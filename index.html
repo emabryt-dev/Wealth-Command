@@ -317,6 +317,17 @@
 
   <!-- Main App Logic -->
   <script defer src="app.js"></script>
+  <script>
+  console.log('> running SW registration');
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('service-worker.js')
+      .then(reg => console.log('✅ SW registered, scope:', reg.scope))
+      .catch(err => console.error('❌ SW registration failed:', err));
+  } else {
+    console.warn('⌛ serviceWorker not supported');
+  }
+</script>
 </body>
 </html>
 ```
