@@ -28,13 +28,19 @@
   <div class="max-w-md mx-auto pb-24">
 
     <!-- Dashboard -->
-    <div id="dashboard" class="tab-content active p-4 space-y-4">
-      <div class="flex justify-between items-center">
-        <select id="monthSelect" class="border p-2 rounded"></select>
-        <button
-          onclick="showTransactionModal()"
-          class="bg-blue-500 text-white px-4 py-2 rounded"
-        >
+    <div class="grid grid-cols-3 gap-4 text-center">
+  <div>
+    <h3 class="text-sm text-gray-600">Income</h3>
+    <p id="totalIncome" class="font-bold text-lg">Rs 0</p>
+  </div>
+  <div>
+    <h3 class="text-sm text-gray-600">Expenses</h3>
+    <p id="totalExpenses" class="font-bold text-lg">Rs 0</p>
+  </div>
+  <div>
+    <h3 class="text-sm text-gray-600">Savings</h3>
+    <p id="netAmount" class="font-bold text-lg">Rs 0</p>
+    
           + Transaction
         </button>
       </div>
