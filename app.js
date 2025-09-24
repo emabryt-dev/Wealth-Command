@@ -122,7 +122,12 @@ function updateHeaderBalance() {
   const netEl = document.getElementById('netAmount');
 
   if (!incEl || !expEl || !netEl) {
-    console.warn('Missing balance element(s):', incEl, expEl, netEl);
+    console.warn(
+      'updateHeaderBalance: missing element(s)',
+      'incEl:', incEl,
+      'expEl:', expEl,
+      'netEl:', netEl
+    );
     return;
   }
 
@@ -130,6 +135,7 @@ function updateHeaderBalance() {
   expEl.textContent = formatCurrency(totalExpenses);
   netEl.textContent = formatCurrency(netAmount);
 }
+
 
 function renderRecentTransactions() {
   const container = document.getElementById('recentTransactionsList');
