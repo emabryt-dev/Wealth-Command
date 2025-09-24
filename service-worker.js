@@ -1,33 +1,40 @@
 // service-worker.js
 
-// 1. Versioned cache names
+// 1. Versioned cache names — bump these when you change this file
 const STATIC_CACHE  = 'wealth-cmd-static-v2';
 const DYNAMIC_CACHE = 'wealth-cmd-dynamic-v2';
 
-// 2. App shell files to precache
+// 2. App shell files to precache (use absolute paths)
 const APP_SHELL = [
-  '/',                  // so navigate requests hit index.html
+  '/',
   '/index.html',
   '/app.js',
-  '/app.css',           // if you have a CSS file
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
 
-// 3. Install: cache app shell
+// 3. Install: cache app shell one-by-one and log any failures
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(STATIC_CACHE);
+    for (const url of APP_SHELL) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        await cache.put(url, res.clone());
+      } catch (err) {
+        console.error('❌ Failed to cache', url, err);
+      }
+    }
+    await self.skipWaiting();
+  })());
 });
 
-// 4. Activate: clean up old caches
+// 4. Activate: remove old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => 
+    caches.keys().then(keys =>
       Promise.all(
         keys
           .filter(key => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
@@ -37,76 +44,70 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 5. Fetch: implement caching strategies
+// 5. Fetch: routing and caching strategies
 self.addEventListener('fetch', event => {
-  const req  = event.request;
-  const url  = new URL(req.url);
+  const req = event.request;
+  const url = new URL(req.url);
 
-  // 5a. Navigation requests → serve index.html from static cache
+  // 5a. Navigation (HTML) → serve index.html from static cache
   if (req.mode === 'navigate') {
     event.respondWith(
-      caches.match('/index.html').then(cached => 
-        cached || fetch(req)
-      )
+      caches.match('/index.html').then(cached => cached || fetch(req))
     );
     return;
   }
 
-  // 5b. App shell (static) → cache-first
+  // 5b. App shell assets → cache-first
   if (APP_SHELL.includes(url.pathname)) {
     event.respondWith(
       caches.open(STATIC_CACHE).then(cache =>
-        cache.match(req).then(cached => 
-          cached || fetch(req).then(networkRes => {
+        cache.match(req).then(cached => {
+          return cached || fetch(req).then(networkRes => {
             cache.put(req, networkRes.clone());
             return networkRes;
-          })
-        )
+          });
+        })
       )
     );
     return;
   }
 
-  // 5c. Everything else (JSON, images, API) → stale-while-revalidate
+  // 5c. Other GETs (API, images) → stale-while-revalidate
   if (req.method === 'GET') {
     event.respondWith(
       caches.open(DYNAMIC_CACHE).then(cache =>
         cache.match(req).then(cached => {
-          const networkFetch = fetch(req).then(networkRes => {
-            // only cache valid responses
+          const fetchPromise = fetch(req).then(networkRes => {
             if (networkRes && networkRes.status === 200) {
               cache.put(req, networkRes.clone());
             }
             return networkRes;
           });
-          // return cached immediately if available, otherwise wait for network
-          return cached || networkFetch;
+          return cached || fetchPromise;
         })
       )
     );
   }
 });
 
-// 6. Background Sync listener (skeleton)
-//    You need to implement `processTransactionQueue()`
-//    which reads your queued items (e.g. from IndexedDB) and POSTS them.
+// 6. Background Sync listener skeleton
 self.addEventListener('sync', event => {
   if (event.tag === 'sync-transactions') {
     event.waitUntil(
-      processTransactionQueue()
-        .catch(err => console.error('Sync failed:', err))
+      processTransactionQueue().catch(err =>
+        console.error('Sync failed:', err)
+      )
     );
   }
 });
 
-// 7. Stub for processing your offline queue
-//    Replace this with your IndexedDB logic + fetch calls
+// 7. Stub for your offline‐queue processing
 async function processTransactionQueue() {
-  // Example stub:
-  // const queued = await readAllQueuedTransactionsFromIDB();
-  // for (let tx of queued) {
+  // Example placeholder:
+  // const queued = await readAllFromIDB('tx-queue');
+  // for (const tx of queued) {
   //   await fetch('/api/transactions', { method: 'POST', body: JSON.stringify(tx) });
-  //   await removeQueuedTransactionFromIDB(tx.id);
+  //   await deleteFromIDB('tx-queue', tx.id);
   // }
-  console.log('⚡️ processTransactionQueue() called, but no queue is implemented yet.');
+  console.log('⚡️ processTransactionQueue() called — implement your queue logic here');
 }
