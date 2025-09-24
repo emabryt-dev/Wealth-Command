@@ -1,8 +1,10 @@
 {
   "name": "Wealth Command Pro",
   "short_name": "WealthCmd",
+  "description": "Track income, expenses, and savings on mobile",
   "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "icons": [
