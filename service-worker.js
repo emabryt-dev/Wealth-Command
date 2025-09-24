@@ -1,56 +1,70 @@
-const CACHE_NAME = 'wealth-cmd-cache-v1';
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
-  './app.js',
-  'https://cdn.tailwindcss.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+// service-worker.js
+const CACHE_NAME = 'wealth-cmd-v1';
+const ASSETS = [
+  '/',                  // makes index.html available at '/'
+  '/index.html',
+  '/app.js',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png'
+  // add any local CSS you committed, e.g. '/css/tailwind.min.css'
 ];
 
-// Install: cache app shell
+// 1. Install: pre-cache app shell
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS_TO_CACHE))
+      .then(cache => cache.addAll(ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate: remove old caches
+// 2. Activate: clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       )
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch: network-first for navigation, cache-first for assets
+// 3. Fetch: serve from cache, then network, fallback to index.html for navigations
 self.addEventListener('fetch', event => {
-  if (event.request.mode === 'navigate') {
+  const req = event.request;
+
+  // For HTML navigations, always return cached index.html
+  if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match('./index.html'))
+      caches.match('/index.html').then(cached => cached)
     );
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then(cached =>
-      cached ||
-      fetch(event.request).then(response =>
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, response.clone());
-          return response;
-        })
-      )
-    )
-  );
+  // For other GET requests, try cache first, then network, and cache new files
+  if (req.method === 'GET') {
+    event.respondWith(
+      caches.match(req).then(cached => {
+        if (cached) return cached;
+        return fetch(req).then(networkRes => {
+          // Only cache same-origin, successful GETs
+          if (
+            networkRes &&
+            networkRes.status === 200 &&
+            req.url.startsWith(self.location.origin)
+          ) {
+            caches.open(CACHE_NAME).then(cache =>
+              cache.put(req, networkRes.clone())
+            );
+          }
+          return networkRes;
+        });
+      }).catch(() => {
+        // As a last resort (e.g. image requests), you could return a placeholder
+      })
+    );
+  }
 });
