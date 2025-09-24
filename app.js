@@ -64,31 +64,37 @@ function refreshDashboard() {
 }
 
 function populateMonthSelect() {
-  const select = document.getElementById('monthSelect');
-  select.innerHTML = '';
+  const select = document.getElementById("monthSelect");
+  select.innerHTML = "";
 
-  const months = [...new Set(transactions.map(t =>
-    new Date(t.date).toLocaleString('default', {
-      month: 'long',
-      year: 'numeric'
-    })
-  ))].sort((a, b) => new Date('1 ' + a) - new Date('1 ' + b));
+  // build a sorted list of month labels from your transactions
+  const months = [...new Set(
+    transactions.map(t =>
+      new Date(t.date).toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      })
+    )
+  )].sort(
+    (a, b) => new Date("1 " + a) - new Date("1 " + b)
+  );
 
+  // populate the <select>
   months.forEach(month => {
-    const option = document.createElement('option');
+    const option = document.createElement("option");
     option.value = month;
     option.textContent = month;
     select.appendChild(option);
   });
 
-  if (months.length > 0) {
+  // if there are any months, default the select to currentMonth
+  if (months.length) {
     select.value = currentMonth;
-    document.getElementById('currentMonthDisplay').textContent = currentMonth;
   }
 
+  // when the user picks a new month, refresh the dashboard
   select.onchange = e => {
     currentMonth = e.target.value;
-    document.getElementById('currentMonthDisplay').textContent = currentMonth;
     refreshDashboard();
   };
 }
