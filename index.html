@@ -27,20 +27,14 @@
 <body class="bg-gray-50 min-h-screen font-sans">
   <div class="max-w-md mx-auto pb-24">
 
-    <!-- Dashboard -->
-    <div class="grid grid-cols-3 gap-4 text-center">
-  <div>
-    <h3 class="text-sm text-gray-600">Income</h3>
-    <p id="totalIncome" class="font-bold text-lg">Rs 0</p>
-  </div>
-  <div>
-    <h3 class="text-sm text-gray-600">Expenses</h3>
-    <p id="totalExpenses" class="font-bold text-lg">Rs 0</p>
-  </div>
-  <div>
-    <h3 class="text-sm text-gray-600">Savings</h3>
-    <p id="netAmount" class="font-bold text-lg">Rs 0</p>
-    
+    <!-- === Dashboard Tab === -->
+    <div id="dashboard" class="tab-content active p-4 space-y-4">
+      <div class="flex justify-between items-center">
+        <select id="monthSelect" class="border p-2 rounded"></select>
+        <button
+          onclick="showTransactionModal()"
+          class="bg-blue-500 text-white px-4 py-2 rounded"
+        >
           + Transaction
         </button>
       </div>
@@ -67,7 +61,7 @@
       <div id="categorySummary" class="space-y-2"></div>
     </div>
 
-    <!-- Transactions -->
+    <!-- === Transactions Tab === -->
     <div id="transactions" class="tab-content p-4 space-y-4">
       <div class="flex items-center mb-4">
         <input
@@ -86,7 +80,7 @@
       <div id="transactionsList" class="space-y-2"></div>
     </div>
 
-    <!-- Analytics -->
+    <!-- === Analytics Tab === -->
     <div id="analytics" class="tab-content p-4 space-y-4">
       <div class="flex items-center mb-4">
         <label for="analyticsRange">Show last</label>
@@ -122,7 +116,7 @@
       <div id="monthlyBreakdown" class="space-y-2"></div>
     </div>
 
-    <!-- Settings -->
+    <!-- === Settings Tab === -->
     <div id="settings" class="tab-content p-4 space-y-4">
       <button
         onclick="showAddCategoryModal()"
@@ -154,7 +148,7 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation -->
+  <!-- === Bottom Navigation === -->
   <nav class="fixed bottom-0 w-full bg-white border-t flex">
     <button
       onclick="switchTab('dashboard')"
@@ -186,7 +180,7 @@
     </button>
   </nav>
 
-  <!-- Transaction Modal -->
+  <!-- === Transaction Modal === -->
   <div
     id="transactionModal"
     class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
@@ -263,7 +257,7 @@
     </div>
   </div>
 
-  <!-- Add Category Modal -->
+  <!-- === Add Category Modal === -->
   <div
     id="addCategoryModal"
     class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
@@ -313,27 +307,23 @@
 
   <!-- Service Worker Registration -->
   <script>
+    console.log('> running SW registration');
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('service-worker.js')
-        .then(() => console.log('Service Worker registered'))
-        .catch(console.error);
+        .then(reg =>
+          console.log('✅ SW registered, scope:', reg.scope)
+        )
+        .catch(err =>
+          console.error('❌ SW registration failed:', err)
+        );
+    } else {
+      console.warn('⌛ serviceWorker not supported');
     }
   </script>
 
   <!-- Main App Logic -->
   <script defer src="app.js"></script>
-  <script>
-  console.log('> running SW registration');
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker
-      .register('service-worker.js')
-      .then(reg => console.log('✅ SW registered, scope:', reg.scope))
-      .catch(err => console.error('❌ SW registration failed:', err));
-  } else {
-    console.warn('⌛ serviceWorker not supported');
-  }
-</script>
 </body>
 </html>
 ```
