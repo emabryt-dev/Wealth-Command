@@ -1,105 +1,107 @@
 // service-worker.js
 
-// 1) Cache version names — bump these on changes
-const STATIC_CACHE  = 'wealth-cmd-static-v8';
-const DYNAMIC_CACHE = 'wealth-cmd-dynamic-v8';
+// 1) Cache version - change this when you update your files
+const CACHE_NAME = 'wealth-cmd-v1';
+const DYNAMIC_CACHE = 'wealth-cmd-dynamic-v1';
 
-// 2) App shell files to precache
+// 2) Files to cache for offline use
 const APP_SHELL = [
-  '/',                // index.html
-  'index.html',
-  'app.js',
-  'tailwind.css',
-  'fa.css',
-  'manifest.json',
-  'icons/icon-192.png',
-  'icons/icon-512.png'
+  './',
+  './index.html',
+  './manifest.json'
+  // Add other files if you have them: './styles.css', './app.js', etc.
 ];
 
-// 3) Install event — precache app shell
+// 3) Install event - caches the app shell
 self.addEventListener('install', event => {
-  event.waitUntil((async () => {
-    const cache = await caches.open(STATIC_CACHE);
-    for (const url of APP_SHELL) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(res.status);
-        await cache.put(url, res.clone());
-      } catch (err) {
-        console.error('Failed to cache', url, err);
-      }
-    }
-    await self.skipWaiting();
-  })());
+  console.log('Service Worker: Installing...');
+  
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Service Worker: Caching App Shell');
+        return cache.addAll(APP_SHELL);
+      })
+      .then(() => {
+        console.log('Service Worker: Install completed');
+        return self.skipWaiting(); // Activate immediately
+      })
+      .catch(error => {
+        console.error('Service Worker: Install failed', error);
+      })
+  );
 });
 
-// 4) Activate event — clean up old caches
+// 4) Activate event - cleans up old caches
 self.addEventListener('activate', event => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(
-      keys
-        .filter(key => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
-        .map(key => caches.delete(key))
-    );
-    await self.clients.claim();
-  })());
+  console.log('Service Worker: Activating...');
+  
+  event.waitUntil(
+    caches.keys()
+      .then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            // Delete old caches
+            if (cacheName !== CACHE_NAME && cacheName !== DYNAMIC_CACHE) {
+              console.log('Service Worker: Deleting old cache', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        console.log('Service Worker: Activate completed');
+        return self.clients.claim(); // Take control immediately
+      })
+  );
 });
 
-// 5) Fetch event — routing & caching strategies
+// 5) Fetch event - serves cached content when offline
 self.addEventListener('fetch', event => {
-  const req = event.request;
-  const url = new URL(req.url);
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
 
-  // a) Navigation: network-first, fallback to cached shell
-  if (req.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        return await fetch(req);
-      } catch {
-        const cache = await caches.open(STATIC_CACHE);
-        return cache.match('/') || cache.match('index.html');
-      }
-    })());
-    return;
-  }
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // Return cached version if found
+        if (response) {
+          console.log('Service Worker: Serving from cache', event.request.url);
+          return response;
+        }
 
-  // b) App shell assets: cache-first
-  const path = url.pathname.replace(/^\//, '');
-  if (APP_SHELL.includes(path)) {
-    event.respondWith((async () => {
-      const cache = await caches.open(STATIC_CACHE);
-      const cached = await cache.match(req);
-      if (cached) return cached;
-      const networkRes = await fetch(req);
-      if (networkRes.ok) cache.put(req, networkRes.clone());
-      return networkRes;
-    })());
-    return;
-  }
-
-  // c) Other GET requests: stale-while-revalidate
-  if (req.method === 'GET') {
-    event.respondWith((async () => {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      const cached = await cache.match(req);
-      const networkFetch = fetch(req).then(networkRes => {
-        if (networkRes.ok) cache.put(req, networkRes.clone());
-        return networkRes;
-      });
-      return cached || networkFetch;
-    })());
-  }
+        // Otherwise fetch from network
+        return fetch(event.request)
+          .then(networkResponse => {
+            // Cache new requests for future use
+            if (event.request.url.startsWith('http') && 
+                networkResponse.status === 200) {
+              caches.open(DYNAMIC_CACHE)
+                .then(cache => {
+                  cache.put(event.request, networkResponse.clone());
+                });
+            }
+            return networkResponse;
+          })
+          .catch(error => {
+            // If both cache and network fail, you could show an offline page
+            console.error('Service Worker: Fetch failed', error);
+            
+            // For navigation requests, return the cached app shell
+            if (event.request.mode === 'navigate') {
+              return caches.match('./index.html');
+            }
+          });
+      })
+  );
 });
 
-// 6) Background sync (optional) — stub for queued transactions
+// 6) Background sync (optional - for future enhancements)
 self.addEventListener('sync', event => {
-  if (event.tag === 'sync-transactions') {
-    event.waitUntil(processTransactionQueue());
+  if (event.tag === 'background-sync') {
+    console.log('Service Worker: Background sync triggered');
+    // You can add background sync logic here later
   }
 });
 
-// 7) Stub function — plug in your IndexedDB queue + POST logic here
-async function processTransactionQueue() {
-  console.log('processTransactionQueue() called — implement your sync logic');
-}
+console.log('Service Worker: Loaded successfully');
