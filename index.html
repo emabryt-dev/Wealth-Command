@@ -1,329 +1,263 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
+  <meta charset="UTF-8">
+  <meta 
+    name="viewport" 
     content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
+  >
+  <meta name="theme-color" content="#3b82f6">
   <title>Wealth Command Pro</title>
 
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#3b82f6" />
-
-  <!-- Fallback Icon -->
-  <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
-
-  <!-- Tailwind CSS -->
-  <link href="https://cdn.tailwindcss.com" rel="stylesheet" />
-
-  <!-- Font Awesome -->
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  <!-- Inter font for crisp readability -->
+  <link 
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" 
     rel="stylesheet"
-  />
-</head>
-<body class="bg-gray-50 min-h-screen font-sans">
-  <div class="max-w-md mx-auto pb-24">
-
-    <!-- === Dashboard Tab === -->
-    <div id="dashboard" class="tab-content active p-4 space-y-4">
-      <div class="flex justify-between items-center">
-        <select id="monthSelect" class="border p-2 rounded"></select>
-        <button
-          onclick="showTransactionModal()"
-          class="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          + Transaction
-        </button>
-      </div>
-
-      <div class="grid grid-cols-3 gap-4 text-center">
-        <div>
-          <h3 class="text-sm text-gray-600">Income</h3>
-          <p id="totalIncome" class="font-bold text-lg">Rs 0</p>
-        </div>
-        <div>
-          <h3 class="text-sm text-gray-600">Expenses</h3>
-          <p id="totalExpenses" class="font-bold text-lg">Rs 0</p>
-        </div>
-        <div>
-          <h3 class="text-sm text-gray-600">Savings</h3>
-          <p id="netAmount" class="font-bold text-lg">Rs 0</p>
-        </div>
-      </div>
-
-      <h4 class="font-semibold">Recent Transactions</h4>
-      <div id="recentTransactionsList" class="space-y-2"></div>
-
-      <h4 class="font-semibold">Top Spending Categories</h4>
-      <div id="categorySummary" class="space-y-2"></div>
-    </div>
-
-    <!-- === Transactions Tab === -->
-    <div id="transactions" class="tab-content p-4 space-y-4">
-      <div class="flex items-center mb-4">
-        <input
-          id="searchTransactions"
-          type="search"
-          placeholder="Search transactions…"
-          class="border p-2 rounded flex-1 mr-2"
-        />
-        <button
-          onclick="showTransactionModal()"
-          class="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          + Add
-        </button>
-      </div>
-      <div id="transactionsList" class="space-y-2"></div>
-    </div>
-
-    <!-- === Analytics Tab === -->
-    <div id="analytics" class="tab-content p-4 space-y-4">
-      <div class="flex items-center mb-4">
-        <label for="analyticsRange">Show last</label>
-        <select
-          id="analyticsRange"
-          onchange="refreshAnalytics()"
-          class="border p-2 rounded mx-2"
-        >
-          <option value="3">3 months</option>
-          <option value="6">6 months</option>
-          <option value="12">12 months</option>
-          <option value="all">All</option>
-        </select>
-        <span>months</span>
-      </div>
-
-      <div class="grid grid-cols-3 gap-4 text-center">
-        <div>
-          <h3 class="text-sm text-gray-600">Avg Income</h3>
-          <p id="avgIncome" class="font-bold text-lg">Rs 0</p>
-        </div>
-        <div>
-          <h3 class="text-sm text-gray-600">Avg Expenses</h3>
-          <p id="avgExpenses" class="font-bold text-lg">Rs 0</p>
-        </div>
-        <div>
-          <h3 class="text-sm text-gray-600">Avg Savings</h3>
-          <p id="avgSavings" class="font-bold text-lg">Rs 0</p>
-        </div>
-      </div>
-
-      <h4 class="font-semibold">Monthly Breakdown</h4>
-      <div id="monthlyBreakdown" class="space-y-2"></div>
-    </div>
-
-    <!-- === Settings Tab === -->
-    <div id="settings" class="tab-content p-4 space-y-4">
-      <button
-        onclick="showAddCategoryModal()"
-        class="bg-green-500 text-white px-4 py-2 rounded"
-      >
-        + Category
-      </button>
-      <div id="categoriesList" class="space-y-2"></div>
-      <div class="flex space-x-2 mt-4">
-        <button
-          onclick="exportData()"
-          class="flex-1 bg-blue-500 text-white p-2 rounded"
-        >
-          Export CSV
-        </button>
-        <button
-          onclick="backupData()"
-          class="flex-1 bg-blue-500 text-white p-2 rounded"
-        >
-          Backup JSON
-        </button>
-        <button
-          onclick="resetAllData()"
-          class="flex-1 bg-red-500 text-white p-2 rounded"
-        >
-          Reset All
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- === Bottom Navigation === -->
-  <nav class="fixed bottom-0 w-full bg-white border-t flex">
-    <button
-      onclick="switchTab('dashboard')"
-      class="flex-1 nav-button active p-2 text-center"
-    >
-      <i class="fas fa-chart-pie"></i>
-      <div class="text-xs">Dashboard</div>
-    </button>
-    <button
-      onclick="switchTab('transactions')"
-      class="flex-1 nav-button p-2 text-center"
-    >
-      <i class="fas fa-list"></i>
-      <div class="text-xs">Transactions</div>
-    </button>
-    <button
-      onclick="switchTab('analytics')"
-      class="flex-1 nav-button p-2 text-center"
-    >
-      <i class="fas fa-chart-line"></i>
-      <div class="text-xs">Analytics</div>
-    </button>
-    <button
-      onclick="switchTab('settings')"
-      class="flex-1 nav-button p-2 text-center"
-    >
-      <i class="fas fa-cog"></i>
-      <div class="text-xs">Settings</div>
-    </button>
-  </nav>
-
-  <!-- === Transaction Modal === -->
-  <div
-    id="transactionModal"
-    class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
   >
-    <div class="bg-white p-6 rounded w-11/12 max-w-md relative">
-      <h3 class="text-lg font-bold mb-4">Add Transaction</h3>
-      <label class="block mb-2">
-        Date
-        <input
-          id="transDate"
-          type="date"
-          class="w-full border p-2 rounded"
-        />
-      </label>
-      <label class="block mb-2">
-        Description
-        <input
-          id="transDesc"
-          type="text"
-          class="w-full border p-2 rounded"
-        />
-      </label>
-      <div class="flex space-x-2 mb-2">
-        <button
-          onclick="setTransactionType('income')"
-          class="income-type flex-1 border rounded p-2"
-        >
-          Income
-        </button>
-        <button
-          onclick="setTransactionType('expense')"
-          class="expense-type flex-1 border rounded p-2"
-        >
-          Expense
-        </button>
-      </div>
-      <label class="block mb-2">
-        Category
-        <select
-          id="transCategory"
-          class="w-full border p-2 rounded"
-          disabled
-        ></select>
-      </label>
-      <label class="block mb-4">
-        Amount
-        <input
-          id="transAmount"
-          type="text"
-          oninput="formatAmount(this)"
-          class="w-full border p-2 rounded"
-        />
-      </label>
-      <div class="flex justify-end space-x-2">
-        <button
-          onclick="saveTransaction()"
-          class="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Save
-        </button>
-        <button
-          onclick="closeModal()"
-          class="bg-gray-300 px-4 py-2 rounded"
-        >
-          Cancel
-        </button>
-      </div>
-      <button
-        onclick="closeModal()"
-        class="absolute top-2 right-2 text-gray-500 text-2xl leading-none"
-      >
-        &times;
-      </button>
-    </div>
-  </div>
 
-  <!-- === Add Category Modal === -->
-  <div
-    id="addCategoryModal"
-    class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-  >
-    <div class="bg-white p-6 rounded w-11/12 max-w-md relative">
-      <h3 class="text-lg font-bold mb-4">Add Category</h3>
-      <label class="block mb-2">
-        Name
-        <input
-          id="newCategoryName"
-          type="text"
-          class="w-full border p-2 rounded"
-        />
-      </label>
-      <label class="block mb-4">
-        Budget
-        <input
-          id="newCategoryBudget"
-          type="text"
-          oninput="formatAmount(this)"
-          class="w-full border p-2 rounded"
-          placeholder="e.g. 5000"
-        />
-      </label>
-      <div class="flex justify-end space-x-2">
-        <button
-          onclick="saveNewCategory()"
-          class="bg-green-500 text-white px-4 py-2 rounded"
-        >
-          Save
-        </button>
-        <button
-          onclick="closeCategoryModal()"
-          class="bg-gray-300 px-4 py-2 rounded"
-        >
-          Cancel
-        </button>
-      </div>
-      <button
-        onclick="closeCategoryModal()"
-        class="absolute top-2 right-2 text-gray-500 text-2xl leading-none"
-      >
-        &times;
-      </button>
-    </div>
-  </div>
-
-  <!-- Service Worker Registration -->
+  <!-- Tailwind via CDN (for rapid iteration) -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    console.log('> running SW registration');
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('service-worker.js')
-        .then(reg =>
-          console.log('✅ SW registered, scope:', reg.scope)
-        )
-        .catch(err =>
-          console.error('❌ SW registration failed:', err)
-        );
-    } else {
-      console.warn('⌛ serviceWorker not supported');
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui']
+          },
+          colors: {
+            primary: '#3b82f6',
+            background: '#f9fafb',
+            surface: '#ffffff'
+          },
+          boxShadow: {
+            card: '0 4px 6px rgba(0,0,0,0.05)'
+          }
+        }
+      }
     }
   </script>
 
-  <!-- Main App Logic -->
-  <script defer src="app.js"></script>
+  <style>
+    /* Safe‐area bottom inset on iOS/Android */
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    /* Fade‐in for tabs */
+    .tab-content { opacity: 0; transform: translateY(8px); transition: all .2s ease-in; }
+    .tab-content.active { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col bg-background font-sans text-gray-800">
+  <!-- HEADER -->
+  <header class="bg-surface shadow sticky top-0 z-50">
+    <div class="max-w-xl mx-auto px-6 py-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-bold">Wealth Command</h1>
+        <p id="currentMonthDisplay" class="text-sm text-gray-500">January 2025</p>
+      </div>
+      <div class="text-right">
+        <p id="headerBalance" class="text-2xl font-semibold text-gray-800">Rs 0</p>
+        <p class="text-xs text-gray-500">Balance</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 overflow-auto">
+    <div class="max-w-xl mx-auto px-6 pt-4 pb-20">
+      <!-- Dashboard Tab -->
+      <section id="dashboard" class="tab-content active space-y-4">
+        <!-- Month + Add -->
+        <div class="flex gap-3">
+          <select 
+            id="monthSelect" 
+            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 bg-surface focus:ring-primary focus:border-primary"
+          ></select>
+          <button 
+            onclick="showTransactionModal()" 
+            class="bg-primary text-white rounded-lg flex items-center px-4 py-2 shadow-card hover:bg-blue-500 transition"
+          >
+            <i class="fas fa-plus mr-2"></i>
+            <span class="whitespace-nowrap">Add Transaction</span>
+          </button>
+        </div>
+
+        <!-- Summary Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-surface rounded-lg p-4 shadow-card border-l-4 border-green-500">
+            <p id="totalIncome" class="text-xl font-semibold text-green-600">Rs 0</p>
+            <p class="text-gray-500">Income</p>
+          </div>
+          <div class="bg-surface rounded-lg p-4 shadow-card border-l-4 border-red-500">
+            <p id="totalExpenses" class="text-xl font-semibold text-red-600">Rs 0</p>
+            <p class="text-gray-500">Expenses</p>
+          </div>
+          <div class="bg-surface rounded-lg p-4 shadow-card border-l-4 border-blue-500">
+            <p id="netAmount" class="text-xl font-semibold text-blue-600">Rs 0</p>
+            <p class="text-gray-500">Savings</p>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="bg-surface rounded-lg shadow-card p-4 space-y-3">
+          <h2 class="text-lg font-medium">Recent Transactions</h2>
+          <div id="recentTransactionsList" class="space-y-2"></div>
+          <button 
+            onclick="switchTab('transactions')" 
+            class="w-full text-primary font-medium py-2 rounded-lg border border-primary hover:bg-primary hover:text-white transition"
+          >
+            View All Transactions
+          </button>
+        </div>
+
+        <!-- Top Categories -->
+        <div class="bg-surface rounded-lg shadow-card p-4">
+          <h2 class="text-lg font-medium mb-3">Top Categories</h2>
+          <div id="categorySummary" class="space-y-2"></div>
+        </div>
+      </section>
+
+      <!-- Transactions Tab -->
+      <section id="transactions" class="tab-content space-y-4">
+        <div class="flex justify-between items-center">
+          <h2 class="text-xl font-medium">All Transactions</h2>
+          <button 
+            onclick="showTransactionModal()" 
+            class="bg-primary text-white p-2 rounded-lg shadow-card hover:bg-blue-500 transition"
+          >
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        <input 
+          type="text" 
+          id="searchTransactions" 
+          placeholder="Search…" 
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-primary focus:border-primary"
+        >
+        <div id="transactionsList" class="space-y-2 pt-2"></div>
+      </section>
+
+      <!-- Analytics Tab -->
+      <section id="analytics" class="tab-content space-y-4">
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-medium">Financial Summary</h2>
+            <select 
+              id="analyticsRange" 
+              class="border border-gray-300 rounded-lg px-3 py-1 focus:ring-primary focus:border-primary"
+            >
+              <option value="3">Last 3 Months</option>
+              <option value="6">Last 6 Months</option>
+              <option value="12">Last 12 Months</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-green-50 rounded-lg p-4 text-center">
+              <p class="text-sm">Avg Income</p>
+              <p id="avgIncome" class="text-lg font-semibold text-green-600">Rs 0</p>
+            </div>
+            <div class="bg-red-50 rounded-lg p-4 text-center">
+              <p class="text-sm">Avg Expenses</p>
+              <p id="avgExpenses" class="text-lg font-semibold text-red-600">Rs 0</p>
+            </div>
+            <div class="bg-blue-50 rounded-lg p-4 text-center">
+              <p class="text-sm">Avg Savings</p>
+              <p id="avgSavings" class="text-lg font-semibold text-blue-600">Rs 0</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-surface rounded-lg shadow-card p-4 space-y-2">
+          <h3 class="font-medium">Monthly Breakdown</h3>
+          <div id="monthlyBreakdown" class="space-y-2"></div>
+        </div>
+      </section>
+
+      <!-- Settings Tab -->
+      <section id="settings" class="tab-content space-y-4">
+        <div class="bg-surface rounded-lg shadow-card p-4 space-y-4">
+          <h2 class="text-xl font-medium">Categories</h2>
+          <button 
+            onclick="showAddCategoryModal()" 
+            class="w-full bg-green-500 text-white py-2 rounded-lg shadow-card hover:bg-green-600 transition"
+          >
+            <i class="fas fa-plus mr-2"></i>Add Category
+          </button>
+          <div id="categoriesList" class="space-y-2"></div>
+        </div>
+
+        <div class="bg-surface rounded-lg shadow-card p-4 space-y-2">
+          <h2 class="text-lg font-medium">Data Management</h2>
+          <button 
+            onclick="exportData()" 
+            class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition"
+          >
+            <i class="fas fa-download mr-2"></i>Export Data
+          </button>
+          <button 
+            onclick="backupData()" 
+            class="w-full bg-indigo-500 text-white py-2 rounded-lg hover:bg-indigo-600 transition"
+          >
+            <i class="fas fa-save mr-2"></i>Backup Data
+          </button>
+          <button 
+            onclick="resetAllData()" 
+            class="w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition"
+          >
+            <i class="fas fa-trash mr-2"></i>Reset All Data
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav 
+    class="fixed inset-x-0 bottom-0 bg-surface border-t border-gray-200 pb-safe-area shadow-lg"
+  >
+    <div class="max-w-xl mx-auto flex justify-around">
+      <button 
+        class="flex-1 py-3 text-center text-gray-500 hover:text-primary transition nav-button active" 
+        onclick="switchTab('dashboard')"
+      >
+        <i class="fas fa-chart-pie text-xl"></i>
+        <p class="text-xs">Dashboard</p>
+      </button>
+      <button 
+        class="flex-1 py-3 text-center text-gray-500 hover:text-primary transition nav-button" 
+        onclick="switchTab('transactions')"
+      >
+        <i class="fas fa-exchange-alt text-xl"></i>
+        <p class="text-xs">Transactions</p>
+      </button>
+      <button 
+        class="flex-1 py-3 text-center text-gray-500 hover:text-primary transition nav-button" 
+        onclick="switchTab('analytics')"
+      >
+        <i class="fas fa-chart-bar text-xl"></i>
+        <p class="text-xs">Analytics</p>
+      </button>
+      <button 
+        class="flex-1 py-3 text-center text-gray-500 hover:text-primary transition nav-button" 
+        onclick="switchTab('settings')"
+      >
+        <i class="fas fa-cog text-xl"></i>
+        <p class="text-xs">Settings</p>
+      </button>
+    </div>
+  </nav>
+
+  <!-- (Modals stay exactly as before) -->
+
+  <!-- Your existing <script>…</script> goes here unchanged -->
+  <!-- At the very bottom add SW registration if not already present -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('./service-worker.js')
+        .then(r => console.log('✅ SW registered', r.scope))
+        .catch(e => console.error('❌ SW registration failed', e));
+    }
+  </script>
 </body>
 </html>
-```
