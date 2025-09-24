@@ -11,16 +11,55 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" integrity="sha256-…" crossorigin="anonymous">
 </head>
 <body class="bg-gray-50 min-h-screen font-sans">
-  <!-- ==== START: Minimal Shell ==== -->
-  <h1 class="text-center text-2xl mt-8">Hello, Wealth Command!</h1>
-  <!-- ==== END: Minimal Shell ==== -->
+
+  <!-- ==== START: App Shell ==== -->
+  <nav class="fixed bottom-0 w-full bg-white border-t flex">
+    <button onclick="switchTab('dashboard')" class="flex-1 nav-button active p-2">
+      <i class="fas fa-chart-pie"></i><span class="block text-xs">Dashboard</span>
+    </button>
+    <button onclick="switchTab('transactions')" class="flex-1 nav-button p-2">
+      <i class="fas fa-list"></i><span class="block text-xs">Transactions</span>
+    </button>
+    <button onclick="switchTab('analytics')" class="flex-1 nav-button p-2">
+      <i class="fas fa-chart-line"></i><span class="block text-xs">Analytics</span>
+    </button>
+    <button onclick="switchTab('settings')" class="flex-1 nav-button p-2">
+      <i class="fas fa-cog"></i><span class="block text-xs">Settings</span>
+    </button>
+  </nav>
+
+  <div id="dashboard" class="tab-content active p-4">
+    <h2 class="text-xl font-bold mb-4">Dashboard</h2>
+    <!-- summary cards and month selector go here -->
+  </div>
+
+  <div id="transactions" class="tab-content p-4">
+    <h2 class="text-xl font-bold mb-4">Transactions</h2>
+    <!-- search bar + transactions list goes here -->
+  </div>
+
+  <div id="analytics" class="tab-content p-4">
+    <h2 class="text-xl font-bold mb-4">Analytics</h2>
+    <!-- analytics charts and summaries go here -->
+  </div>
+
+  <div id="settings" class="tab-content p-4">
+    <h2 class="text-xl font-bold mb-4">Settings</h2>
+    <!-- categories list, export/backup/reset controls go here -->
+  </div>
+  <!-- ==== END: App Shell ==== -->
+
+  <!-- Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
+      navigator.serviceWorker
+        .register('service-worker.js')
         .then(() => console.log('SW registered'))
         .catch(console.error);
     }
   </script>
+
+  <!-- Main App Logic -->
   <script defer src="app.js"></script>
 </body>
 </html>
