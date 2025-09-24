@@ -8,10 +8,10 @@ const defaultCategories = [
 ];
 
 // App state
-let transactions = JSON.parse(
-  localStorage.getItem("financeTransactions")
-) || [];
-let categories = JSON.parse(localStorage.getItem("categories")) ||
+let transactions =
+  JSON.parse(localStorage.getItem("financeTransactions")) || [];
+let categories =
+  JSON.parse(localStorage.getItem("categories")) ||
   defaultCategories.map(name => ({ name, budget: 10000 }));
 let currentMonth = new Date().toLocaleString("default", {
   month: "long",
@@ -23,11 +23,9 @@ let currentTransactionType = "";
 function formatCurrency(amount) {
   return "Rs " + parseInt(amount).toLocaleString("en-PK");
 }
-
 function parseCurrency(amountStr) {
   return parseInt(amountStr.replace(/[^0-9]/g, "")) || 0;
 }
-
 function formatAmount(input) {
   let value = input.value.replace(/[^0-9]/g, "");
   if (value) value = parseInt(value).toLocaleString("en-PK");
@@ -37,7 +35,6 @@ function formatAmount(input) {
 // Navigation
 function switchTab(tabName) {
   console.log("switchTab()", tabName);
-
   document.querySelectorAll(".nav-button")
     .forEach(btn => btn.classList.remove("active"));
   document
@@ -53,25 +50,22 @@ function switchTab(tabName) {
   else if (tabName === "analytics") refreshAnalytics();
   else if (tabName === "settings") renderSettings();
 }
-
 function getTabIndex(tabName) {
   const tabs = ["dashboard", "transactions", "analytics", "settings"];
   return tabs.indexOf(tabName) + 1;
 }
 
-// Dashboard functions
+// Dashboard
 function refreshDashboard() {
   populateMonthSelect();
   updateSummaryCards();
   renderRecentTransactions();
   renderCategorySummary();
 }
-
 function populateMonthSelect() {
   const select = document.getElementById("monthSelect");
   select.innerHTML = "";
 
-  // build sorted list of month labels from transactions
   const months = [...new Set(
     transactions.map(t =>
       new Date(t.date).toLocaleString("default", {
@@ -81,7 +75,6 @@ function populateMonthSelect() {
     )
   )].sort((a, b) => new Date("1 " + a) - new Date("1 " + b));
 
-  // populate the <select>
   months.forEach(month => {
     const option = document.createElement("option");
     option.value = month;
@@ -89,18 +82,12 @@ function populateMonthSelect() {
     select.appendChild(option);
   });
 
-  // default to currentMonth if any exist
-  if (months.length) {
-    select.value = currentMonth;
-  }
-
-  // when the user picks a new month, refresh the dashboard
+  if (months.length) select.value = currentMonth;
   select.onchange = e => {
     currentMonth = e.target.value;
     refreshDashboard();
   };
 }
-
 function updateSummaryCards() {
   const monthTransactions = transactions.filter(t =>
     new Date(t.date).toLocaleString("default", {
@@ -112,11 +99,9 @@ function updateSummaryCards() {
   const income = monthTransactions
     .filter(t => t.type === "income")
     .reduce((sum, t) => sum + parseCurrency(t.amount), 0);
-
   const expenses = monthTransactions
     .filter(t => t.type === "expense")
     .reduce((sum, t) => sum + parseCurrency(t.amount), 0);
-
   const savings = income - expenses;
 
   document.getElementById("totalIncome").textContent =
@@ -126,7 +111,6 @@ function updateSummaryCards() {
   document.getElementById("netAmount").textContent =
     formatCurrency(savings);
 }
-
 function renderRecentTransactions() {
   const container = document.getElementById("recentTransactionsList");
   container.innerHTML = "";
@@ -162,50 +146,50 @@ function renderRecentTransactions() {
           }">
             ${formatCurrency(parseCurrency(transaction.amount))}
           </div>
-          <div class="text-xs text-gray-500">${new Date(
-            transaction.date
-          ).toLocaleDateString()}</div>
+          <div class="text-xs text-gray-500">${
+            new Date(transaction.date).toLocaleDateString()
+          }</div>
         </div>
       </div>
     `;
     container.appendChild(div);
   });
 }
-
 function renderCategorySummary() {
   const container = document.getElementById("categorySummary");
   container.innerHTML = "";
 
-  const monthTransactions = transactions.filter(t =>
-    new Date(t.date).toLocaleString("default", {
-      month: "long",
-      year: "numeric"
-    }) === currentMonth && t.type === "expense"
+  const monthTransactions = transactions.filter(
+    t =>
+      new Date(t.date).toLocaleString("default", {
+        month: "long",
+        year: "numeric"
+      }) === currentMonth && t.type === "expense"
   );
 
-  const categoryTotals = {};
+  const totals = {};
   monthTransactions.forEach(t => {
-    categoryTotals[t.category] =
-      (categoryTotals[t.category] || 0) + parseCurrency(t.amount);
+    totals[t.category] =
+      (totals[t.category] || 0) + parseCurrency(t.amount);
   });
 
-  const topCategories = Object.entries(categoryTotals)
+  const top = Object.entries(totals)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
-  if (!topCategories.length) {
+  if (!top.length) {
     container.innerHTML =
       '<div class="text-center text-gray-500 py-4">No expense data</div>';
     return;
   }
 
-  topCategories.forEach(([category, amount]) => {
+  top.forEach(([cat, amt]) => {
     const div = document.createElement("div");
     div.className = "list-item";
     div.innerHTML = `
       <div class="flex justify-between items-center">
-        <span class="font-medium">${category}</span>
-        <span class="text-red-600">${formatCurrency(amount)}</span>
+        <span class="font-medium">${cat}</span>
+        <span class="text-red-600">${formatCurrency(amt)}</span>
       </div>
     `;
     container.appendChild(div);
@@ -244,9 +228,9 @@ function renderTransactionsList() {
         <div class="flex-1">
           <div class="font-medium">${transaction.description}</div>
           <div class="text-sm text-gray-500">
-            ${transaction.category} • ${new Date(
-      transaction.date
-    ).toLocaleDateString()}
+            ${transaction.category} • ${
+      new Date(transaction.date).toLocaleDateString()
+    }
           </div>
         </div>
         <div class="text-right">
@@ -266,7 +250,6 @@ function renderTransactionsList() {
     container.appendChild(div);
   });
 }
-
 document
   .getElementById("searchTransactions")
   .addEventListener("input", renderTransactionsList);
@@ -276,37 +259,22 @@ function refreshAnalytics() {
   updateAnalyticsSummary();
   renderMonthlyBreakdown();
 }
-
 function updateAnalyticsSummary() {
   const range = parseInt(
     document.getElementById("analyticsRange").value
   );
-  const monthlyData = getMonthlyData(range);
+  const data = getMonthlyData(range);
 
-  const avgIncome =
-    monthlyData.income.length > 0
-      ? monthlyData.income.reduce((a, b) => a + b, 0) /
-        monthlyData.income.length
-      : 0;
-  const avgExpenses =
-    monthlyData.expenses.length > 0
-      ? monthlyData.expenses.reduce((a, b) => a + b, 0) /
-        monthlyData.expenses.length
-      : 0;
-  const avgSavings =
-    monthlyData.savings.length > 0
-      ? monthlyData.savings.reduce((a, b) => a + b, 0) /
-        monthlyData.savings.length
-      : 0;
+  const avg = arr =>
+    arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 
   document.getElementById("avgIncome").textContent =
-    formatCurrency(avgIncome);
+    formatCurrency(avg(data.income));
   document.getElementById("avgExpenses").textContent =
-    formatCurrency(avgExpenses);
+    formatCurrency(avg(data.expenses));
   document.getElementById("avgSavings").textContent =
-    formatCurrency(avgSavings);
+    formatCurrency(avg(data.savings));
 }
-
 function renderMonthlyBreakdown() {
   const container = document.getElementById("monthlyBreakdown");
   container.innerHTML = "";
@@ -314,21 +282,17 @@ function renderMonthlyBreakdown() {
   const range = parseInt(
     document.getElementById("analyticsRange").value
   );
-  const monthlyData = getMonthlyData(range);
+  const data = getMonthlyData(range);
 
-  monthlyData.labels.forEach((month, index) => {
-    const income = monthlyData.income[index];
-    const expenses = monthlyData.expenses[index];
-    const savings = monthlyData.savings[index];
-
+  data.labels.forEach((month, i) => {
     const div = document.createElement("div");
     div.className = "list-item";
     div.innerHTML = `
       <div class="font-medium mb-2">${month}</div>
       <div class="grid grid-cols-3 gap-2 text-sm">
-        <div class="text-green-600">${formatCurrency(income)}</div>
-        <div class="text-red-600">${formatCurrency(expenses)}</div>
-        <div class="text-blue-600">${formatCurrency(savings)}</div>
+        <div class="text-green-600">${formatCurrency(data.income[i])}</div>
+        <div class="text-red-600">${formatCurrency(data.expenses[i])}</div>
+        <div class="text-blue-600">${formatCurrency(data.savings[i])}</div>
         <div class="text-gray-500">Income</div>
         <div class="text-gray-500">Expenses</div>
         <div class="text-gray-500">Savings</div>
@@ -337,72 +301,62 @@ function renderMonthlyBreakdown() {
     container.appendChild(div);
   });
 }
-
 function getMonthlyData(monthCount) {
-  const allMonths = [...new Set(
-    transactions.map(t => new Date(t.date).toLocaleString("default", {
-      month: "short",
-      year: "numeric"
-    }))
+  const all = [...new Set(
+    transactions.map(t =>
+      new Date(t.date).toLocaleString("default", {
+        month: "short",
+        year: "numeric"
+      })
+    )
   )].sort((a, b) => new Date("1 " + a) - new Date("1 " + b));
 
-  const recentMonths =
-    monthCount === "all" ? allMonths : allMonths.slice(-monthCount);
+  const labels =
+    monthCount === "all" ? all : all.slice(-monthCount);
 
-  const income = recentMonths.map(month =>
-    transactions
-      .filter(
-        t =>
-          new Date(t.date).toLocaleString("default", {
-            month: "short",
-            year: "numeric"
-          }) === month && t.type === "income"
-      )
-      .reduce((sum, t) => sum + parseCurrency(t.amount), 0)
-  );
+  const build = type =>
+    labels.map(m =>
+      transactions
+        .filter(
+          t =>
+            new Date(t.date).toLocaleString("default", {
+              month: "short", year: "numeric"
+            }) === m && t.type === type
+        )
+        .reduce((s, t) => s + parseCurrency(t.amount), 0)
+    );
 
-  const expenses = recentMonths.map(month =>
-    transactions
-      .filter(
-        t =>
-          new Date(t.date).toLocaleString("default", {
-            month: "short",
-            year: "numeric"
-          }) === month && t.type === "expense"
-      )
-      .reduce((sum, t) => sum + parseCurrency(t.amount), 0)
-  );
-
-  const savings = income.map((inc, i) => inc - expenses[i]);
-
-  return { labels: recentMonths, income, expenses, savings };
+  return {
+    labels,
+    income: build("income"),
+    expenses: build("expense"),
+    savings: build("income").map((inc, i) => inc - build("expense")[i])
+  };
 }
 
 // Settings
 function renderSettings() {
   renderCategoriesList();
 }
-
 function renderCategoriesList() {
   const container = document.getElementById("categoriesList");
   container.innerHTML = "";
-
-  categories.forEach((category, index) => {
+  categories.forEach((cat, idx) => {
     const div = document.createElement("div");
     div.className = "list-item";
     div.innerHTML = `
       <div class="flex justify-between items-center">
         <div>
-          <div class="font-medium">${category.name}</div>
+          <div class="font-medium">${cat.name}</div>
           <div class="text-sm text-gray-500">
-            Budget: ${formatCurrency(category.budget)}
+            Budget: ${formatCurrency(cat.budget)}
           </div>
         </div>
         <div class="flex space-x-2">
-          <button onclick="editCategory(${index})" class="touch-button text-blue-500">
+          <button onclick="editCategory(${idx})" class="touch-button text-blue-500">
             <i class="fas fa-edit"></i>
           </button>
-          <button onclick="deleteCategory(${index})" class="touch-button text-red-500">
+          <button onclick="deleteCategory(${idx})" class="touch-button text-red-500">
             <i class="fas fa-trash"></i>
           </button>
         </div>
@@ -421,59 +375,47 @@ function showTransactionModal() {
   currentTransactionType = "";
   updateTransactionTypeButtons();
 }
-
 function closeModal() {
   document.getElementById("transactionModal").classList.add("hidden");
 }
-
 function setTransactionType(type) {
   currentTransactionType = type;
   updateTransactionTypeButtons();
   updateCategoryDropdown();
 }
-
 function updateTransactionTypeButtons() {
   document.querySelectorAll(".income-type, .expense-type").forEach(btn => {
     btn.classList.remove("bg-green-500", "bg-red-500", "text-white");
     btn.classList.add("border");
   });
   if (currentTransactionType === "income") {
-    document.querySelector(".income-type").classList.add(
-      "bg-green-500",
-      "text-white"
-    );
+    document.querySelector(".income-type").classList.add("bg-green-500", "text-white");
     document.querySelector(".income-type").classList.remove("border");
   } else if (currentTransactionType === "expense") {
-    document.querySelector(".expense-type").classList.add(
-      "bg-red-500",
-      "text-white"
-    );
+    document.querySelector(".expense-type").classList.add("bg-red-500", "text-white");
     document.querySelector(".expense-type").classList.remove("border");
   }
 }
-
 function updateCategoryDropdown() {
-  const select = document.getElementById("transCategory");
-  select.innerHTML = "";
-  select.disabled = !currentTransactionType;
-
+  const sel = document.getElementById("transCategory");
+  sel.innerHTML = "";
+  sel.disabled = !currentTransactionType;
   if (currentTransactionType) {
-    categories.forEach(category => {
-      const option = document.createElement("option");
-      option.value = category.name;
-      option.textContent = category.name;
-      select.appendChild(option);
+    categories.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.name;
+      opt.textContent = c.name;
+      sel.appendChild(opt);
     });
   } else {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "Select a type first";
-    select.appendChild(option);
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "Select a type first";
+    sel.appendChild(opt);
   }
 }
-
 function saveTransaction() {
-  const transaction = {
+  const tx = {
     id: Date.now().toString(),
     date: document.getElementById("transDate").value,
     description: document.getElementById("transDesc").value,
@@ -481,99 +423,69 @@ function saveTransaction() {
     category: document.getElementById("transCategory").value,
     amount: document.getElementById("transAmount").value
   };
-
   if (
-    !transaction.date ||
-    !transaction.description ||
-    !transaction.type ||
-    !transaction.category ||
-    !transaction.amount ||
-    parseCurrency(transaction.amount) <= 0
+    !tx.date ||
+    !tx.description ||
+    !tx.type ||
+    !tx.category ||
+    !tx.amount ||
+    parseCurrency(tx.amount) <= 0
   ) {
     alert("Please fill all fields correctly");
     return;
   }
-
-  transactions.push(transaction);
-  localStorage.setItem(
-    "financeTransactions",
-    JSON.stringify(transactions)
-  );
-
+  transactions.push(tx);
+  localStorage.setItem("financeTransactions", JSON.stringify(transactions));
   closeModal();
   refreshDashboard();
-  if (
-    document.getElementById("transactions").classList.contains("active")
-  ) {
+  if (document.getElementById("transactions").classList.contains("active")) {
     renderTransactionsList();
   }
 }
-
 function deleteTransaction(id) {
   if (confirm("Delete this transaction?")) {
     transactions = transactions.filter(t => t.id !== id);
-    localStorage.setItem(
-      "financeTransactions",
-      JSON.stringify(transactions)
-    );
+    localStorage.setItem("financeTransactions", JSON.stringify(transactions));
     refreshDashboard();
     renderTransactionsList();
   }
 }
-
 function showAddCategoryModal() {
   document.getElementById("addCategoryModal").classList.remove("hidden");
   document.getElementById("newCategoryName").value = "";
   document.getElementById("newCategoryBudget").value = "";
 }
-
 function closeCategoryModal() {
   document.getElementById("addCategoryModal").classList.add("hidden");
 }
-
 function saveNewCategory() {
   const name = document.getElementById("newCategoryName").value.trim();
   const budget = parseCurrency(
     document.getElementById("newCategoryBudget").value
   );
-
   if (!name) {
     alert("Please enter a category name");
     return;
   }
-  if (
-    categories.find(
-      c => c.name.toLowerCase() === name.toLowerCase()
-    )
-  ) {
+  if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) {
     alert("Category already exists");
     return;
   }
-
   categories.push({ name, budget: budget || 0 });
   localStorage.setItem("categories", JSON.stringify(categories));
   closeCategoryModal();
   renderSettings();
 }
-
 function editCategory(index) {
-  const newName = prompt(
-    "Edit category name:",
-    categories[index].name
-  );
-  if (newName && newName.trim()) {
-    const newBudget = prompt(
-      "Edit budget:",
-      categories[index].budget
-    );
-    categories[index].name = newName.trim();
-    categories[index].budget =
-      parseCurrency(newBudget) || categories[index].budget;
+  const nn = prompt("Edit category name:", categories[index].name);
+  if (nn && nn.trim()) {
+    const nb = prompt("Edit budget:", categories[index].budget);
+    categories[index].name = nn.trim();
+    categories[index].budget = parseCurrency(nb) || categories[index].budget;
     localStorage.setItem("categories", JSON.stringify(categories));
     renderSettings();
   }
 }
-
 function deleteCategory(index) {
   if (confirm("Delete this category?")) {
     categories.splice(index, 1);
@@ -598,13 +510,8 @@ function exportData() {
   a.download = `wealth-command-${new Date().toISOString().split("T")[0]}.csv`;
   a.click();
 }
-
 function backupData() {
-  const backup = {
-    transactions,
-    categories,
-    exportDate: new Date().toISOString()
-  };
+  const backup = { transactions, categories, exportDate: new Date().toISOString() };
   const dataStr = JSON.stringify(backup, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -613,16 +520,12 @@ function backupData() {
   a.download = `wealth-command-backup-${new Date().toISOString().split("T")[0]}.json`;
   a.click();
 }
-
 function resetAllData() {
   if (confirm("This will delete ALL your data. Continue?")) {
     localStorage.removeItem("financeTransactions");
     localStorage.removeItem("categories");
     transactions = [];
-    categories = defaultCategories.map(name => ({
-      name,
-      budget: 10000
-    }));
+    categories = defaultCategories.map(name => ({ name, budget: 10000 }));
     localStorage.setItem("categories", JSON.stringify(categories));
     refreshDashboard();
     renderSettings();
@@ -638,4 +541,5 @@ function initApp() {
   switchTab("dashboard");
 }
 
+// Listen for DOM ready
 document.addEventListener("DOMContentLoaded", initApp);
