@@ -1,16 +1,13 @@
 // service-worker.js
 const CACHE_NAME = 'wealth-cmd-v1';
 const ASSETS = [
-  '/',                  // makes index.html available at '/'
-  '/index.html',
-  '/app.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
-  // add any local CSS you committed, e.g. '/css/tailwind.min.css'
+  'index.html',
+  'app.js',
+  'manifest.json',
+  'icons/icon-192.png',
+  'icons/icon-512.png'
 ];
 
-// 1. Install: pre-cache app shell
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -19,7 +16,6 @@ self.addEventListener('install', event => {
   );
 });
 
-// 2. Activate: clean up old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -32,25 +28,18 @@ self.addEventListener('activate', event => {
   );
 });
 
-// 3. Fetch: serve from cache, then network, fallback to index.html for navigations
 self.addEventListener('fetch', event => {
   const req = event.request;
-
-  // For HTML navigations, always return cached index.html
+  // Serve navigation requests (HTML) from cache
   if (req.mode === 'navigate') {
-    event.respondWith(
-      caches.match('/index.html').then(cached => cached)
-    );
+    event.respondWith(caches.match('index.html'));
     return;
   }
-
-  // For other GET requests, try cache first, then network, and cache new files
+  // For other GET requests, try cache first, then network
   if (req.method === 'GET') {
     event.respondWith(
       caches.match(req).then(cached => {
-        if (cached) return cached;
-        return fetch(req).then(networkRes => {
-          // Only cache same-origin, successful GETs
+        return cached || fetch(req).then(networkRes => {
           if (
             networkRes &&
             networkRes.status === 200 &&
@@ -62,8 +51,6 @@ self.addEventListener('fetch', event => {
           }
           return networkRes;
         });
-      }).catch(() => {
-        // As a last resort (e.g. image requests), you could return a placeholder
       })
     );
   }
