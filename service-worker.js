@@ -7,6 +7,8 @@ const APP_SHELL = [
   '/',
   'index.html',
   'app.js',
+  'tailwind.css',
+  'fa.css',
   'manifest.json',
   'icons/icon-192.png',
   'icons/icon-512.png'
@@ -53,10 +55,11 @@ self.addEventListener('fetch', event => {
   if (APP_SHELL.includes(url.pathname.replace(/^\//, ''))) {
     event.respondWith((async () => {
       const cache = await caches.open(STATIC_CACHE);
-      return cache.match(req) || fetch(req).then(res => {
-        if (res.ok) cache.put(req, res.clone());
-        return res;
-      });
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      const response = await fetch(req);
+      if (response.ok) cache.put(req, response.clone());
+      return response;
     })());
     return;
   }
