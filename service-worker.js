@@ -1,47 +1,48 @@
 // service-worker.js
 
 // 1. Versioned cache names — bump these when you change this file
-const STATIC_CACHE  = 'wealth-cmd-static-v2';
-const DYNAMIC_CACHE = 'wealth-cmd-dynamic-v2';
+const STATIC_CACHE  = 'wealth-cmd-static-v3';
+const DYNAMIC_CACHE = 'wealth-cmd-dynamic-v3';
 
-// 2. App shell files to precache (use absolute paths)
+// 2. App-shell assets, using paths relative to this service worker’s scope
 const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  'index.html',
+  'app.js',
+  'app.css',          // remove or rename if you don’t actually have app.css
+  'manifest.json',
+  'icons/icon-192.png',
+  'icons/icon-512.png'
 ];
 
-// 3. Install: cache app shell one-by-one and log any failures
+// 3. Install: cache each asset in APP_SHELL one by one, logging failures
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(STATIC_CACHE);
-    for (const url of APP_SHELL) {
+    for (const asset of APP_SHELL) {
       try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        await cache.put(url, res.clone());
+        const response = await fetch(asset);
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        await cache.put(asset, response.clone());
       } catch (err) {
-        console.error('❌ Failed to cache', url, err);
+        console.error('❌ Failed to cache', asset, err);
       }
     }
+    // Activate file immediately
     await self.skipWaiting();
   })());
 });
 
-// 4. Activate: remove old caches
+// 4. Activate: remove any old caches that don’t match our names
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
-          .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys
+        .filter(key => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
+        .map(key => caches.delete(key))
+    );
+    await self.clients.claim();
+  })());
 });
 
 // 5. Fetch: routing and caching strategies
@@ -49,65 +50,63 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // 5a. Navigation (HTML) → serve index.html from static cache
+  // 5a. Navigation requests (HTML) → serve index.html from cache, fallback to network
   if (req.mode === 'navigate') {
-    event.respondWith(
-      caches.match('/index.html').then(cached => cached || fetch(req))
-    );
+    event.respondWith((async () => {
+      const cache = await caches.open(STATIC_CACHE);
+      const cachedIndex = await cache.match('index.html');
+      return cachedIndex || fetch(req);
+    })());
     return;
   }
 
-  // 5b. App shell assets → cache-first
-  if (APP_SHELL.includes(url.pathname)) {
-    event.respondWith(
-      caches.open(STATIC_CACHE).then(cache =>
-        cache.match(req).then(cached => {
-          return cached || fetch(req).then(networkRes => {
-            cache.put(req, networkRes.clone());
-            return networkRes;
-          });
-        })
-      )
-    );
+  // 5b. App-shell assets → cache-first
+  const path = url.pathname.replace(/^\//, '');  
+  if (APP_SHELL.includes(path)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(STATIC_CACHE);
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      const networkRes = await fetch(req);
+      if (networkRes && networkRes.ok) {
+        await cache.put(req, networkRes.clone());
+      }
+      return networkRes;
+    })());
     return;
   }
 
-  // 5c. Other GETs (API, images) → stale-while-revalidate
+  // 5c. Everything else (JSON, images, API) → stale-while-revalidate
   if (req.method === 'GET') {
-    event.respondWith(
-      caches.open(DYNAMIC_CACHE).then(cache =>
-        cache.match(req).then(cached => {
-          const fetchPromise = fetch(req).then(networkRes => {
-            if (networkRes && networkRes.status === 200) {
-              cache.put(req, networkRes.clone());
-            }
-            return networkRes;
-          });
-          return cached || fetchPromise;
-        })
-      )
-    );
+    event.respondWith((async () => {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      const cached = await cache.match(req);
+      const networkFetch = fetch(req).then(networkRes => {
+        if (networkRes && networkRes.ok) {
+          cache.put(req, networkRes.clone());
+        }
+        return networkRes;
+      });
+      return cached || networkFetch;
+    })());
   }
 });
 
-// 6. Background Sync listener skeleton
+// 6. Background Sync listener (skeleton)
+//    Register sync in your page script via:
+//      navigator.serviceWorker.ready.then(sw => sw.sync.register('sync-transactions'));
 self.addEventListener('sync', event => {
   if (event.tag === 'sync-transactions') {
     event.waitUntil(
       processTransactionQueue().catch(err =>
-        console.error('Sync failed:', err)
+        console.error('Background sync failed:', err)
       )
     );
   }
 });
 
-// 7. Stub for your offline‐queue processing
+// 7. Stub for processing your offline-queued transactions
 async function processTransactionQueue() {
-  // Example placeholder:
-  // const queued = await readAllFromIDB('tx-queue');
-  // for (const tx of queued) {
-  //   await fetch('/api/transactions', { method: 'POST', body: JSON.stringify(tx) });
-  //   await deleteFromIDB('tx-queue', tx.id);
-  // }
-  console.log('⚡️ processTransactionQueue() called — implement your queue logic here');
+  // TODO: implement IndexedDB queue read + server POST + queue cleanup
+  console.log('🔄 processTransactionQueue() called — implement your queue logic here');
 }
