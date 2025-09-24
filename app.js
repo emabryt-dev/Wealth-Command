@@ -67,7 +67,7 @@ function populateMonthSelect() {
   const select = document.getElementById("monthSelect");
   select.innerHTML = "";
 
-  // build a sorted list of month labels from your transactions
+  // build sorted list of month labels from transactions
   const months = [...new Set(
     transactions.map(t =>
       new Date(t.date).toLocaleString("default", {
@@ -75,9 +75,27 @@ function populateMonthSelect() {
         year: "numeric",
       })
     )
-  )].sort(
-    (a, b) => new Date("1 " + a) - new Date("1 " + b)
-  );
+  )].sort((a, b) => new Date("1 " + a) - new Date("1 " + b));
+
+  // populate the <select>
+  months.forEach(month => {
+    const option = document.createElement("option");
+    option.value = month;
+    option.textContent = month;
+    select.appendChild(option);
+  });
+
+  // default to currentMonth if any exist
+  if (months.length) {
+    select.value = currentMonth;
+  }
+
+  // refresh dashboard on change
+  select.onchange = e => {
+    currentMonth = e.target.value;
+    refreshDashboard();
+  };
+}
 
   // populate the <select>
   months.forEach(month => {
