@@ -117,16 +117,18 @@ function updateSummaryCards() {
 }
 
 function updateHeaderBalance() {
-  const totalIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + parseCurrency(t.amount), 0);
+  const incEl = document.getElementById('totalIncome');
+  const expEl = document.getElementById('totalExpenses');
+  const netEl = document.getElementById('netAmount');
 
-  const totalExpenses = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + parseCurrency(t.amount), 0);
+  if (!incEl || !expEl || !netEl) {
+    console.warn('Missing balance element(s):', incEl, expEl, netEl);
+    return;
+  }
 
-  const balance = totalIncome - totalExpenses;
-  document.getElementById('headerBalance').textContent = formatCurrency(balance);
+  incEl.textContent = formatCurrency(totalIncome);
+  expEl.textContent = formatCurrency(totalExpenses);
+  netEl.textContent = formatCurrency(netAmount);
 }
 
 function renderRecentTransactions() {
