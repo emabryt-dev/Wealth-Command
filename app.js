@@ -490,4 +490,36 @@ function saveCurrency(val) {
 }
 
 // Dark Mode Toggle
-document.getElementById('darkModeToggle').addEventListener('click
+document.getElementById('darkModeToggle').addEventListener('click', function() {
+  document.body.classList.toggle('dark-mode');
+  this.classList.toggle('active');
+  if (document.body.classList.contains('dark-mode')) {
+    localStorage.setItem('theme', 'dark');
+  } else {
+    localStorage.setItem('theme', 'light');
+  }
+});
+(function () {
+  const theme = localStorage.getItem('theme');
+  if (theme === 'dark') {
+    document.body.classList.add('dark-mode');
+    document.getElementById('darkModeToggle').classList.add('active');
+  }
+})();
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/Wealth-Command/service-worker.js')
+      .then(registration => {
+        console.log('SW registered successfully: ', registration);
+      })
+      .catch(registrationError => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
+}
+
+// Initial UI update
+renderCategoryList();
+updateUI();
