@@ -107,4 +107,18 @@ body.dark-mode #categoryBreakdown .category-card {
     font-size: 0.85rem;
     padding: 0.17em 0.28em;
   }
+  /* Make the filter controls smaller */
+#summaryMonth, #summaryYear {
+  font-size: 0.93rem !important;
+  padding: 0.3rem 0.5rem !important;
+  height: 2.0rem !important;
+}
+
+/* Make the calendar icon match the select height */
+#summaryMonth ~ .input-group-text,
+#summaryYear ~ .input-group-text {
+  font-size: 1rem !important;
+  padding: 0.3rem 0.7rem !important;
+  height: 2.0rem !important;
+}
 }
