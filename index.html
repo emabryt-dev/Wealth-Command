@@ -429,30 +429,30 @@
             
             <div class="space-y-4">
                 <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
-                    <input type="date" id="transDate">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
-                    <input type="text" id="transDesc" placeholder="What was this for?">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button id="incomeTypeBtn" class="btn btn-success">Income</button>
-                        <button id="expenseTypeBtn" class="btn btn-danger">Expense</button>
-                    </div>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Category</label>
-                    <select id="transCategory">
-                        <option value="">Select a type first</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Amount (Rs)</label>
-                    <input type="text" id="transAmount" placeholder="0" oninput="formatAmount(this)">
-                </div>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
+    <input type="date" id="transDate">
+</div>
+<div>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
+    <input type="text" id="transDesc" placeholder="What was this for?">
+</div>
+<div>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type</label>
+    <div class="grid grid-cols-2 gap-3">
+        <button id="incomeTypeBtn" class="btn btn-success">Income</button>
+        <button id="expenseTypeBtn" class="btn btn-danger">Expense</button>
+    </div>
+</div>
+<div>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Category</label>
+    <select id="transCategory">
+        <option value="">Select a type first</option>
+    </select>
+</div>
+<div>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Amount (Rs)</label>
+    <input type="text" id="transAmount" placeholder="0" oninput="formatAmount(this)">
+</div>
             </div>
             
             <div class="grid grid-cols-2 gap-3 mt-6">
@@ -474,13 +474,13 @@
             
             <div class="space-y-4">
                 <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Category Name</label>
-                    <input type="text" id="newCategoryName" placeholder="e.g., Groceries, Rent, etc.">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Monthly Budget (Rs)</label>
-                    <input type="text" id="newCategoryBudget" placeholder="0" oninput="formatAmount(this)">
-                </div>
+    <label for="newCategoryName" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Category Name</label>
+    <input type="text" id="newCategoryName" placeholder="e.g., Groceries, Rent, etc.">
+</div>
+<div>
+    <label for="newCategoryBudget" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Monthly Budget (Rs)</label>
+    <input type="text" id="newCategoryBudget" placeholder="0" oninput="formatAmount(this)">
+</div>
             </div>
             
             <div class="grid grid-cols-2 gap-3 mt-6">
