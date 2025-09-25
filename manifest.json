@@ -4,20 +4,21 @@
   "description": "Expense and Income Manager",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
+  "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-128.png",
+      "src": "https://emabryt-dev.github.io/icon-128.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "icon-512.png",
+      "src": "https://emabryt-dev.github.io/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ],
-  "categories": ["finance", "productivity"]
+  "categories": ["finance", "productivity"],
+  "scope": "/"
 }
