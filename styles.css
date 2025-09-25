@@ -1,1 +1,11 @@
-code
+.card {
+  background: linear-gradient(120deg, #f8fafc, #eef2ff);
+  box-shadow: 0 4px 24px rgba(59,130,246,0.12);
+  border-radius: 18px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  transition: box-shadow 0.2s;
+}
+.card:hover {
+  box-shadow: 0 8px 32px rgba(59,130,246,0.18);
+}
