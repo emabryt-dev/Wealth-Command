@@ -9,7 +9,10 @@
   "iarc_rating_id": "e12345678",
   "start_url": "/",
   "scope": "/",
-  "scope_extensions": ["/help/", "https://wealthcommand-support.com/"],
+  "scope_extensions": [
+    { "origin": "/help/" },
+    { "origin": "https://wealthcommand-support.com/" }
+  ],
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
   "background_color": "#ffffff",
