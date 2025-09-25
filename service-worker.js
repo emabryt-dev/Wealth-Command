@@ -246,4 +246,10 @@ self.addEventListener('fetch', (event) => {
       .then(response => response || fetch(event.request))
   );
 });
+  // Add this to the end of your service-worker.js
+self.addEventListener('message', (event) => {
+    if (event.data === 'skipWaiting') {
+        self.skipWaiting();
+    }
+});
 }
