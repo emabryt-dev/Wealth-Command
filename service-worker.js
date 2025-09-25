@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wealth-command-cache-v2';
+const CACHE_NAME = 'wealth-command-cache-v3';
 const urlsToCache = [
   '/Wealth-Command/',
   '/Wealth-Command/index.html',
@@ -29,9 +29,19 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== "GET") return;
+
+  // If navigation request, always respond with index.html from cache
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match('/Wealth-Command/index.html')
+        .then(response => response || fetch(event.request))
+    );
+    return;
+  }
+
+  // For other requests, respond with cache first, then network
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request)
-        .catch(() => caches.match('/Wealth-Command/index.html')))
+      .then(response => response || fetch(event.request))
   );
 });
