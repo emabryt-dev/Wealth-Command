@@ -391,6 +391,66 @@ function updateUI() {
     });
   }
 }
+
+  // Expense Breakdown - Show only category totals
+  const expenseBreakdown = document.getElementById("expenseBreakdown");
+  const noExpenseMsg = document.getElementById("noExpenseCategories");
+  expenseBreakdown.innerHTML = "";
+  
+  const expenseCategories = categories.filter(cat => cat.type === "expense");
+  let hasExpenseData = false;
+  
+  if (expenseCategories.length === 0) {
+    noExpenseMsg.style.display = 'block';
+  } else {
+    noExpenseMsg.style.display = 'none';
+    
+    expenseCategories.forEach(cat => {
+      const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense")
+        .reduce((sum, tx) => sum + tx.amount, 0);
+      
+      if (catAmount > 0) {
+        hasExpenseData = true;
+        const item = document.createElement("div");
+        item.className = "breakdown-item";
+        item.innerHTML = `
+          <span class="breakdown-category">${cat.name}</span>
+          <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
+        `;
+        expenseBreakdown.appendChild(item);
+      }
+    });
+    
+    if (!hasExpenseData) {
+      noExpenseMsg.style.display = 'block';
+    }
+  }
+
+  // Transactions Table
+  const tbody = document.getElementById('transactionsBody');
+  tbody.innerHTML = "";
+  if (transactions.length === 0) {
+    document.getElementById('noTransactions').style.display = 'block';
+  } else {
+    document.getElementById('noTransactions').style.display = 'none';
+    transactions.slice().reverse().forEach((tx, idx) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${tx.date}</td>
+        <td>${tx.desc}</td>
+        <td class="fw-bold ${tx.type === 'income' ? 'text-success' : 'text-danger'}">${tx.type}</td>
+        <td>${tx.category}</td>
+        <td class="fw-bold">${tx.amount.toLocaleString()} ${currency}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="removeTransaction(${transactions.length - 1 - idx})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+}
     
     // Add total row
     const totalItem = document.createElement("div");
