@@ -194,19 +194,8 @@ body.dark-mode #categoryBreakdown .category-card {
   color: #dc3545;
 }
 
-.breakdown-total {
-  background-color: #f8f9fa;
-  font-weight: bold;
-  border-top: 2px solid #dee2e6;
-}
-
 body.dark-mode .breakdown-item {
   border-bottom-color: #444;
-}
-
-body.dark-mode .breakdown-total {
-  background-color: #2d2d2d;
-  border-top-color: #555;
 }
 
 /* Card header improvements */
