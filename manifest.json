@@ -1,16 +1,22 @@
 {
   "name": "Wealth Command Pro",
   "short_name": "WealthCommand",
-  "src": "icone/icon-192.png",
-    "sizes": "192x192",
-    "type": "image/png"
-    "src": "icons/icon512x512.png",
-    "sizes": "512x512",
-    "type": "image/png"
   "description": "Expense and Income Manager",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
-  "scope": "/"
+  "scope": "/",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
