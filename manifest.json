@@ -7,7 +7,7 @@
   "lang": "en",
   "dir": "ltr",
   "iarc_rating_id": "e12345678",
-  "start_url": "/",
+  "start_url": "/Wealth-Command/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
