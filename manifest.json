@@ -22,40 +22,19 @@
       "name": "Add Transaction",
       "short_name": "Add Tx",
       "description": "Quickly add income or expense",
-      "url": "/Wealth-Command/#add",
-      "icons": [
-        {
-          "src": "/Wealth-Command/icons/shortcut-add-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/Wealth-Command/#add"
     },
     {
       "name": "View Dashboard",
       "short_name": "Dashboard",
       "description": "See financial overview",
-      "url": "/Wealth-Command/",
-      "icons": [
-        {
-          "src": "/Wealth-Command/icons/shortcut-dashboard-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/Wealth-Command/"
     },
     {
       "name": "Transaction History",
       "short_name": "History",
       "description": "Browse all transactions",
-      "url": "/Wealth-Command/#transactions",
-      "icons": [
-        {
-          "src": "/Wealth-Command/icons/shortcut-history-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "url": "/Wealth-Command/#transactions"
     }
   ],
   "share_target": {
@@ -66,7 +45,7 @@
       "text": "amount",
       "url": "url"
     }
-  ],
+  },
   "icons": [
     {
       "src": "/Wealth-Command/icons/icon-192.png",
@@ -92,12 +71,6 @@
       "platform": "itunes",
       "url": "https://apps.apple.com/app/wealth-command/id1234567890",
       "id": "id1234567890"
-    }
-  ],
-  "protocol_handlers": [
-    {
-      "protocol": "web+wealth",
-      "url": "/Wealth-Command/?url=%s"
     }
   ]
 }
