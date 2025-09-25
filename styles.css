@@ -21,9 +21,9 @@ body {
   padding: 0.3rem 0.7rem;
 }
 .form-select, .form-control {
-  font-size: 0.97rem;
+  font-size: 0.94rem;
   padding: 0.3rem 0.5rem;
-  height: 2rem;
+  height: 1.5rem;
 }
 .btn {
   font-size: 0.97rem;
