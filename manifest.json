@@ -1,29 +1,84 @@
 {
-  "id": "/",
+  "id": "/Wealth-Command/",
   "name": "Wealth Command Pro",
   "short_name": "WealthCommand",
-  "description": "Expense and Income Manager",
+  "description": "Expense and Income Manager - Track your finances effortlessly",
   "categories": ["finance", "productivity", "business"],
   "lang": "en",
   "dir": "ltr",
-  "iarc_rating_id": "e12345678",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4a53b7",
   "start_url": "/Wealth-Command/",
-  "scope": "/",
+  "scope": "/Wealth-Command/",
   "display": "standalone",
-  "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
+  "display_override": ["window-controls-overlay", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
-  "orientation": "portrait",
-  "icons": [
+  "orientation": "any",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "shortcuts": [
     {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "name": "Add Transaction",
+      "short_name": "Add Tx",
+      "description": "Quickly add income or expense",
+      "url": "/Wealth-Command/#add",
+      "icons": [
+        {
+          "src": "/Wealth-Command/icons/shortcut-add-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     },
     {
-      "src": "icons/icon-512.png",
+      "name": "View Dashboard",
+      "short_name": "Dashboard",
+      "description": "See financial overview",
+      "url": "/Wealth-Command/",
+      "icons": [
+        {
+          "src": "/Wealth-Command/icons/shortcut-dashboard-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Transaction History",
+      "short_name": "History",
+      "description": "Browse all transactions",
+      "url": "/Wealth-Command/#transactions",
+      "icons": [
+        {
+          "src": "/Wealth-Command/icons/shortcut-history-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/Wealth-Command/#share",
+    "method": "GET",
+    "params": {
+      "title": "description",
+      "text": "amount",
+      "url": "url"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/Wealth-Command/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Wealth-Command/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "prefer_related_applications": false,
@@ -37,6 +92,12 @@
       "platform": "itunes",
       "url": "https://apps.apple.com/app/wealth-command/id1234567890",
       "id": "id1234567890"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+wealth",
+      "url": "/Wealth-Command/?url=%s"
     }
   ]
 }
