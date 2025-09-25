@@ -92,6 +92,50 @@ body.dark-mode #categoryBreakdown .category-card {
   white-space: nowrap;
   padding: 0.25em 0.4em;
 }
+
+/* Make the filter row smaller */
+.input-group.input-group-lg {
+  font-size: inherit;
+}
+.input-group-text.bg-light {
+  font-size: 0.93rem !important;
+  padding: 0.3rem 0.7rem !important;
+  height: 2.0rem !important;
+  display: flex;
+  align-items: center;
+}
+#summaryMonth, #summaryYear {
+  font-size: 0.93rem !important;
+  padding: 0.3rem 0.5rem !important;
+  height: 2.0rem !important;
+}
+
+/* Category type badges */
+.category-type-badge {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+  margin-left: 0.5rem;
+  border-radius: 0.25rem;
+}
+.category-income {
+  background-color: #198754;
+  color: white;
+}
+.category-expense {
+  background-color: #dc3545;
+  color: white;
+}
+.category-filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.category-filter-btn {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 576px) {
   .card-title {
     font-size: 0.97rem;
@@ -107,19 +151,8 @@ body.dark-mode #categoryBreakdown .category-card {
     font-size: 0.85rem;
     padding: 0.17em 0.28em;
   }
-  /* Make the filter controls smaller */
-#summaryMonth, #summaryYear {
-  font-size: 0.93rem !important;
-  padding: 0.3rem 0.5rem !important;
-  height: 2.0rem !important;
-}
-
-/* Make the calendar icon match the select height */
-.input-group .input-group-text {
-  font-size: 0.93rem;
-  padding: 0.3rem 0.7rem;
-  height: 2.0rem;
-  display: flex;
-  align-items: center;
-}
+  .category-filter-buttons {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
 }
