@@ -6,108 +6,168 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Bootstrap 5 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <!-- Custom CSS -->
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <!-- Top Navbar -->
+  <nav class="navbar navbar-dark bg-primary">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">Wealth Command</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarContent">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <button id="darkModeToggle" class="btn btn-outline-light btn-sm">
-              <i class="bi bi-moon"></i> Dark Mode
-            </button>
-          </li>
-        </ul>
-      </div>
+      <button id="darkModeToggle" class="btn btn-outline-light btn-sm"><i class="bi bi-moon"></i></button>
     </div>
   </nav>
 
   <!-- Main Content -->
-  <div class="container mt-4">
-    <div class="row g-4">
-      <!-- Dashboard Summary -->
-      <div class="col-12 col-lg-4">
-        <div class="card shadow-sm">
-          <div class="card-body text-center">
-            <h5 class="card-title">Total Wealth</h5>
-            <p class="display-5 fw-bold" id="totalWealth">$0</p>
-            <hr>
-            <h6>Recent Transaction</h6>
-            <p id="recentTransaction" class="text-muted">None yet.</p>
+  <div class="main-content container py-3">
+    <!-- Dashboard Tab -->
+    <div id="tab-dashboard" class="tab-page">
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="card shadow-sm mb-3">
+            <div class="card-body text-center">
+              <h5 class="card-title">Net Wealth (<span id="currencyLabel">PKR</span>)</h5>
+              <p class="display-5 fw-bold" id="netWealth">0</p>
+              <hr>
+              <div class="row">
+                <div class="col-6 text-success">
+                  <strong>Total Income:</strong>
+                  <div id="totalIncome">0</div>
+                </div>
+                <div class="col-6 text-danger">
+                  <strong>Total Expense:</strong>
+                  <div id="totalExpense">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Category Breakdown -->
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-header"><i class="bi bi-tags"></i> Category Breakdown</div>
+            <div class="card-body">
+              <div id="categoryBreakdown" class="row"></div>
+            </div>
           </div>
         </div>
       </div>
-      <!-- Transactions List -->
-      <div class="col-12 col-lg-8">
-        <div class="card shadow-sm mb-4">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-list-ul"></i> Transactions</span>
-            <button id="clearTransactions" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Clear All</button>
-          </div>
-          <div class="card-body p-0">
-            <table class="table table-striped mb-0" id="transactionsTable">
-              <thead class="table-light">
-                <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="transactionsBody">
-                <!-- Transactions go here -->
-              </tbody>
-            </table>
-            <div id="noTransactions" class="text-center text-muted p-3">No transactions yet.</div>
-          </div>
+    </div>
+
+    <!-- Transactions Tab -->
+    <div id="tab-transactions" class="tab-page d-none">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-list-ul"></i> Transactions</span>
+          <button id="clearTransactions" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Clear All</button>
         </div>
-        <!-- Add Transaction Form -->
-        <div class="card shadow-sm">
-          <div class="card-header">
-            <i class="bi bi-plus-circle"></i> Add Transaction
-          </div>
-          <div class="card-body">
-            <form id="transactionForm" autocomplete="off">
-              <div class="row g-3 align-items-end">
-                <div class="col-md-4">
-                  <label for="dateInput" class="form-label">Date</label>
-                  <input type="date" class="form-control" id="dateInput" required>
-                </div>
-                <div class="col-md-4">
-                  <label for="descInput" class="form-label">Description</label>
-                  <input type="text" class="form-control" id="descInput" placeholder="e.g. Salary, Grocery" required>
-                </div>
-                <div class="col-md-3">
-                  <label for="amountInput" class="form-label">Amount ($)</label>
-                  <input type="number" class="form-control" id="amountInput" required step="0.01">
-                </div>
-                <div class="col-md-1 d-grid">
-                  <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i></button>
-                </div>
+        <div class="card-body p-0">
+          <table class="table table-striped mb-0" id="transactionsTable">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsBody"></tbody>
+          </table>
+          <div id="noTransactions" class="text-center text-muted p-3">No transactions yet.</div>
+        </div>
+      </div>
+      <!-- Add Transaction Form -->
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <i class="bi bi-plus-circle"></i> Add Transaction
+        </div>
+        <div class="card-body">
+          <form id="transactionForm" autocomplete="off">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-3">
+                <label for="dateInput" class="form-label">Date</label>
+                <input type="date" class="form-control" id="dateInput" required>
               </div>
-            </form>
-            <div id="formAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+              <div class="col-md-3">
+                <label for="descInput" class="form-label">Description</label>
+                <input type="text" class="form-control" id="descInput" required>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Type</label>
+                <select class="form-select" id="typeInput" required>
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label for="categoryInput" class="form-label">Category</label>
+                <select class="form-select" id="categoryInput" required>
+                  <!-- Categories will be populated here -->
+                </select>
+              </div>
+              <div class="col-md-1">
+                <label for="amountInput" class="form-label">Amount</label>
+                <input type="number" class="form-control" id="amountInput" required step="0.01">
+              </div>
+              <div class="col-md-1 d-grid">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i></button>
+              </div>
+            </div>
+          </form>
+          <div id="formAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="tab-settings" class="tab-page d-none">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header"><i class="bi bi-gear"></i> Settings</div>
+        <div class="card-body">
+          <!-- Currency Selection -->
+          <div class="mb-3">
+            <label for="currencySelect" class="form-label">Currency</label>
+            <select id="currencySelect" class="form-select">
+              <option value="PKR">PKR - Pakistani Rupee</option>
+              <option value="USD">USD - US Dollar</option>
+              <option value="EUR">EUR - Euro</option>
+              <!-- Add more currencies as needed -->
+            </select>
+          </div>
+          <!-- Category Management -->
+          <div>
+            <label class="form-label">Categories</label>
+            <div class="input-group mb-2">
+              <input type="text" id="newCategoryInput" class="form-control" placeholder="New category">
+              <button id="addCategoryBtn" class="btn btn-primary" type="button"><i class="bi bi-plus"></i> Add</button>
+            </div>
+            <ul id="categoryList" class="list-group">
+              <!-- Categories will be listed here -->
+            </ul>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <footer class="mt-5 text-center text-muted">
+  <!-- Bottom Navigation Bar -->
+  <nav class="navbar fixed-bottom navbar-light bg-light border-top">
+    <div class="container-fluid">
+      <div class="d-flex justify-content-around w-100">
+        <button class="nav-btn btn btn-link flex-fill" data-tab="dashboard"><i class="bi bi-house-door"></i><br><small>Dashboard</small></button>
+        <button class="nav-btn btn btn-link flex-fill" data-tab="transactions"><i class="bi bi-list-ul"></i><br><small>Transactions</small></button>
+        <button class="nav-btn btn btn-link flex-fill" data-tab="settings"><i class="bi bi-gear"></i><br><small>Settings</small></button>
+      </div>
+    </div>
+  </nav>
+
+  <footer class="mt-5 text-center text-muted mb-5">
     <small>Copyright &copy; 2025 Wealth Command</small>
   </footer>
 
-  <!-- JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="app.js"></script>
 </body>
