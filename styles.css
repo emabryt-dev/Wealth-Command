@@ -1,51 +1,47 @@
 body {
   background-color: #f8f9fa;
   transition: background-color 0.2s;
+  font-size: 0.97rem;
 }
 .navbar {
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
 }
 .card {
-  border-radius: 0.75rem;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.8rem;
 }
 #netWealth, #totalIncome, #totalExpense {
-  font-size: 2rem;
+  font-size: 1.4rem;
 }
-#darkModeToggle.active {
-  background-color: #212529;
-  color: #f8f9fa;
+.card-title {
+  font-size: 1.05rem;
 }
-body.dark-mode {
-  background-color: #212529;
-  color: #f8f9fa;
+.input-group-text {
+  font-size: 1rem;
+  padding: 0.3rem 0.7rem;
 }
-body.dark-mode .navbar,
-body.dark-mode .card {
-  background-color: #1a1d21 !important;
-  color: #f8f9fa !important;
+.form-select, .form-control {
+  font-size: 0.97rem;
+  padding: 0.3rem 0.5rem;
+  height: 2rem;
 }
-body.dark-mode .table-light {
-  background-color: #343a40 !important;
-  color: #f8f9fa !important;
+.btn {
+  font-size: 0.97rem;
+  padding: 0.35rem 0.7rem;
 }
-body.dark-mode .table-striped>tbody>tr:nth-of-type(odd) {
-  background-color: #23272b !important;
+.btn-lg {
+  font-size: 1.01rem;
+  padding: 0.7rem 1.1rem;
 }
-body.dark-mode .btn-outline-light {
-  border-color: #f8f9fa;
-  color: #f8f9fa;
+.btn-sm {
+  font-size: 0.89rem;
+  padding: 0.25rem 0.5rem;
 }
-body.dark-mode .btn-outline-danger {
-  color: #e74c3c;
-  border-color: #e74c3c;
+.modal-title {
+  font-size: 1.02rem;
 }
-body.dark-mode .btn-success {
-  background-color: #27ae60;
-  border: none;
-}
-footer {
-  margin-top: 2rem;
-  padding-bottom: 2rem;
+.modal-content {
+  font-size: 0.97rem;
 }
 .tab-page {
   display: block;
@@ -60,12 +56,13 @@ footer {
   bottom: 0;
   width: 100vw;
   position: fixed !important;
+  padding: 0;
 }
 .nav-btn {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: #0d6efd;
   border-radius: 0;
-  padding: 0.5em 0;
+  padding: 0.45em 0;
 }
 .nav-btn.active {
   color: #198754;
@@ -76,9 +73,10 @@ footer {
   border: 1px solid #e2e2e2;
   background: #fff;
   border-radius: 0.5rem;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
+  padding: 0.55rem;
+  margin-bottom: 0.4rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  font-size: 0.96rem;
 }
 body.dark-mode #categoryBreakdown .category-card {
   background: #222;
@@ -90,21 +88,23 @@ body.dark-mode #categoryBreakdown .category-card {
   overflow-x: auto;
 }
 .table th, .table td {
-  font-size: 1rem;
+  font-size: 0.95rem;
   white-space: nowrap;
+  padding: 0.25em 0.4em;
 }
 @media (max-width: 576px) {
   .card-title {
-    font-size: 1.2rem;
+    font-size: 0.97rem;
   }
   #netWealth, #totalIncome, #totalExpense {
-    font-size: 1.3rem;
+    font-size: 1.02rem;
   }
   .nav-btn {
-    font-size: 1rem;
+    font-size: 0.89rem;
+    padding: 0.25em 0;
   }
   .table th, .table td {
-    font-size: 0.9rem;
-    padding: 0.3em 0.4em;
+    font-size: 0.85rem;
+    padding: 0.17em 0.28em;
   }
 }
