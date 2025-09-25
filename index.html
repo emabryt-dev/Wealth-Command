@@ -1079,23 +1079,23 @@
 
             // ===== OFFLINE SUPPORT & PWA FUNCTIONALITY =====
     
-    // Service Worker Registration
+   // Service Worker Registration with correct path
+function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(function(registration) {
-                    console.log('SW registered: ', registration);
-                    
-                    // Check for updates every hour
-                    setInterval(() => {
-                        registration.update();
-                    }, 60 * 60 * 1000);
-                })
-                .catch(function(error) {
-                    console.log('SW registration failed: ', error);
-                });
-        });
+        navigator.serviceWorker.register('/service-worker.js')  // ← Fixed path
+            .then((registration) => {
+                console.log('SW registered successfully at scope:', registration.scope);
+                
+                // Check if page is controlled by SW
+                if (navigator.serviceWorker.controller) {
+                    console.log('Page is controlled by Service Worker');
+                }
+            })
+            .catch((error) => {
+                console.log('SW registration failed:', error);
+            });
     }
+}
 
     // Offline/Online detection
     function updateOnlineStatus() {
