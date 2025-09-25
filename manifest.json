@@ -3,22 +3,41 @@
   "name": "Wealth Command Pro",
   "short_name": "WealthCommand",
   "description": "Expense and Income Manager",
+  "categories": ["finance", "productivity", "business"],
+  "lang": "en",
+  "dir": "ltr",
+  "iarc_rating_id": "e12345678",
   "start_url": "/",
+  "scope": "/",
+  "scope_extensions": ["/help/", "https://wealthcommand-support.com/"],
   "display": "standalone",
+  "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
-  "scope": "/",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "icons/icon-192",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
   ],
-  "orientation": "portrait"
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.emabryt.wealthcommand",
+      "id": "com.emabryt.wealthcommand"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/wealth-command/id1234567890",
+      "id": "id1234567890"
+    }
+  ]
 }
