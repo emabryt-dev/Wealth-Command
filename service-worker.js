@@ -1,112 +1,111 @@
-// service-worker.js
-const CACHE_NAME = 'wealth-command-github-v1';
+const CACHE_NAME = 'wealth-command-pwa-v2';
 const APP_SHELL = [
-  '.',  // Current directory (root)
-  './', // Root path
-  'index.html'
+  '/',            // Main app root
+  '/index.html',  // Main HTML file
+  '/manifest.json', // Manifest
+  '/assets/icons/icon-192x192.png', // Icon (update path if needed)
+  '/assets/icons/icon-512x512.png', // Icon (update path if needed)
+  // Add other essential assets you want available offline (CSS, JS, etc)
 ];
 
-self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing for GitHub Pages');
-  
+self.addEventListener('install', event => {
+  console.log('[SW] Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Cache opened, attempting to add:', APP_SHELL);
-        
-        // Try to cache the main page using different approaches
-        return Promise.all([
-          cache.add('.').catch(err => console.log('Failed to cache .:', err)),
-          cache.add('./').catch(err => console.log('Failed to cache ./:', err)),
-          cache.add('index.html').catch(err => console.log('Failed to cache index.html:', err)),
-          cache.add('/emabryt-dev.github.io/').catch(err => console.log('Failed to cache full path:', err)),
-          fetch('.').then(response => cache.put('.', response)).catch(err => console.log('Fetch and cache failed:', err))
-        ]).then(() => {
-          console.log('Cache attempts completed');
-          return self.skipWaiting();
-        });
+      .then(cache => {
+        console.log('[SW] Precaching app shell:', APP_SHELL);
+        return cache.addAll(APP_SHELL);
       })
+      .then(() => self.skipWaiting())
+      .catch(err => console.error('[SW] Install failed:', err))
   );
 });
 
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activating and claiming clients');
-  event.waitUntil(self.clients.claim());
+self.addEventListener('activate', event => {
+  console.log('[SW] Activating...');
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => {
+        if (key !== CACHE_NAME) {
+          console.log('[SW] Removing old cache:', key);
+          return caches.delete(key);
+        }
+      }))
+    ).then(() => self.clients.claim())
+  );
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', event => {
   const request = event.request;
-  const url = new URL(request.url);
-  
-  console.log('Fetching:', url.pathname);
-  
-  // Only handle GET requests and same-origin requests
-  if (request.method !== 'GET' || !url.origin.startsWith(self.location.origin)) {
+  // Only handle GET requests for same-origin resources
+  if (request.method !== 'GET' || !request.url.startsWith(self.location.origin)) {
     return;
   }
-  
+
+  // Handle navigations (HTML pages)
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Optionally cache the response
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => {
+          // If offline, try to serve cached shell or offline page
+          return caches.match('/index.html')
+            .then(response => response || offlinePage());
+        })
+    );
+    return;
+  }
+
+  // For static resources (JS, CSS, images, manifest, etc)
   event.respondWith(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        return cache.match(request)
-          .then((response) => {
-            // If found in cache, return it
-            if (response) {
-              console.log('Serving from cache:', url.pathname);
-              return response;
+    caches.match(request)
+      .then(response => {
+        if (response) {
+          return response; // Serve from cache
+        }
+        // Fetch from network and cache it
+        return fetch(request)
+          .then(networkResponse => {
+            if (networkResponse.ok) {
+              caches.open(CACHE_NAME).then(cache => cache.put(request, networkResponse.clone()));
             }
-            
-            // Otherwise fetch from network
-            console.log('Fetching from network:', url.pathname);
-            return fetch(request)
-              .then((networkResponse) => {
-                // Cache the successful response
-                if (networkResponse.status === 200) {
-                  cache.put(request, networkResponse.clone());
-                }
-                return networkResponse;
-              })
-              .catch((error) => {
-                console.log('Network failed, trying fallbacks for:', url.pathname);
-                
-                // For navigation requests, try various fallbacks
-                if (request.mode === 'navigate') {
-                  return cache.match('.')
-                    .then(response => response || cache.match('./'))
-                    .then(response => response || cache.match('index.html'))
-                    .then(response => response || cache.match('/index.html'))
-                    .then(response => {
-                      if (response) {
-                        return response;
-                      }
-                      // Ultimate fallback - create a simple offline page
-                      return new Response(`
-                        <!DOCTYPE html>
-                        <html>
-                          <head>
-                            <title>Wealth Command Pro - Offline</title>
-                            <style>body { font-family: Arial; padding: 20px; text-align: center; }</style>
-                          </head>
-                          <body>
-                            <h1>💰 Wealth Command Pro</h1>
-                            <p>You are currently offline.</p>
-                            <p>Your expense data is stored locally and will be available when you're back online.</p>
-                            <button onclick="location.reload()">Retry</button>
-                          </body>
-                        </html>
-                      `, { headers: { 'Content-Type': 'text/html' } });
-                    });
-                }
-                
-                throw error;
-              });
-          });
+            return networkResponse;
+          })
+          .catch(() => undefined); // If fail, just fail silently for assets
       })
   );
 });
 
-// Handle messages from the main page
-self.addEventListener('message', (event) => {
+// Offline page for navigation fallback
+function offlinePage() {
+  return new Response(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Wealth Command Pro - Offline</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          body { font-family: Arial; padding: 2em; text-align: center; background: #f8fafc; color: #333; }
+          h1 { font-size: 2em; color: #3b82f6; }
+          button { padding: 0.5em 2em; font-size: 1em; background: #3b82f6; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1em; }
+        </style>
+      </head>
+      <body>
+        <h1>💰 Wealth Command Pro</h1>
+        <p>You are offline. Your expense data is safe and will sync once you reconnect.</p>
+        <button onclick="location.reload()">Retry</button>
+      </body>
+    </html>
+  `, { headers: { 'Content-Type': 'text/html' } });
+}
+
+// Message handler for skipWaiting
+self.addEventListener('message', event => {
   if (event.data === 'skipWaiting') {
     self.skipWaiting();
   }
