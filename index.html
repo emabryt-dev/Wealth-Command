@@ -1251,65 +1251,164 @@ function registerServiceWorker() {
         setTimeout(() => installButton.remove(), 10000);
     });
 
-    // Enhanced saveTransaction function with offline support
-    function saveTransaction() {
-        const date = document.getElementById('transDate').value;
-        const description = document.getElementById('transDesc').value.trim();
-        const category = document.getElementById('transCategory').value;
-        const amount = document.getElementById('transAmount').value;
-
-        if (!date || !description || !currentTransactionType || !category || !amount) {
-            showNotification('Please fill in all fields', 'error');
-            return;
-        }
-
-        const transaction = {
-            id: Date.now().toString(),
-            date: date,
-            description: description,
-            type: currentTransactionType,
-            category: category,
-            amount: amount,
-            synced: navigator.onLine
-        };
-
-        // Use offline-aware save function
-        saveTransactionWithOfflineSupport(transaction);
+   // Main JavaScript - GitHub Pages specific
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        // Get the correct path for GitHub Pages
+        const swPath = '/service-worker.js';
         
-        closeModal();
-        refreshDashboard();
-        switchTab('dashboard');
+        console.log('Registering Service Worker at:', swPath);
         
-        showNotification('Transaction saved successfully', 'success');
-    }
-        
-        // Add sample data if no transactions exist
-        if (transactions.length === 0) {
-            const sampleDate = new Date();
-            sampleDate.setDate(sampleDate.getDate() - 1);
-            
-            transactions = [
-                {
-                    id: '1',
-                    date: sampleDate.toISOString().split('T')[0],
-                    description: 'Monthly Salary',
-                    type: 'income',
-                    category: 'Paycheck',
-                    amount: '75000'
-                },
-                {
-                    id: '2',
-                    date: new Date().toISOString().split('T')[0],
-                    description: 'Grocery Shopping',
-                    type: 'expense',
-                    category: 'Food',
-                    amount: '4500'
+        navigator.serviceWorker.register(swPath)
+            .then((registration) => {
+                console.log('✅ Service Worker registered successfully');
+                console.log('Scope:', registration.scope);
+                
+                // Force the Service Worker to take control immediately
+                if (registration.waiting) {
+                    registration.waiting.postMessage('skipWaiting');
                 }
-            ];
-            localStorage.setItem('financeTransactions', JSON.stringify(transactions));
-            refreshDashboard();
+                if (registration.active) {
+                    registration.active.postMessage('skipWaiting');
+                }
+                
+                // Check every second if the page is controlled
+                const checkControlInterval = setInterval(() => {
+                    if (navigator.serviceWorker.controller) {
+                        console.log('✅ Page is now controlled by Service Worker');
+                        clearInterval(checkControlInterval);
+                        testOfflineCapability();
+                    }
+                }, 1000);
+                
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    clearInterval(checkControlInterval);
+                    if (!navigator.serviceWorker.controller) {
+                        console.log('⚠️ Page not controlled by Service Worker after 10s');
+                    }
+                }, 10000);
+                
+            })
+            .catch((error) => {
+                console.log('❌ Service Worker registration failed:', error);
+            });
+    } else {
+        console.log('❌ Service Workers not supported');
+    }
+}
+
+function testOfflineCapability() {
+    console.log('Testing offline capability...');
+    
+    // Test if the page can be loaded offline
+    if ('caches' in window) {
+        caches.open('wealth-command-github-v1').then(cache => {
+            cache.match('.').then(response => {
+                if (response) {
+                    console.log('✅ Root page is cached and available offline');
+                } else {
+                    console.log('❌ Root page is NOT cached');
+                }
+            });
+            
+            cache.match('index.html').then(response => {
+                if (response) {
+                    console.log('✅ index.html is cached and available offline');
+                } else {
+                    console.log('❌ index.html is NOT cached');
+                }
+            });
+        });
+    }
+}
+
+// Enhanced offline detection
+function updateOnlineStatus() {
+    const isOnline = navigator.onLine;
+    console.log('Connection status:', isOnline ? 'Online' : 'Offline');
+    
+    if (isOnline) {
+        showNotification('Connection restored', 'success');
+    } else {
+        showNotification('Offline - Using local data', 'warning');
+        // Ensure we're using cached data
+        if (navigator.serviceWorker.controller) {
+            console.log('✅ Service Worker is handling offline mode');
+        } else {
+            console.log('❌ No Service Worker control in offline mode');
+        }
+    }
+}
+
+// Force Service Worker to take control
+function forceSWControl() {
+    if (navigator.serviceWorker.controller) {
+        console.log('Page is already controlled by Service Worker');
+        return;
+    }
+    
+    navigator.serviceWorker.getRegistration().then(registration => {
+        if (registration) {
+            registration.unregister().then(() => {
+                console.log('Unregistered old Service Worker, reloading...');
+                setTimeout(() => location.reload(), 1000);
+            });
         }
     });
+}
+
+// Initialize app with Service Worker support
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing Wealth Command Pro...');
+    
+    // Register Service Worker first
+    registerServiceWorker();
+    
+    // Then initialize the app
+    setTimeout(() => {
+        // Load data
+        const stored = localStorage.getItem('financeTransactions');
+        if (stored) {
+            transactions = JSON.parse(stored);
+        }
+        
+        refreshDashboard();
+        renderSettings();
+        
+        // Set up event listeners
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        
+        // Initial status
+        updateOnlineStatus();
+        
+        console.log('App initialized. Try:');
+        console.log('1. Wait for Service Worker to activate');
+        console.log('2. Go offline in DevTools (Network tab)');
+        console.log('3. Reload the page');
+        
+    }, 500);
+});
+
+// Add a manual test function you can run from console
+window.testOffline = function() {
+    console.log('=== OFFLINE TEST ===');
+    console.log('Service Worker controlled:', !!navigator.serviceWorker.controller);
+    console.log('Online status:', navigator.onLine);
+    console.log('Caches supported:', 'caches' in window);
+    
+    if ('caches' in window) {
+        caches.open('wealth-command-github-v1').then(cache => {
+            return cache.keys().then(requests => {
+                console.log('Cached URLs:');
+                requests.forEach(request => {
+                    console.log(' -', request.url);
+                });
+            });
+        });
+    }
+};
 </script>
 </body>
 </html>
