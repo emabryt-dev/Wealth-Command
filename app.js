@@ -396,5 +396,12 @@ if ('serviceWorker' in navigator) {
     .catch(registrationError => {
       console.log('SW registration failed: ', registrationError);
     });
+    if (request.mode === 'navigate') {
+  event.respondWith(
+    caches.match('/Wealth-Command/index.html')
+      .then(response => response || fetch(request))
+  );
+  return;
+}
   });
 }
