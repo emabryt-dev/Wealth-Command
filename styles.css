@@ -1,11 +1,59 @@
-.card {
-  background: linear-gradient(120deg, #f8fafc, #eef2ff);
-  box-shadow: 0 4px 24px rgba(59,130,246,0.12);
-  border-radius: 18px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  transition: box-shadow 0.2s;
+body {
+  background-color: #f8f9fa;
+  transition: background-color 0.2s;
 }
-.card:hover {
-  box-shadow: 0 8px 32px rgba(59,130,246,0.18);
+.navbar {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.card {
+  border-radius: 0.75rem;
+}
+#totalWealth {
+  color: #198754;
+}
+#darkModeToggle.active {
+  background-color: #212529;
+  color: #f8f9fa;
+}
+body.dark-mode {
+  background-color: #212529;
+  color: #f8f9fa;
+}
+body.dark-mode .navbar,
+body.dark-mode .card {
+  background-color: #1a1d21 !important;
+  color: #f8f9fa !important;
+}
+body.dark-mode .table-light {
+  background-color: #343a40 !important;
+  color: #f8f9fa !important;
+}
+body.dark-mode .table-striped>tbody>tr:nth-of-type(odd) {
+  background-color: #23272b !important;
+}
+body.dark-mode .btn-outline-light {
+  border-color: #f8f9fa;
+  color: #f8f9fa;
+}
+body.dark-mode .btn-outline-danger {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+body.dark-mode .btn-success {
+  background-color: #27ae60;
+  border: none;
+}
+
+footer {
+  margin-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+@media (max-width: 576px) {
+  .card-title {
+    font-size: 1.2rem;
+  }
+  #totalWealth {
+    font-size: 2rem;
+  }
 }
