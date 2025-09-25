@@ -387,7 +387,7 @@ updateUI();
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/Wealth-Command/sw.js')
+    navigator.serviceWorker.register('/Wealth-Command/service-worker.js')
       .then(registration => {
         console.log('SW registered successfully: ', registration);
         
