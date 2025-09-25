@@ -443,29 +443,29 @@
             </div>
             
             <div class="space-y-4">
-               <div>
-    <label for="transDate" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
+              <div>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
     <input type="date" id="transDate">
 </div>
 <div>
-    <label for="transDesc" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
     <input type="text" id="transDesc" placeholder="What was this for?">
 </div>
 <div>
-    <div style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type</div>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type</label>
     <div class="grid grid-cols-2 gap-3">
         <button id="incomeTypeBtn" class="btn btn-success">Income</button>
         <button id="expenseTypeBtn" class="btn btn-danger">Expense</button>
     </div>
 </div>
 <div>
-    <label for="transCategory" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Category</label>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Category</label>
     <select id="transCategory">
         <option value="">Select a type first</option>
     </select>
 </div>
 <div>
-    <label for="transAmount" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Amount (Rs)</label>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Amount (Rs)</label>
     <input type="text" id="transAmount" placeholder="0" oninput="formatAmount(this)">
 </div>
             </div>
