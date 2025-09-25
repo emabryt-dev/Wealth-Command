@@ -444,25 +444,35 @@
             
             <div class="space-y-4">
                 <div>
-    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Date</label>
-    <input type="date" id="transDate">
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+  Date
+  <input type="date" style="display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+</label>
 </div>
 <div>
-    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Description</label>
-    <input type="text" id="transDesc" placeholder="What was this for?">
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+  Description
+  <input type="text" style="display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+</label>
 </div>
 <div>
-    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Type</label>
-    <div class="grid grid-cols-2 gap-3">
-        <button id="incomeTypeBtn" class="btn btn-success">Income</button>
-        <button id="expenseTypeBtn" class="btn btn-danger">Expense</button>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+  Type
+  <select style="display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+    <option value="income">Income</option>
+    <option value="expense">Expense</option>
+  </select>
+</label>
     </div>
 </div>
 <div>
-    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Category</label>
-    <select id="transCategory">
-        <option value="">Select a type first</option>
-    </select>
+    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+  Category
+  <select style="display: block; width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
+    <option value="food">Food</option>
+    <option value="transport">Transport</option>
+  </select>
+</label>
 </div>
 <div>
     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Amount (Rs)</label>
