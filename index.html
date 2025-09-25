@@ -1395,26 +1395,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('3. Reload the page');
         
     }, 500);
-});
-
-// Add a manual test function you can run from console
-window.testOffline = function() {
-    console.log('=== OFFLINE TEST ===');
-    console.log('Service Worker controlled:', !!navigator.serviceWorker.controller);
-    console.log('Online status:', navigator.onLine);
-    console.log('Caches supported:', 'caches' in window);
-    
-    if ('caches' in window) {
-        caches.open('wealth-command-github-v1').then(cache => {
-            return cache.keys().then(requests => {
-                console.log('Cached URLs:');
-                requests.forEach(request => {
-                    console.log(' -', request.url);
-                });
-            });
-        });
     });
-};
+
+});
 </script>
 </body>
 </html>
