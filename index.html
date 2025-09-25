@@ -52,7 +52,7 @@
                 </div>
               </div>
               <div class="mt-2">
-                <button id="openAddTransactionModal" class="btn btn-primary btn-lg" style="font-size:0.99rem;padding:1rem 1rem;"><i class="bi bi-plus-lg"></i> Add Transaction</button>
+                <button id="openAddTransactionModal" class="btn btn-primary btn-lg" style="font-size:0.99rem;padding:0.5rem 1rem;"><i class="bi bi-plus-lg"></i> Add Transaction</button>
               </div>
             </div>
           </div>
@@ -138,7 +138,7 @@
               <option value="EUR">EUR - Euro</option>
             </select>
           </div>
-          <!-- Category Management (collapsible) -->
+          <!-- Enhanced Category Management -->
           <div>
             <button id="toggleCategorySettings" class="btn btn-outline-secondary w-100 mb-2" type="button">
               <span id="catCollapseIcon"><i class="bi bi-chevron-right"></i></span> Category Settings
@@ -146,6 +146,10 @@
             <div id="categorySettingsPanel" class="collapse">
               <div class="input-group mb-2">
                 <input type="text" id="newCategoryInput" class="form-control" placeholder="New category">
+                <select id="newCategoryType" class="form-select" style="max-width: 120px;">
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
                 <button id="addCategoryBtn" class="btn btn-primary" type="button"><i class="bi bi-plus"></i> Add</button>
               </div>
               <ul id="categoryList" class="list-group"></ul>
@@ -215,7 +219,7 @@
     </div>
   </div>
 
-  <!-- Bottom Navigation Bar (fixed, stable) -->
+  <!-- Bottom Navigation Bar -->
   <nav class="navbar navbar-light bg-light border-top p-0 fixed-bottom" id="fixedNavBar">
     <div class="container-fluid p-0">
       <div class="d-flex justify-content-around w-100">
