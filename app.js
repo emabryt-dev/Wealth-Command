@@ -85,8 +85,8 @@ function populateSummaryFilters() {
   const yearSel = document.getElementById('summaryYear');
   monthSel.innerHTML = '';
   yearSel.innerHTML = '';
-  // Month names
-  const monthNames = ["All Months","January","February","March","April","May","June","July","August","September","October","November","December"];
+  // Month names (smaller)
+  const monthNames = ["All Months","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   monthNames.forEach((m,i) => {
     const opt = document.createElement('option');
     opt.value = i===0 ? "all" : i;
