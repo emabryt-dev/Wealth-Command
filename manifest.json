@@ -40,6 +40,7 @@
   "share_target": {
     "action": "/Wealth-Command/#share",
     "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
     "params": {
       "title": "description",
       "text": "amount",
