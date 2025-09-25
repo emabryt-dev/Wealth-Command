@@ -6,7 +6,7 @@ let currency = loadCurrency() || "PKR";
 let currentCategoryFilter = 'all';
 
 // Page navigation logic
-const tabs = ["dashboard", "breakdown", "transactions", "charts", "settings"];
+const tabs = ["dashboard", "transactions", "charts", "settings"];
 function showTab(tab) {
   tabs.forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle("d-none", t !== tab);
@@ -273,6 +273,7 @@ function removeTransaction(idx) {
 }
 
 // Update UI: Dashboard, Breakdown, Transactions
+// Update UI: Dashboard, Breakdown, Transactions
 function updateUI() {
   document.getElementById("currencyLabel").textContent = currency;
   
@@ -298,25 +299,83 @@ function updateUI() {
   document.getElementById("totalExpense").textContent = totalExpense.toLocaleString() + " " + currency;
   document.getElementById("netWealth").textContent = (totalIncome - totalExpense).toLocaleString() + " " + currency;
 
-  // Breakdown: category cards (all time)
-  const breakdownDiv = document.getElementById("categoryBreakdown");
-  breakdownDiv.innerHTML = "";
-  categories.forEach(cat => {
-    const catIncome = transactions.filter(tx => tx.category === cat.name && tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-    const catExpense = transactions.filter(tx => tx.category === cat.name && tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
-    const net = catIncome - catExpense;
-    const card = document.createElement("div");
-    card.className = "col-12 col-md-6 category-card";
-    card.innerHTML = `
-      <strong>${cat.name} <span class="category-type-badge ${cat.type === 'income' ? 'category-income' : 'category-expense'}">${cat.type}</span></strong>
-      <div class="row mt-2">
-        <div class="col-6 text-success">Income: ${catIncome.toLocaleString()} ${currency}</div>
-        <div class="col-6 text-danger">Expense: ${catExpense.toLocaleString()} ${currency}</div>
-      </div>
-      <div class="mt-2">Net: <span class="${net >= 0 ? 'text-success' : 'text-danger'}">${net.toLocaleString()} ${currency}</span></div>
+  // Income Breakdown
+  const incomeBreakdown = document.getElementById("incomeBreakdown");
+  const noIncomeMsg = document.getElementById("noIncomeCategories");
+  incomeBreakdown.innerHTML = "";
+  
+  const incomeCategories = categories.filter(cat => cat.type === "income");
+  let incomeTotal = 0;
+  
+  if (incomeCategories.length === 0) {
+    noIncomeMsg.style.display = 'block';
+  } else {
+    noIncomeMsg.style.display = 'none';
+    
+    incomeCategories.forEach(cat => {
+      const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income")
+        .reduce((sum, tx) => sum + tx.amount, 0);
+      incomeTotal += catAmount;
+      
+      if (catAmount > 0) {
+        const item = document.createElement("div");
+        item.className = "breakdown-item";
+        item.innerHTML = `
+          <span class="breakdown-category">${cat.name}</span>
+          <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
+        `;
+        incomeBreakdown.appendChild(item);
+      }
+    });
+    
+    // Add total row
+    const totalItem = document.createElement("div");
+    totalItem.className = "breakdown-item breakdown-total";
+    totalItem.innerHTML = `
+      <span class="breakdown-category">Total</span>
+      <span class="breakdown-amount">${incomeTotal.toLocaleString()} ${currency}</span>
     `;
-    breakdownDiv.appendChild(card);
-  });
+    incomeBreakdown.appendChild(totalItem);
+  }
+
+  // Expense Breakdown
+  const expenseBreakdown = document.getElementById("expenseBreakdown");
+  const noExpenseMsg = document.getElementById("noExpenseCategories");
+  expenseBreakdown.innerHTML = "";
+  
+  const expenseCategories = categories.filter(cat => cat.type === "expense");
+  let expenseTotal = 0;
+  
+  if (expenseCategories.length === 0) {
+    noExpenseMsg.style.display = 'block';
+  } else {
+    noExpenseMsg.style.display = 'none';
+    
+    expenseCategories.forEach(cat => {
+      const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense")
+        .reduce((sum, tx) => sum + tx.amount, 0);
+      expenseTotal += catAmount;
+      
+      if (catAmount > 0) {
+        const item = document.createElement("div");
+        item.className = "breakdown-item";
+        item.innerHTML = `
+          <span class="breakdown-category">${cat.name}</span>
+          <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
+        `;
+        expenseBreakdown.appendChild(item);
+      }
+    });
+    
+    // Add total row
+    const totalItem = document.createElement("div");
+    totalItem.className = "breakdown-item breakdown-total";
+    totalItem.innerHTML = `
+      <span class="breakdown-category">Total</span>
+      <span class="breakdown-amount">${expenseTotal.toLocaleString()} ${currency}</span>
+    `;
+    expenseBreakdown.appendChild(totalItem);
+  }
 
   // Transactions Table
   const tbody = document.getElementById('transactionsBody');
