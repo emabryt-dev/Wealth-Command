@@ -1,16 +1,17 @@
-// Wealth Command: Improved tracker with categories, types, and currency
+// Wealth Command: With summary filter for month/year
 
 let transactions = loadTransactions();
 let categories = loadCategories();
 let currency = loadCurrency() || "PKR";
 
 // Page navigation logic
-const tabs = ["dashboard", "transactions", "settings"];
+const tabs = ["dashboard", "breakdown", "transactions", "charts", "settings"];
 function showTab(tab) {
   tabs.forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle("d-none", t !== tab);
     document.querySelector(`[data-tab='${t}']`).classList.toggle("active", t === tab);
   });
+  if(tab === "charts") renderCharts();
 }
 document.querySelectorAll(".nav-btn").forEach(btn => {
   btn.addEventListener("click", () => showTab(btn.dataset.tab));
@@ -26,7 +27,15 @@ document.getElementById("currencySelect").addEventListener("change", function() 
   updateUI();
 });
 
-// Settings: Category management
+// Settings: Category management (collapsible)
+const catPanel = document.getElementById('categorySettingsPanel');
+document.getElementById('toggleCategorySettings').onclick = function() {
+  catPanel.classList.toggle('collapse');
+  document.getElementById('catCollapseIcon').innerHTML =
+    catPanel.classList.contains('collapse')
+      ? '<i class="bi bi-chevron-right"></i>'
+      : '<i class="bi bi-chevron-down"></i>';
+};
 function renderCategoryList() {
   const ul = document.getElementById('categoryList');
   ul.innerHTML = '';
@@ -70,6 +79,67 @@ window.removeCategory = function(idx) {
 };
 renderCategoryList();
 
+// Dashboard summary filter
+function uniqueMonthsYears(transactions) {
+  const result = {};
+  transactions.forEach(tx => {
+    if (!tx.date) return;
+    const d = new Date(tx.date);
+    if (isNaN(d)) return;
+    const month = d.getMonth();
+    const year = d.getFullYear();
+    result[year] = result[year] || new Set();
+    result[year].add(month);
+  });
+  // Return sorted arrays
+  return Object.keys(result).sort((a,b)=>b-a).map(year => ({
+    year: +year,
+    months: Array.from(result[year]).sort((a,b)=>b-a)
+  }));
+}
+function populateSummaryFilters() {
+  const monthSel = document.getElementById('summaryMonth');
+  const yearSel = document.getElementById('summaryYear');
+  monthSel.innerHTML = '';
+  yearSel.innerHTML = '';
+  // Month names
+  const monthNames = ["All","January","February","March","April","May","June","July","August","September","October","November","December"];
+  monthNames.forEach((m,i) => {
+    const opt = document.createElement('option');
+    opt.value = i===0 ? "all" : i-1;
+    opt.textContent = m;
+    monthSel.appendChild(opt);
+  });
+  // Years from transactions
+  const yearsArr = Array.from(new Set(transactions.map(tx => {
+    const d = new Date(tx.date);
+    return isNaN(d) ? null : d.getFullYear();
+  }).filter(Boolean)));
+  yearsArr.sort((a,b)=>b-a);
+  yearSel.innerHTML = '<option value="all">All</option>';
+  yearsArr.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    yearSel.appendChild(opt);
+  });
+  // Set default
+  monthSel.value = "all";
+  yearSel.value = "all";
+}
+populateSummaryFilters();
+document.getElementById('clearSummaryFilter').onclick = function() {
+  document.getElementById('summaryMonth').value = "all";
+  document.getElementById('summaryYear').value = "all";
+  updateUI();
+};
+document.getElementById('summaryMonth').onchange = updateUI;
+document.getElementById('summaryYear').onchange = updateUI;
+
+// Add Transaction Modal
+const addTxModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
+document.getElementById('openAddTransactionModal').onclick = () => addTxModal.show();
+
 // Add Transaction
 document.getElementById('transactionForm').addEventListener('submit', function(e) {
   e.preventDefault();
@@ -94,6 +164,7 @@ document.getElementById('transactionForm').addEventListener('submit', function(e
   transactions.push({ date, desc, type, category: cat, amount });
   saveTransactions(transactions);
   updateUI();
+  addTxModal.hide();
   this.reset();
 });
 
@@ -103,6 +174,7 @@ document.getElementById('clearTransactions').addEventListener('click', function(
     transactions = [];
     saveTransactions(transactions);
     updateUI();
+    renderCharts();
   }
 });
 
@@ -111,20 +183,34 @@ function removeTransaction(idx) {
   transactions.splice(idx, 1);
   saveTransactions(transactions);
   updateUI();
+  renderCharts();
 }
 
-// Update UI: Dashboard & Transactions
+// Update UI: Dashboard, Breakdown, Transactions
 function updateUI() {
   document.getElementById("currencyLabel").textContent = currency;
-
+  // Filter by month/year
+  const monthSel = document.getElementById('summaryMonth');
+  const yearSel = document.getElementById('summaryYear');
+  let filteredTx = transactions;
+  if (monthSel && yearSel && (monthSel.value !== "all" || yearSel.value !== "all")) {
+    filteredTx = transactions.filter(tx => {
+      const d = new Date(tx.date);
+      if (isNaN(d)) return false;
+      let valid = true;
+      if (monthSel.value !== "all") valid = valid && d.getMonth() == monthSel.value;
+      if (yearSel.value !== "all") valid = valid && d.getFullYear() == yearSel.value;
+      return valid;
+    });
+  }
   // Dashboard: Net Wealth, Income, Expense
-  const totalIncome = transactions.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-  const totalExpense = transactions.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
+  const totalIncome = filteredTx.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
+  const totalExpense = filteredTx.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
   document.getElementById("totalIncome").textContent = totalIncome.toLocaleString() + " " + currency;
   document.getElementById("totalExpense").textContent = totalExpense.toLocaleString() + " " + currency;
   document.getElementById("netWealth").textContent = (totalIncome - totalExpense).toLocaleString() + " " + currency;
 
-  // Category breakdown
+  // Breakdown: category cards (all time)
   const breakdownDiv = document.getElementById("categoryBreakdown");
   breakdownDiv.innerHTML = "";
   categories.forEach(cat => {
@@ -170,6 +256,102 @@ function updateUI() {
   }
 }
 
+// Chart.js charts
+let incomeExpenseChart, categoryChart;
+function renderCharts() {
+  // Income vs Expense Pie
+  const totalIncome = transactions.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
+  const totalExpense = transactions.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
+  const ctxIE = document.getElementById('incomeExpenseChart').getContext('2d');
+  if (incomeExpenseChart) incomeExpenseChart.destroy();
+  incomeExpenseChart = new Chart(ctxIE, {
+    type: 'pie',
+    data: {
+      labels: ['Income', 'Expense'],
+      datasets: [{
+        data: [totalIncome, totalExpense],
+        backgroundColor: ['#198754', '#dc3545']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+
+  // Category Breakdown Bar
+  const catLabels = categories;
+  const catIncome = categories.map(cat => transactions.filter(tx => tx.category === cat && tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0));
+  const catExpense = categories.map(cat => transactions.filter(tx => tx.category === cat && tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0));
+  const ctxCat = document.getElementById('categoryChart').getContext('2d');
+  if (categoryChart) categoryChart.destroy();
+  categoryChart = new Chart(ctxCat, {
+    type: 'bar',
+    data: {
+      labels: catLabels,
+      datasets: [
+        { label: 'Income', data: catIncome, backgroundColor: '#198754' },
+        { label: 'Expense', data: catExpense, backgroundColor: '#dc3545' }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+// Import/Export
+document.getElementById('exportBtn').onclick = function() {
+  const data = {
+    transactions,
+    categories,
+    currency
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:"application/json"}));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "wealth-command-backup.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+document.getElementById('importBtn').onclick = function() {
+  document.getElementById('importFile').click();
+};
+document.getElementById('importFile').onchange = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (Array.isArray(data.transactions)) transactions = data.transactions;
+      if (Array.isArray(data.categories)) categories = data.categories;
+      if (typeof data.currency === "string") currency = data.currency;
+      saveTransactions(transactions);
+      saveCategories(categories);
+      saveCurrency(currency);
+      renderCategoryList();
+      populateSummaryFilters();
+      updateUI();
+      renderCharts();
+      showImportExportAlert("Import successful!", "success");
+    } catch {
+      showImportExportAlert("Import failed: Invalid file.", "danger");
+    }
+  };
+  reader.readAsText(file);
+};
+function showImportExportAlert(msg, type) {
+  const alertBox = document.getElementById('importExportAlert');
+  alertBox.className = `alert alert-${type}`;
+  alertBox.textContent = msg;
+  alertBox.classList.remove('d-none');
+  setTimeout(()=>alertBox.classList.add('d-none'), 3000);
+}
+
 // LocalStorage handlers
 function loadTransactions() {
   try {
@@ -185,7 +367,6 @@ function loadCategories() {
   try {
     const cats = JSON.parse(localStorage.getItem('categories'));
     if (Array.isArray(cats) && cats.length > 0) return cats;
-    // Default categories
     return ["Salary", "Food", "Shopping", "Utilities"];
   } catch {
     return ["Salary", "Food", "Shopping", "Utilities"];
