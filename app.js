@@ -1,4 +1,4 @@
-// Wealth Command: With summary filter for month/year
+// Wealth Command: Sleek summary filter with dropdown
 
 let transactions = loadTransactions();
 let categories = loadCategories();
@@ -79,34 +79,17 @@ window.removeCategory = function(idx) {
 };
 renderCategoryList();
 
-// Dashboard summary filter
-function uniqueMonthsYears(transactions) {
-  const result = {};
-  transactions.forEach(tx => {
-    if (!tx.date) return;
-    const d = new Date(tx.date);
-    if (isNaN(d)) return;
-    const month = d.getMonth();
-    const year = d.getFullYear();
-    result[year] = result[year] || new Set();
-    result[year].add(month);
-  });
-  // Return sorted arrays
-  return Object.keys(result).sort((a,b)=>b-a).map(year => ({
-    year: +year,
-    months: Array.from(result[year]).sort((a,b)=>b-a)
-  }));
-}
+// Sleek Dashboard summary filter
 function populateSummaryFilters() {
   const monthSel = document.getElementById('summaryMonth');
   const yearSel = document.getElementById('summaryYear');
   monthSel.innerHTML = '';
   yearSel.innerHTML = '';
   // Month names
-  const monthNames = ["All","January","February","March","April","May","June","July","August","September","October","November","December"];
+  const monthNames = ["All Months","January","February","March","April","May","June","July","August","September","October","November","December"];
   monthNames.forEach((m,i) => {
     const opt = document.createElement('option');
-    opt.value = i===0 ? "all" : i-1;
+    opt.value = i===0 ? "all" : i;
     opt.textContent = m;
     monthSel.appendChild(opt);
   });
@@ -116,7 +99,7 @@ function populateSummaryFilters() {
     return isNaN(d) ? null : d.getFullYear();
   }).filter(Boolean)));
   yearsArr.sort((a,b)=>b-a);
-  yearSel.innerHTML = '<option value="all">All</option>';
+  yearSel.innerHTML = '<option value="all">All Years</option>';
   yearsArr.forEach(y => {
     const opt = document.createElement('option');
     opt.value = y;
@@ -128,11 +111,6 @@ function populateSummaryFilters() {
   yearSel.value = "all";
 }
 populateSummaryFilters();
-document.getElementById('clearSummaryFilter').onclick = function() {
-  document.getElementById('summaryMonth').value = "all";
-  document.getElementById('summaryYear').value = "all";
-  updateUI();
-};
 document.getElementById('summaryMonth').onchange = updateUI;
 document.getElementById('summaryYear').onchange = updateUI;
 
@@ -166,6 +144,7 @@ document.getElementById('transactionForm').addEventListener('submit', function(e
   updateUI();
   addTxModal.hide();
   this.reset();
+  populateSummaryFilters();
 });
 
 // Clear All Transactions
@@ -175,6 +154,7 @@ document.getElementById('clearTransactions').addEventListener('click', function(
     saveTransactions(transactions);
     updateUI();
     renderCharts();
+    populateSummaryFilters();
   }
 });
 
@@ -184,6 +164,7 @@ function removeTransaction(idx) {
   saveTransactions(transactions);
   updateUI();
   renderCharts();
+  populateSummaryFilters();
 }
 
 // Update UI: Dashboard, Breakdown, Transactions
@@ -198,7 +179,7 @@ function updateUI() {
       const d = new Date(tx.date);
       if (isNaN(d)) return false;
       let valid = true;
-      if (monthSel.value !== "all") valid = valid && d.getMonth() == monthSel.value;
+      if (monthSel.value !== "all") valid = valid && (d.getMonth()+1) == monthSel.value;
       if (yearSel.value !== "all") valid = valid && d.getFullYear() == yearSel.value;
       return valid;
     });
