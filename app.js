@@ -446,10 +446,11 @@ function initApp() {
     switchTab('dashboard');
 }
 document.addEventListener('DOMContentLoaded', initApp);
+
 // Place this at the end of your index.html, or in app.js
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/service-worker.js')
+    navigator.serviceWorker.register('service-worker.js')
       .then(function(reg) {
         console.log('Service Worker registered!', reg);
       })
@@ -457,4 +458,5 @@ if ('serviceWorker' in navigator) {
         console.error('Service Worker registration failed:', err);
       });
   });
+}
 }
