@@ -21,58 +21,74 @@
 
   <div class="main-content container py-3">
     <!-- Dashboard Tab -->
-    <div id="tab-dashboard" class="tab-page">
-      <div class="row g-4">
-        <div class="col-12">
-          <div class="card shadow-sm mb-3">
-            <div class="card-body text-center">
-              <h5 class="card-title">
-                Net Wealth (<span id="currencyLabel">PKR</span>)
-              </h5>
-              <!-- Sleek filter row -->
-              <div class="row mb-2 justify-content-center align-items-center">
-                <div class="col-12 col-md-8 mx-auto">
-                  <div class="input-group">
-                    <span class="input-group-text bg-light"><i class="bi bi-calendar"></i></span>
-                    <select id="summaryMonth" class="form-select"></select>
-                    <select id="summaryYear" class="form-select"></select>
-                  </div>
-                </div>
-              </div>
-              <p class="fw-bold mb-2" id="netWealth" style="font-size:1.3rem;">0</p>
-              <hr style="margin:0.5rem 0;">
-              <div class="row mb-2">
-                <div class="col-6 text-success">
-                  <strong>Total Income:</strong>
-                  <div id="totalIncome" style="font-size:1.08rem;"></div>
-                </div>
-                <div class="col-6 text-danger">
-                  <strong>Total Expense:</strong>
-                  <div id="totalExpense" style="font-size:1.08rem;"></div>
-                </div>
-              </div>
-              <div class="mt-2">
-                <button id="openAddTransactionModal" class="btn btn-primary btn-lg" style="font-size:0.99rem;padding:0.5rem 1rem;"><i class="bi bi-plus-lg"></i> Add Transaction</button>
+<div id="tab-dashboard" class="tab-page">
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body text-center">
+          <h5 class="card-title">
+            Net Wealth (<span id="currencyLabel">PKR</span>)
+          </h5>
+          <!-- Sleek filter row -->
+          <div class="row mb-2 justify-content-center align-items-center">
+            <div class="col-12 col-md-8 mx-auto">
+              <div class="input-group">
+                <span class="input-group-text bg-light"><i class="bi bi-calendar"></i></span>
+                <select id="summaryMonth" class="form-select"></select>
+                <select id="summaryYear" class="form-select"></select>
               </div>
             </div>
+          </div>
+          <p class="fw-bold mb-2" id="netWealth" style="font-size:1.3rem;">0</p>
+          <hr style="margin:0.5rem 0;">
+          <div class="row mb-2">
+            <div class="col-6 text-success">
+              <strong>Total Income:</strong>
+              <div id="totalIncome" style="font-size:1.08rem;"></div>
+            </div>
+            <div class="col-6 text-danger">
+              <strong>Total Expense:</strong>
+              <div id="totalExpense" style="font-size:1.08rem;"></div>
+            </div>
+          </div>
+          <div class="mt-2">
+            <button id="openAddTransactionModal" class="btn btn-primary btn-lg" style="font-size:0.99rem;padding:0.5rem 1rem;"><i class="bi bi-plus-lg"></i> Add Transaction</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Breakdown Tab -->
-    <div id="tab-breakdown" class="tab-page d-none">
-      <div class="row g-4">
-        <div class="col-12">
-          <div class="card shadow-sm mb-4">
-            <div class="card-header"><i class="bi bi-tags"></i> Category Breakdown</div>
-            <div class="card-body">
-              <div id="categoryBreakdown" class="row"></div>
-            </div>
+    <!-- Income Breakdown Card -->
+    <div class="col-12 col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <i class="bi bi-arrow-down-circle"></i> Income Breakdown
+        </div>
+        <div class="card-body p-2">
+          <div id="incomeBreakdown" class="breakdown-list">
+            <!-- Income categories will appear here -->
           </div>
+          <div id="noIncomeCategories" class="text-center text-muted p-2">No income categories</div>
         </div>
       </div>
     </div>
+
+    <!-- Expense Breakdown Card -->
+    <div class="col-12 col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+          <i class="bi bi-arrow-up-circle"></i> Expense Breakdown
+        </div>
+        <div class="card-body p-2">
+          <div id="expenseBreakdown" class="breakdown-list">
+            <!-- Expense categories will appear here -->
+          </div>
+          <div id="noExpenseCategories" class="text-center text-muted p-2">No expense categories</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
     <!-- Transactions Tab -->
     <div id="tab-transactions" class="tab-page d-none">
@@ -220,18 +236,16 @@
   </div>
 
   <!-- Bottom Navigation Bar -->
-  <nav class="navbar navbar-light bg-light border-top p-0 fixed-bottom" id="fixedNavBar">
-    <div class="container-fluid p-0">
-      <div class="d-flex justify-content-around w-100">
-        <button class="nav-btn btn btn-link flex-fill" data-tab="dashboard"><i class="bi bi-house-door"></i><br><small>Dashboard</small></button>
-        <button class="nav-btn btn btn-link flex-fill" data-tab="breakdown"><i class="bi bi-tags"></i><br><small>Breakdown</small></button>
-        <button class="nav-btn btn btn-link flex-fill" data-tab="transactions"><i class="bi bi-list-ul"></i><br><small>Transactions</small></button>
-        <button class="nav-btn btn btn-link flex-fill" data-tab="charts"><i class="bi bi-bar-chart"></i><br><small>Charts</small></button>
-        <button class="nav-btn btn btn-link flex-fill" data-tab="settings"><i class="bi bi-gear"></i><br><small>Settings</small></button>
-      </div>
+<nav class="navbar navbar-light bg-light border-top p-0 fixed-bottom" id="fixedNavBar">
+  <div class="container-fluid p-0">
+    <div class="d-flex justify-content-around w-100">
+      <button class="nav-btn btn btn-link flex-fill" data-tab="dashboard"><i class="bi bi-house-door"></i><br><small>Dashboard</small></button>
+      <button class="nav-btn btn btn-link flex-fill" data-tab="transactions"><i class="bi bi-list-ul"></i><br><small>Transactions</small></button>
+      <button class="nav-btn btn btn-link flex-fill" data-tab="charts"><i class="bi bi-bar-chart"></i><br><small>Charts</small></button>
+      <button class="nav-btn btn btn-link flex-fill" data-tab="settings"><i class="bi bi-gear"></i><br><small>Settings</small></button>
     </div>
-  </nav>
-
+  </div>
+</nav>
   <footer class="mt-5 text-center text-muted mb-5">
     <small>Copyright &copy; 2025 Wealth Command</small>
   </footer>
