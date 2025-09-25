@@ -55,14 +55,22 @@ footer {
 }
 .navbar.fixed-bottom {
   z-index: 1040;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  position: fixed !important;
 }
 .nav-btn {
   font-size: 1.2rem;
   color: #0d6efd;
+  border-radius: 0;
+  padding: 0.5em 0;
 }
 .nav-btn.active {
   color: #198754;
   font-weight: bold;
+  border-bottom: 2px solid #198754;
 }
 #categoryBreakdown .category-card {
   border: 1px solid #e2e2e2;
@@ -77,6 +85,14 @@ body.dark-mode #categoryBreakdown .category-card {
   border-color: #444;
   color: #f8f9fa;
 }
+.table-responsive {
+  min-width: 100%;
+  overflow-x: auto;
+}
+.table th, .table td {
+  font-size: 1rem;
+  white-space: nowrap;
+}
 @media (max-width: 576px) {
   .card-title {
     font-size: 1.2rem;
@@ -86,5 +102,9 @@ body.dark-mode #categoryBreakdown .category-card {
   }
   .nav-btn {
     font-size: 1rem;
+  }
+  .table th, .table td {
+    font-size: 0.9rem;
+    padding: 0.3em 0.4em;
   }
 }
