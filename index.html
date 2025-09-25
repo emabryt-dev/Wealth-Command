@@ -21,39 +21,34 @@
 
   <div class="main-content container py-3">
     <!-- Dashboard Tab -->
-    <div id="tab-dashboard" class="tab-page">
-      <div class="row g-4">
-        <div class="col-12">
-          <div class="card shadow-sm mb-3">
-            <div class="card-body text-center">
-              <h5 class="card-title">
-                Net Wealth (<span id="currencyLabel">PKR</span>)
-              </h5>
-              <!-- Sleek filter row -->
-              <div class="row mb-3 justify-content-center align-items-center">
-                <div class="col-12 col-md-8 mx-auto">
-                  <div class="input-group input-group-lg">
-                    <span class="input-group-text bg-light"><i class="bi bi-calendar"></i></span>
-                    <select id="summaryMonth" class="form-select"></select>
-                    <select id="summaryYear" class="form-select"></select>
-                  </div>
-                </div>
-              </div>
-              <p class="display-5 fw-bold" id="netWealth">0</p>
-              <hr>
-              <div class="row">
-                <div class="col-6 text-success">
-                  <strong>Total Income:</strong>
-                  <div id="totalIncome">0</div>
-                </div>
-                <div class="col-6 text-danger">
-                  <strong>Total Expense:</strong>
-                  <div id="totalExpense">0</div>
-                </div>
-              </div>
-              <div class="mt-4">
-                <button id="openAddTransactionModal" class="btn btn-primary btn-lg"><i class="bi bi-plus-lg"></i> Add Transaction</button>
-              </div>
+   <div class="card-body text-center">
+  <h5 class="card-title">
+    Net Wealth (<span id="currencyLabel">PKR</span>)
+  </h5>
+  <div class="row mb-2 justify-content-center align-items-center">
+    <div class="col-12 col-md-8 mx-auto">
+      <div class="input-group">
+        <span class="input-group-text bg-light"><i class="bi bi-calendar"></i></span>
+        <select id="summaryMonth" class="form-select"></select>
+        <select id="summaryYear" class="form-select"></select>
+      </div>
+    </div>
+  </div>
+  <p class="fw-bold mb-2" id="netWealth" style="font-size:1.3rem;">0</p>
+  <hr style="margin:0.5rem 0;">
+  <div class="row mb-2">
+    <div class="col-6 text-success">
+      <strong>Total Income:</strong>
+      <div id="totalIncome" style="font-size:1.08rem;"></div>
+    </div>
+    <div class="col-6 text-danger">
+      <strong>Total Expense:</strong>
+      <div id="totalExpense" style="font-size:1.08rem;"></div>
+    </div>
+  </div>
+  <div class="mt-2">
+    <button id="openAddTransactionModal" class="btn btn-primary btn-lg" style="font-size:0.99rem;padding:0.5rem 1rem;"><i class="bi bi-plus-lg"></i> Add Transaction</button>
+  </div>
             </div>
           </div>
         </div>
