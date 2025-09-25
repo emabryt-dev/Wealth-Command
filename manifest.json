@@ -4,20 +4,20 @@
   "description": "Expense and Income Manager",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait"
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "scope": "/",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "/path/to/your-192x192-icon.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "/path/to/your-512x512-icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "orientation": "portrait"
 }
