@@ -7,7 +7,6 @@ const urlsToCache = [
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
-  // Add more files if needed
 ];
 
 // Install: cache files
@@ -32,12 +31,19 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: serve cached, fallback to network
+// Fetch: serve cached files, fallback to network
 self.addEventListener('fetch', event => {
-  console.log('Service Worker: Fetching ', event.request.url);
+  // Only handle GET requests
+  if (event.request.method !== "GET") return;
+
   event.respondWith(
     caches.match(event.request)
-      .then(response => response || fetch(event.request))
-      .catch(() => caches.match('./index.html')) // Fallback to index.html
+      .then(response => {
+        // Serve from cache if available
+        if (response) return response;
+        // Otherwise, fetch from network
+        return fetch(event.request)
+          .catch(() => caches.match('./index.html')); // Fallback offline
+      })
   );
 });
