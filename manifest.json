@@ -10,8 +10,8 @@
   "start_url": "/",
   "scope": "/",
   "scope_extensions": [
-    { "origin": "/help/" },
-    { "origin": "https://wealthcommand-support.com/" }
+    { "type": "web", "origin": "/help/" },
+    { "type": "web", "origin": "https://wealthcommand-support.com/" }
   ],
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui", "browser"],
