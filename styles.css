@@ -8,8 +8,8 @@ body {
 .card {
   border-radius: 0.75rem;
 }
-#totalWealth {
-  color: #198754;
+#netWealth, #totalIncome, #totalExpense {
+  font-size: 2rem;
 }
 #darkModeToggle.active {
   background-color: #212529;
@@ -43,17 +43,48 @@ body.dark-mode .btn-success {
   background-color: #27ae60;
   border: none;
 }
-
 footer {
   margin-top: 2rem;
   padding-bottom: 2rem;
 }
-
+.tab-page {
+  display: block;
+}
+.tab-page.d-none {
+  display: none !important;
+}
+.navbar.fixed-bottom {
+  z-index: 1040;
+}
+.nav-btn {
+  font-size: 1.2rem;
+  color: #0d6efd;
+}
+.nav-btn.active {
+  color: #198754;
+  font-weight: bold;
+}
+#categoryBreakdown .category-card {
+  border: 1px solid #e2e2e2;
+  background: #fff;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+body.dark-mode #categoryBreakdown .category-card {
+  background: #222;
+  border-color: #444;
+  color: #f8f9fa;
+}
 @media (max-width: 576px) {
   .card-title {
     font-size: 1.2rem;
   }
-  #totalWealth {
-    font-size: 2rem;
+  #netWealth, #totalIncome, #totalExpense {
+    font-size: 1.3rem;
+  }
+  .nav-btn {
+    font-size: 1rem;
   }
 }
