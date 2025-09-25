@@ -1076,6 +1076,212 @@
         // Initialize the app
         refreshDashboard();
         renderSettings();
+
+            // ===== OFFLINE SUPPORT & PWA FUNCTIONALITY =====
+    
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js')
+                .then(function(registration) {
+                    console.log('SW registered: ', registration);
+                    
+                    // Check for updates every hour
+                    setInterval(() => {
+                        registration.update();
+                    }, 60 * 60 * 1000);
+                })
+                .catch(function(error) {
+                    console.log('SW registration failed: ', error);
+                });
+        });
+    }
+
+    // Offline/Online detection
+    function updateOnlineStatus() {
+        const status = navigator.onLine ? 'online' : 'offline';
+        document.body.setAttribute('data-connection', status);
+        
+        if (status === 'online') {
+            showNotification('Connection restored', 'success');
+            // Sync any pending transactions
+            syncPendingTransactions();
+        } else {
+            showNotification('You are offline - changes will save locally', 'warning');
+        }
+    }
+
+    // Sync pending transactions when back online
+    function syncPendingTransactions() {
+        const pending = JSON.parse(localStorage.getItem('pendingTransactions') || '[]');
+        if (pending.length > 0) {
+            showNotification(`Syncing ${pending.length} pending transactions`, 'info');
+            // Here you would send transactions to your server
+            localStorage.removeItem('pendingTransactions');
+        }
+    }
+
+    // Store transaction as pending if offline
+    function saveTransactionWithOfflineSupport(transaction) {
+        if (!navigator.onLine) {
+            const pending = JSON.parse(localStorage.getItem('pendingTransactions') || '[]');
+            pending.push({...transaction, pending: true, timestamp: Date.now()});
+            localStorage.setItem('pendingTransactions', JSON.stringify(pending));
+            showNotification('Transaction saved offline - will sync when online', 'info');
+        }
+        
+        // Always save to local storage
+        transactions.push(transaction);
+        localStorage.setItem('financeTransactions', JSON.stringify(transactions));
+    }
+
+    // Enhanced notification system
+    function showNotification(message, type = 'info') {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.connection-notification');
+        existingNotifications.forEach(notif => notif.remove());
+        
+        const colors = {
+            success: '#10b981',
+            warning: '#f59e0b',
+            error: '#ef4444',
+            info: '#3b82f6'
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = 'connection-notification';
+        notification.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                background: ${colors[type] || colors.info};
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                max-width: 300px;
+            ">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas ${type === 'success' ? 'fa-check' : type === 'warning' ? 'fa-exclamation-triangle' : type === 'error' ? 'fa-times' : 'fa-info'}"></i>
+                    <span>${message}</span>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }
+        }, 4000);
+    }
+
+    // Add CSS animations for notifications
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        [data-connection="offline"]::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #f59e0b;
+            z-index: 10001;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Event listeners for connectivity changes
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    
+    // Initial status check
+    updateOnlineStatus();
+
+    // Install prompt for PWA
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show install button (you can add this to your UI)
+        const installButton = document.createElement('button');
+        installButton.innerHTML = '<i class="fas fa-download"></i> Install App';
+        installButton.style.cssText = `
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            z-index: 1000;
+        `;
+        installButton.onclick = () => {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted install');
+                }
+                deferredPrompt = null;
+                installButton.remove();
+            });
+        };
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => installButton.remove(), 10000);
+    });
+
+    // Enhanced saveTransaction function with offline support
+    function saveTransaction() {
+        const date = document.getElementById('transDate').value;
+        const description = document.getElementById('transDesc').value.trim();
+        const category = document.getElementById('transCategory').value;
+        const amount = document.getElementById('transAmount').value;
+
+        if (!date || !description || !currentTransactionType || !category || !amount) {
+            showNotification('Please fill in all fields', 'error');
+            return;
+        }
+
+        const transaction = {
+            id: Date.now().toString(),
+            date: date,
+            description: description,
+            type: currentTransactionType,
+            category: category,
+            amount: amount,
+            synced: navigator.onLine
+        };
+
+        // Use offline-aware save function
+        saveTransactionWithOfflineSupport(transaction);
+        
+        closeModal();
+        refreshDashboard();
+        switchTab('dashboard');
+        
+        showNotification('Transaction saved successfully', 'success');
+    }
         
         // Add sample data if no transactions exist
         if (transactions.length === 0) {
