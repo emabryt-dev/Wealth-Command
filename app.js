@@ -383,3 +383,29 @@ document.getElementById('darkModeToggle').addEventListener('click', function() {
 
 // Initial UI update
 updateUI();
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/Wealth-Command/sw.js')
+      .then(registration => {
+        console.log('SW registered successfully: ', registration);
+        
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          console.log('New service worker found...');
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('New content available; please refresh.');
+              // You could show an "Update available" toast here
+            }
+          });
+        });
+      })
+      .catch(registrationError => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
+}
