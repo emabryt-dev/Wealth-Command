@@ -1,112 +1,92 @@
-const CACHE_NAME = 'wealth-command-pwa-v2';
+const CACHE_NAME = 'wealth-command-pwa-v3';
 const APP_SHELL = [
-  '/',            // Main app root
-  '/index.html',  // Main HTML file
-  '/manifest.json', // Manifest
-  '/assets/icons/icon-192x192.png', // Icon (update path if needed)
-  '/assets/icons/icon-512x512.png', // Icon (update path if needed)
-  // Add other essential assets you want available offline (CSS, JS, etc)
+  '/',            
+  '/index.html',  
+  '/manifest.json',
+  '/app.js',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  // Add other essential assets if needed (CSS, fonts, etc)
 ];
 
+// Install event: cache app shell
 self.addEventListener('install', event => {
-  console.log('[SW] Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('[SW] Precaching app shell:', APP_SHELL);
-        return cache.addAll(APP_SHELL);
-      })
+      .then(cache => cache.addAll(APP_SHELL))
       .then(() => self.skipWaiting())
-      .catch(err => console.error('[SW] Install failed:', err))
   );
 });
 
+// Activate event: clean old caches
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating...');
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.map(key => {
-        if (key !== CACHE_NAME) {
-          console.log('[SW] Removing old cache:', key);
-          return caches.delete(key);
-        }
+        if (key !== CACHE_NAME) return caches.delete(key);
       }))
     ).then(() => self.clients.claim())
   );
 });
 
+// Fetch event: respond from cache, update in background
 self.addEventListener('fetch', event => {
-  const request = event.request;
-  // Only handle GET requests for same-origin resources
-  if (request.method !== 'GET' || !request.url.startsWith(self.location.origin)) {
-    return;
-  }
+  // Only handle GET requests and same-origin resources
+  if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) return;
 
-  // Handle navigations (HTML pages)
-  if (request.mode === 'navigate') {
+  // Navigation requests: try network, fallback to cache
+  if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(event.request)
         .then(response => {
           // Optionally cache the response
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
           return response;
         })
-        .catch(() => {
-          // If offline, try to serve cached shell or offline page
-          return caches.match('/index.html')
-            .then(response => response || offlinePage());
-        })
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  // For static resources (JS, CSS, images, manifest, etc)
+  // For static resources: cache first, then network
   event.respondWith(
-    caches.match(request)
-      .then(response => {
-        if (response) {
-          return response; // Serve from cache
-        }
-        // Fetch from network and cache it
-        return fetch(request)
-          .then(networkResponse => {
-            if (networkResponse.ok) {
-              caches.open(CACHE_NAME).then(cache => cache.put(request, networkResponse.clone()));
-            }
-            return networkResponse;
-          })
-          .catch(() => undefined); // If fail, just fail silently for assets
-      })
+    caches.match(event.request)
+      .then(response => response || fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse.ok) {
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, networkResponse.clone()));
+          }
+          return networkResponse;
+        })
+        .catch(() => undefined)
+      )
   );
 });
 
-// Offline page for navigation fallback
+// Listen for skipWaiting message
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') self.skipWaiting();
+});
+
+// Optional: offline fallback page for navigation
 function offlinePage() {
   return new Response(`
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Wealth Command Pro - Offline</title>
+        <title>Wealth Command - Offline</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
-          body { font-family: Arial; padding: 2em; text-align: center; background: #f8fafc; color: #333; }
-          h1 { font-size: 2em; color: #3b82f6; }
-          button { padding: 0.5em 2em; font-size: 1em; background: #3b82f6; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1em; }
+          body { font-family: Arial; background: #f3f4f6; color: #333; text-align: center; padding: 2em; }
+          h1 { color: #3b82f6; font-size: 2em; margin-bottom: 1em; }
+          button { background: #3b82f6; color: #fff; border: none; padding: 0.6em 2em; border-radius: 4px; font-size: 1em; cursor: pointer; }
         </style>
       </head>
       <body>
         <h1>💰 Wealth Command Pro</h1>
-        <p>You are offline. Your expense data is safe and will sync once you reconnect.</p>
+        <p>You are offline. Your data is safe and will sync once reconnected.</p>
         <button onclick="location.reload()">Retry</button>
       </body>
     </html>
   `, { headers: { 'Content-Type': 'text/html' } });
 }
-
-// Message handler for skipWaiting
-self.addEventListener('message', event => {
-  if (event.data === 'skipWaiting') {
-    self.skipWaiting();
-  }
-});
