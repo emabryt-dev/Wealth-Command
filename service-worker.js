@@ -178,4 +178,72 @@ function syncPendingData() {
     // Here you would sync with your server
     resolve();
   });
+  // service-worker.js - DEBUG VERSION
+const CACHE_NAME = 'wealth-command-v1.4';
+const urlsToCache = [
+  '/',  // Root path
+  '/index.html',
+  './index.html',
+  'index.html'
+];
+
+self.addEventListener('install', (event) => {
+  console.log('Service Worker: Installing...');
+  
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Service Worker: Attempting to cache URLs:', urlsToCache);
+        return cache.addAll(urlsToCache)
+          .then(() => {
+            console.log('Service Worker: All resources cached successfully');
+            return self.skipWaiting();
+          })
+          .catch((error) => {
+            console.log('Service Worker: Cache error:', error);
+            // Try caching individually to see which URL works
+            return cacheIndividualUrls(cache);
+          });
+      })
+  );
+});
+
+// Helper function to cache URLs individually
+function cacheIndividualUrls(cache) {
+  const promises = urlsToCache.map(url => {
+    return cache.add(url)
+      .then(() => console.log('Cached successfully:', url))
+      .catch(err => console.log('Failed to cache:', url, err));
+  });
+  return Promise.all(promises);
+}
+
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker: Activating...');
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+  console.log('Service Worker: Fetching:', event.request.url);
+  
+  // Handle page navigation
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          console.log('Offline - returning cached version');
+          return caches.match('/')
+            .then(response => response || caches.match('/index.html'))
+            .then(response => response || caches.match('index.html'));
+        })
+    );
+    return;
+  }
+
+  // For all other requests, try cache first
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
+  );
+});
 }
