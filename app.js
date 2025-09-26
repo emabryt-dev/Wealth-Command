@@ -5,6 +5,10 @@ let transactions = loadTransactions();
 let categories = loadCategories();
 let currency = loadCurrency() || "PKR";
 let currentCategoryFilter = 'all';
+let mainChart = null;
+let incomePieChart = null;
+let expensePieChart = null;
+let currentChartType = 'category';
 
 // Google Drive Sync Configuration
 const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
@@ -523,9 +527,9 @@ function showTab(tab) {
         }
     }, 50);
     
-    // REMOVED: dashboard chart rendering
     if (tab === "charts") {
-        renderCharts();
+        renderEnhancedCharts();
+        populateChartFilters();
     }
 }
 
@@ -1107,10 +1111,9 @@ function updateUI() {
             const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income")
                 .reduce((sum, tx) => sum + tx.amount, 0);
             
-            // ONLY SHOW IF AMOUNT > 0
+            // ONLY SHOW IF AMOUNT > 0 - REMOVED transaction count badge
             if (catAmount > 0) {
                 hasIncomeData = true;
-                const transactionCount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income").length;
                 
                 const item = document.createElement("div");
                 item.className = "breakdown-item";
@@ -1121,7 +1124,6 @@ function updateUI() {
                 item.innerHTML = `
                     <span class="breakdown-category">${cat.name}</span>
                     <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
-                    ${transactionCount > 0 ? `<span class="category-badge">${transactionCount}</span>` : ''}
                 `;
                 incomeBreakdown.appendChild(item);
             }
@@ -1151,10 +1153,9 @@ function updateUI() {
             const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense")
                 .reduce((sum, tx) => sum + tx.amount, 0);
             
-            // ONLY SHOW IF AMOUNT > 0
+            // ONLY SHOW IF AMOUNT > 0 - REMOVED transaction count badge
             if (catAmount > 0) {
                 hasExpenseData = true;
-                const transactionCount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense").length;
                 
                 const item = document.createElement("div");
                 item.className = "breakdown-item";
@@ -1165,7 +1166,6 @@ function updateUI() {
                 item.innerHTML = `
                     <span class="breakdown-category">${cat.name}</span>
                     <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
-                    ${transactionCount > 0 ? `<span class="category-badge">${transactionCount}</span>` : ''}
                 `;
                 expenseBreakdown.appendChild(item);
             }
@@ -1188,6 +1188,13 @@ function updateUI() {
         transactions.slice().reverse().forEach((tx, idx) => {
             const originalIndex = transactions.length - 1 - idx;
             const row = document.createElement('tr');
+            row.className = 'clickable-row';
+            row.onclick = () => editTransaction(originalIndex);
+            
+            // Format date as "DD-MMM" (e.g., "26-Sep")
+            const transactionDate = new Date(tx.date);
+            const formattedDate = isNaN(transactionDate) ? tx.date : 
+                `${transactionDate.getDate()}-${transactionDate.toLocaleString('default', { month: 'short' })}`;
             
             // Add tooltip for long descriptions
             const descCell = tx.desc.length > 30 ? 
@@ -1195,20 +1202,15 @@ function updateUI() {
                 `<td>${tx.desc}</td>`;
             
             row.innerHTML = `
-                <td>${tx.date}</td>
+                <td>${formattedDate}</td>
                 ${descCell}
                 <td class="fw-bold ${tx.type === 'income' ? 'text-success' : 'text-danger'}">${tx.type}</td>
                 <td>${tx.category}</td>
                 <td class="fw-bold">${tx.amount.toLocaleString()} ${currency}</td>
                 <td>
-                    <div class="d-flex gap-1">
-                        <button class="btn-action btn-edit" title="Edit" onclick="editTransaction(${originalIndex})">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn-action btn-delete" title="Delete" onclick="removeTransaction(${originalIndex})">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
+                    <button class="btn-action btn-delete" title="Delete" onclick="event.stopPropagation(); removeTransaction(${originalIndex})">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </td>
             `;
             tbody.appendChild(row);
@@ -1216,84 +1218,441 @@ function updateUI() {
     }
 }
 
-// Charts Tab Chart (Category Breakdown only)
-let categoryChart;
-function renderCharts() {
-    const catLabels = categories.map(cat => cat.name);
-    const catIncome = categories.map(cat => transactions.filter(tx => tx.category === cat.name && tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0));
-    const catExpense = categories.map(cat => transactions.filter(tx => tx.category === cat.name && tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0));
-    const ctxCat = document.getElementById('categoryChart').getContext('2d');
+// Enhanced Charts Tab Functions
+function populateChartFilters() {
+    const chartMonth = document.getElementById('chartMonth');
+    const chartYear = document.getElementById('chartYear');
     
-    if (categoryChart) {
-        categoryChart.destroy();
+    // Populate months
+    chartMonth.innerHTML = '<option value="all">All Months</option>';
+    for (let i = 1; i <= 12; i++) {
+        const date = new Date(2023, i - 1, 1);
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = date.toLocaleString('default', { month: 'long' });
+        chartMonth.appendChild(option);
     }
     
-    categoryChart = new Chart(ctxCat, {
+    // Populate years
+    chartYear.innerHTML = '<option value="all">All Years</option>';
+    const years = Array.from(new Set(transactions.map(tx => new Date(tx.date).getFullYear())))
+        .filter(year => !isNaN(year))
+        .sort((a, b) => b - a);
+    
+    years.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        chartYear.appendChild(option);
+    });
+    
+    // Set current month/year as default
+    const now = new Date();
+    chartMonth.value = now.getMonth() + 1;
+    chartYear.value = now.getFullYear();
+    
+    // Add event listeners
+    chartMonth.addEventListener('change', renderEnhancedCharts);
+    chartYear.addEventListener('change', renderEnhancedCharts);
+}
+
+function renderEnhancedCharts() {
+    updateChartSummaryStats();
+    
+    const chartTypeButtons = document.querySelectorAll('[data-chart-type]');
+    chartTypeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            chartTypeButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentChartType = this.dataset.chartType;
+            renderMainChart();
+        });
+    });
+    
+    renderMainChart();
+    renderPieCharts();
+}
+
+function updateChartSummaryStats() {
+    const statsContainer = document.getElementById('chartSummaryStats');
+    const chartMonth = document.getElementById('chartMonth').value;
+    const chartYear = document.getElementById('chartYear').value;
+    
+    let filteredTx = transactions;
+    if (chartMonth !== 'all' || chartYear !== 'all') {
+        filteredTx = transactions.filter(tx => {
+            const d = new Date(tx.date);
+            if (isNaN(d)) return false;
+            let valid = true;
+            if (chartMonth !== 'all') valid = valid && (d.getMonth() + 1) == chartMonth;
+            if (chartYear !== 'all') valid = valid && d.getFullYear() == chartYear;
+            return valid;
+        });
+    }
+    
+    const totalIncome = filteredTx.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
+    const totalExpense = filteredTx.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0);
+    const netWealth = totalIncome - totalExpense;
+    const transactionCount = filteredTx.length;
+    
+    statsContainer.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-value text-primary">${transactionCount}</div>
+            <div class="stat-label">Transactions</div>
+        </div>
+        <div class="stat-card income">
+            <div class="stat-value text-success">${totalIncome.toLocaleString()} ${currency}</div>
+            <div class="stat-label">Total Income</div>
+        </div>
+        <div class="stat-card expense">
+            <div class="stat-value text-danger">${totalExpense.toLocaleString()} ${currency}</div>
+            <div class="stat-label">Total Expense</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value ${netWealth >= 0 ? 'text-success' : 'text-danger'}">
+                ${netWealth.toLocaleString()} ${currency}
+            </div>
+            <div class="stat-label">Net Wealth</div>
+        </div>
+    `;
+}
+
+function renderMainChart() {
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    const placeholder = document.getElementById('chartPlaceholder');
+    
+    if (mainChart) {
+        mainChart.destroy();
+    }
+    
+    if (transactions.length === 0) {
+        placeholder.classList.remove('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    
+    const chartMonth = document.getElementById('chartMonth').value;
+    const chartYear = document.getElementById('chartYear').value;
+    
+    switch (currentChartType) {
+        case 'category':
+            renderCategoryChart(ctx, chartMonth, chartYear);
+            break;
+        case 'monthly':
+            renderMonthlyTrendChart(ctx, chartYear);
+            break;
+        case 'yearly':
+            renderYearlyComparisonChart(ctx);
+            break;
+    }
+}
+
+function renderCategoryChart(ctx, month, year) {
+    let filteredTx = transactions;
+    if (month !== 'all' || year !== 'all') {
+        filteredTx = transactions.filter(tx => {
+            const d = new Date(tx.date);
+            if (isNaN(d)) return false;
+            let valid = true;
+            if (month !== 'all') valid = valid && (d.getMonth() + 1) == month;
+            if (year !== 'all') valid = valid && d.getFullYear() == year;
+            return valid;
+        });
+    }
+    
+    const categoryData = {};
+    categories.forEach(cat => {
+        categoryData[cat.name] = {
+            income: 0,
+            expense: 0,
+            type: cat.type
+        };
+    });
+    
+    filteredTx.forEach(tx => {
+        if (categoryData[tx.category]) {
+            categoryData[tx.category][tx.type === 'income' ? 'income' : 'expense'] += tx.amount;
+        }
+    });
+    
+    const labels = Object.keys(categoryData).filter(cat => 
+        categoryData[cat].income > 0 || categoryData[cat].expense > 0
+    );
+    
+    const incomeData = labels.map(cat => categoryData[cat].income);
+    const expenseData = labels.map(cat => categoryData[cat].expense);
+    
+    mainChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: catLabels,
+            labels: labels,
             datasets: [
-                { label: 'Income', data: catIncome, backgroundColor: '#198754' },
-                { label: 'Expense', data: catExpense, backgroundColor: '#dc3545' }
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    backgroundColor: '#198754',
+                    borderColor: '#198754',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Expense',
+                    data: expenseData,
+                    backgroundColor: '#dc3545',
+                    borderColor: '#dc3545',
+                    borderWidth: 1
+                }
             ]
         },
         options: {
             responsive: true,
-            plugins: { legend: { position: 'bottom' } }
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Category-wise Income vs Expense'
+                },
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ' + currency;
+                        }
+                    }
+                }
+            }
         }
     });
 }
 
-// Import/Export
-document.getElementById('exportBtn').onclick = function() {
-    const data = {
-        transactions,
-        categories,
-        currency,
-        monthlyBudgets
-    };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:"application/json"}));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "wealth-command-backup.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showToast('Data exported successfully', 'success');
-};
-
-document.getElementById('importBtn').onclick = function() {
-    document.getElementById('importFile').click();
-};
-
-document.getElementById('importFile').onchange = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-        try {
-            const data = JSON.parse(ev.target.result);
-            if (Array.isArray(data.transactions)) transactions = data.transactions;
-            if (Array.isArray(data.categories)) categories = data.categories;
-            if (typeof data.currency === "string") currency = data.currency;
-            if (data.monthlyBudgets) monthlyBudgets = data.monthlyBudgets;
-            
-            saveTransactions(transactions);
-            saveCategories(categories);
-            saveCurrency(currency);
-            saveMonthlyBudgets(monthlyBudgets);
-            
-            renderCategoryList();
-            populateSummaryFilters();
-            updateUI();
-            renderCharts();
-            showToast("Import successful!", "success");
-        } catch {
-            showToast("Import failed: Invalid file.", "danger");
+function renderMonthlyTrendChart(ctx, year) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyData = Array(12).fill().map(() => ({ income: 0, expense: 0 }));
+    
+    transactions.forEach(tx => {
+        const d = new Date(tx.date);
+        if (isNaN(d)) return;
+        
+        if (year === 'all' || d.getFullYear() == year) {
+            const month = d.getMonth();
+            if (tx.type === 'income') {
+                monthlyData[month].income += tx.amount;
+            } else {
+                monthlyData[month].expense += tx.amount;
+            }
         }
-    };
-    reader.readAsText(file);
-};
+    });
+    
+    const incomeData = monthlyData.map(m => m.income);
+    const expenseData = monthlyData.map(m => m.expense);
+    
+    mainChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Expense',
+                    data: expenseData,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Monthly Trend ${year === 'all' ? '(All Years)' : year}`
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ' + currency;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderYearlyComparisonChart(ctx) {
+    const years = Array.from(new Set(transactions.map(tx => new Date(tx.date).getFullYear())))
+        .filter(year => !isNaN(year))
+        .sort((a, b) => a - b);
+    
+    const yearlyData = {};
+    years.forEach(year => {
+        yearlyData[year] = { income: 0, expense: 0 };
+    });
+    
+    transactions.forEach(tx => {
+        const year = new Date(tx.date).getFullYear();
+        if (yearlyData[year]) {
+            if (tx.type === 'income') {
+                yearlyData[year].income += tx.amount;
+            } else {
+                yearlyData[year].expense += tx.amount;
+            }
+        }
+    });
+    
+    const incomeData = years.map(year => yearlyData[year].income);
+    const expenseData = years.map(year => yearlyData[year].expense);
+    
+    mainChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: years,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    backgroundColor: '#198754',
+                    borderColor: '#198754',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Expense',
+                    data: expenseData,
+                    backgroundColor: '#dc3545',
+                    borderColor: '#dc3545',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Yearly Income vs Expense Comparison'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ' + currency;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderPieCharts() {
+    const chartMonth = document.getElementById('chartMonth').value;
+    const chartYear = document.getElementById('chartYear').value;
+    
+    let filteredTx = transactions;
+    if (chartMonth !== 'all' || chartYear !== 'all') {
+        filteredTx = transactions.filter(tx => {
+            const d = new Date(tx.date);
+            if (isNaN(d)) return false;
+            let valid = true;
+            if (chartMonth !== 'all') valid = valid && (d.getMonth() + 1) == chartMonth;
+            if (chartYear !== 'all') valid = valid && d.getFullYear() == chartYear;
+            return valid;
+        });
+    }
+    
+    // Income Pie Chart
+    const incomeData = {};
+    filteredTx.filter(tx => tx.type === 'income').forEach(tx => {
+        incomeData[tx.category] = (incomeData[tx.category] || 0) + tx.amount;
+    });
+    
+    const incomeCtx = document.getElementById('incomePieChart').getContext('2d');
+    const incomePlaceholder = document.getElementById('incomePiePlaceholder');
+    
+    if (incomePieChart) incomePieChart.destroy();
+    
+    if (Object.keys(incomeData).length === 0) {
+        incomePlaceholder.style.display = 'flex';
+    } else {
+        incomePlaceholder.style.display = 'none';
+        incomePieChart = new Chart(incomeCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(incomeData),
+                datasets: [{
+                    data: Object.values(incomeData),
+                    backgroundColor: ['#198754', '#20c997', '#0dcaf0', '#6f42c1', '#fd7e14']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Expense Pie Chart
+    const expenseData = {};
+    filteredTx.filter(tx => tx.type === 'expense').forEach(tx => {
+        expenseData[tx.category] = (expenseData[tx.category] || 0) + tx.amount;
+    });
+    
+    const expenseCtx = document.getElementById('expensePieChart').getContext('2d');
+    const expensePlaceholder = document.getElementById('expensePiePlaceholder');
+    
+    if (expensePieChart) expensePieChart.destroy();
+    
+    if (Object.keys(expenseData).length === 0) {
+        expensePlaceholder.style.display = 'flex';
+    } else {
+        expensePlaceholder.style.display = 'none';
+        expensePieChart = new Chart(expenseCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(expenseData),
+                datasets: [{
+                    data: Object.values(expenseData),
+                    backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1', '#20c997']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
 
 // LocalStorage handlers
 function loadTransactions() {
