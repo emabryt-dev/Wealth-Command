@@ -17,11 +17,10 @@ let googleUser = null;
 let googleAuth = null;
 let isOnline = navigator.onLine;
 
-// Monthly Rollover System - Define functions before using them
+// Monthly Rollover System
 function loadMonthlyBudgets() {
     try {
         const budgets = JSON.parse(localStorage.getItem('monthlyBudgets')) || {};
-        // Initialize current month if not exists
         const currentMonth = getCurrentMonthKey();
         if (!budgets[currentMonth]) {
             budgets[currentMonth] = {
@@ -32,7 +31,6 @@ function loadMonthlyBudgets() {
                 autoRollover: true,
                 allowNegative: false
             };
-            // Use localStorage directly here to avoid circular dependency
             localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
         }
         return budgets;
@@ -57,7 +55,6 @@ function getCurrentMonthKey() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Now initialize monthlyBudgets after function definitions
 let monthlyBudgets = loadMonthlyBudgets();
 
 function saveMonthlyBudgets(budgets) {
@@ -78,7 +75,6 @@ function calculateMonthlyRollover() {
         const currentMonth = months[i];
         const monthData = monthlyBudgets[currentMonth];
         
-        // Calculate current month totals from transactions
         const monthTransactions = transactions.filter(tx => 
             getMonthKeyFromDate(tx.date) === currentMonth
         );
@@ -93,7 +89,6 @@ function calculateMonthlyRollover() {
             
         monthData.endingBalance = monthData.startingBalance + monthData.income - monthData.expenses;
         
-        // Auto-rollover to next month if enabled
         if (monthData.autoRollover && i < months.length - 1) {
             const nextMonth = months[i + 1];
             if (monthData.endingBalance >= 0 || monthData.allowNegative) {
@@ -220,7 +215,6 @@ function showToast(message, type = 'info', duration = 4000) {
     bsToast.show();
 }
 
-// Replace old showSyncStatus with new toast system
 function showSyncStatus(message, type) {
     showToast(message, type, type === 'success' ? 3000 : 5000);
 }
@@ -399,7 +393,6 @@ async function loadDataFromDrive() {
             }
             
             updateUI();
-            renderCharts();
             showSyncStatus('Data loaded from Google Drive!', 'success');
             return true;
         } else {
@@ -410,7 +403,6 @@ async function loadDataFromDrive() {
             }
             
             updateUI();
-            renderCharts();
             
             await syncDataToDrive();
             return true;
@@ -520,7 +512,6 @@ function showTab(tab) {
         btn.classList.toggle("active", t === tab);
     });
     
-    // Force a small delay for DOM update then adjust table
     setTimeout(() => {
         if (tab === "transactions") {
             adjustTransactionsTable();
@@ -533,17 +524,14 @@ function showTab(tab) {
     }
 }
 
-// Add this function to handle table adjustments
 function adjustTransactionsTable() {
     const tableContainer = document.querySelector('#tab-transactions .table-container');
     const table = document.getElementById('transactionsTable');
     
     if (tableContainer && table) {
-        // Reset any inline styles that might be causing issues
         tableContainer.style.height = '';
         table.style.width = '';
         
-        // Force a reflow to ensure proper rendering
         setTimeout(() => {
             const availableHeight = window.innerHeight - tableContainer.getBoundingClientRect().top - 100;
             tableContainer.style.height = Math.max(availableHeight, 300) + 'px';
@@ -551,7 +539,6 @@ function adjustTransactionsTable() {
     }
 }
 
-// Also call this on window resize
 window.addEventListener('resize', function() {
     if (!document.getElementById('tab-transactions').classList.contains('d-none')) {
         adjustTransactionsTable();
@@ -576,18 +563,15 @@ function showCategoryTransactions(type, categoryName) {
     const transactionsList = document.getElementById('categoryTransactionsList');
     const noTransactions = document.getElementById('noCategoryTransactions');
     
-    // Get filter values
     const monthSel = document.getElementById('summaryMonth');
     const yearSel = document.getElementById('summaryYear');
     
-    // Filter transactions
     let filteredTx = transactions.filter(tx => tx.type === type);
     
     if (categoryName !== 'all') {
         filteredTx = filteredTx.filter(tx => tx.category === categoryName);
     }
     
-    // Apply month/year filter
     if (monthSel.value !== "all" || yearSel.value !== "all") {
         filteredTx = filteredTx.filter(tx => {
             const d = new Date(tx.date);
@@ -599,7 +583,6 @@ function showCategoryTransactions(type, categoryName) {
         });
     }
     
-    // Update modal content
     if (categoryName === 'all') {
         title.innerHTML = `<i class="bi bi-list-ul"></i> All ${type.charAt(0).toUpperCase() + type.slice(1)} Transactions`;
         info.textContent = `Showing ${filteredTx.length} transactions`;
@@ -612,7 +595,6 @@ function showCategoryTransactions(type, categoryName) {
     totalAmount.textContent = `${total.toLocaleString()} ${currency}`;
     totalAmount.className = `fw-bold fs-5 ${type === 'income' ? 'text-success' : 'text-danger'}`;
     
-    // Populate transactions list
     transactionsList.innerHTML = '';
     
     if (filteredTx.length === 0) {
@@ -670,11 +652,9 @@ function removeTransactionFromCategory(idx) {
         transactions.splice(idx, 1);
         saveTransactions(transactions);
         updateUI();
-        renderCharts();
         populateSummaryFilters();
         confirmationModal.hide();
         
-        // Reopen category modal
         setTimeout(() => {
             if (currentCategoryView) {
                 showCategoryTransactions(currentCategoryView.type, currentCategoryView.categoryName);
@@ -698,7 +678,6 @@ function addTransactionForCategory() {
             document.getElementById('editTransactionIndex').value = '-1';
             document.getElementById('transactionForm').reset();
             
-            // Pre-fill category and type
             document.getElementById('typeInput').value = currentCategoryView.type;
             updateCategorySelect();
             document.getElementById('categoryInput').value = currentCategoryView.categoryName;
@@ -897,7 +876,6 @@ function populateSummaryFilters() {
         return isNaN(d) ? null : d.getFullYear();
     }).filter(Boolean)));
     
-    // Always include current year
     if (!yearsArr.includes(currentYear)) {
         yearsArr.push(currentYear);
     }
@@ -911,7 +889,6 @@ function populateSummaryFilters() {
         yearSel.appendChild(opt);
     });
     
-    // Add "All" options
     const allMonthOpt = document.createElement('option');
     allMonthOpt.value = "all";
     allMonthOpt.textContent = "All Months";
@@ -931,7 +908,6 @@ document.getElementById('openAddTransactionModal').onclick = () => {
     document.getElementById('editTransactionIndex').value = '-1';
     document.getElementById('transactionForm').reset();
     
-    // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('dateInput').value = today;
     
@@ -950,7 +926,6 @@ window.editTransaction = function(idx) {
     document.getElementById('typeInput').value = transaction.type;
     document.getElementById('amountInput').value = transaction.amount;
     
-    // Update categories based on type
     updateCategorySelect();
     document.getElementById('categoryInput').value = transaction.category;
     
@@ -973,7 +948,6 @@ window.removeTransaction = function(idx) {
         transactions.splice(idx, 1);
         saveTransactions(transactions);
         updateUI();
-        renderCharts();
         populateSummaryFilters();
         confirmationModal.hide();
         showToast('Transaction deleted successfully', 'success');
@@ -1006,22 +980,19 @@ document.getElementById('transactionForm').addEventListener('submit', function(e
     }
     
     if (editIndex >= 0) {
-        // Update existing transaction
         transactions[editIndex] = { date, desc, type, category: cat, amount };
         showToast('Transaction updated successfully', 'success');
     } else {
-        // Add new transaction
         transactions.push({ date, desc, type, category: cat, amount });
         showToast('Transaction added successfully', 'success');
     }
     
     saveTransactions(transactions);
-    calculateMonthlyRollover(); // Update rollover calculations
+    calculateMonthlyRollover();
     updateUI();
     addTxModal.hide();
     this.reset();
     
-    // Set default date to today for next entry
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('dateInput').value = today;
 });
@@ -1045,12 +1016,10 @@ function updateUI() {
         });
     }
     
-    // Calculate totals including rollover if applicable
     let totalIncome = filteredTx.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
     let totalExpense = filteredTx.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
     let netWealth = totalIncome - totalExpense;
     
-    // Add rollover balance if viewing specific month
     if (monthSel.value !== "all" && yearSel.value !== "all") {
         const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
         const monthData = monthlyBudgets[monthKey];
@@ -1063,10 +1032,9 @@ function updateUI() {
     document.getElementById("totalExpense").textContent = totalExpense.toLocaleString() + " " + currency;
     document.getElementById("netWealth").textContent = netWealth.toLocaleString() + " " + currency;
 
-    // Update rollover display
     updateRolloverDisplay();
 
-    // Income Breakdown with clickable items - ONLY SHOW CATEGORIES WITH AMOUNT > 0
+    // Income Breakdown - Only show categories with amount > 0
     const incomeBreakdown = document.getElementById("incomeBreakdown");
     const noIncomeMsg = document.getElementById("noIncomeCategories");
     incomeBreakdown.innerHTML = "";
@@ -1083,7 +1051,6 @@ function updateUI() {
             const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income")
                 .reduce((sum, tx) => sum + tx.amount, 0);
             
-            // ONLY SHOW IF AMOUNT > 0 - REMOVED transaction count badge
             if (catAmount > 0) {
                 hasIncomeData = true;
                 
@@ -1108,7 +1075,7 @@ function updateUI() {
         }
     }
 
-    // Expense Breakdown with clickable items - ONLY SHOW CATEGORIES WITH AMOUNT > 0
+    // Expense Breakdown - Only show categories with amount > 0
     const expenseBreakdown = document.getElementById("expenseBreakdown");
     const noExpenseMsg = document.getElementById("noExpenseCategories");
     expenseBreakdown.innerHTML = "";
@@ -1125,7 +1092,6 @@ function updateUI() {
             const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense")
                 .reduce((sum, tx) => sum + tx.amount, 0);
             
-            // ONLY SHOW IF AMOUNT > 0 - REMOVED transaction count badge
             if (catAmount > 0) {
                 hasExpenseData = true;
                 
@@ -1168,7 +1134,6 @@ function updateUI() {
             const formattedDate = isNaN(transactionDate) ? tx.date : 
                 `${transactionDate.getDate()}-${transactionDate.toLocaleString('default', { month: 'short' })}`;
             
-            // Add tooltip for long descriptions
             const descCell = tx.desc.length > 30 ? 
                 `<td class="description-cell" data-fulltext="${tx.desc}">${tx.desc.substring(0, 30)}...</td>` :
                 `<td>${tx.desc}</td>`;
@@ -1195,7 +1160,6 @@ function populateChartFilters() {
     const chartMonth = document.getElementById('chartMonth');
     const chartYear = document.getElementById('chartYear');
     
-    // Populate months
     chartMonth.innerHTML = '<option value="all">All Months</option>';
     for (let i = 1; i <= 12; i++) {
         const date = new Date(2023, i - 1, 1);
@@ -1205,7 +1169,6 @@ function populateChartFilters() {
         chartMonth.appendChild(option);
     }
     
-    // Populate years
     chartYear.innerHTML = '<option value="all">All Years</option>';
     const years = Array.from(new Set(transactions.map(tx => new Date(tx.date).getFullYear())))
         .filter(year => !isNaN(year))
@@ -1218,12 +1181,10 @@ function populateChartFilters() {
         chartYear.appendChild(option);
     });
     
-    // Set current month/year as default
     const now = new Date();
     chartMonth.value = now.getMonth() + 1;
     chartYear.value = now.getFullYear();
     
-    // Add event listeners
     chartMonth.addEventListener('change', renderEnhancedCharts);
     chartYear.addEventListener('change', renderEnhancedCharts);
 }
@@ -1626,6 +1587,56 @@ function renderPieCharts() {
     }
 }
 
+// Import/Export
+document.getElementById('exportBtn').onclick = function() {
+    const data = {
+        transactions,
+        categories,
+        currency,
+        monthlyBudgets
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:"application/json"}));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "wealth-command-backup.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Data exported successfully', 'success');
+};
+
+document.getElementById('importBtn').onclick = function() {
+    document.getElementById('importFile').click();
+};
+
+document.getElementById('importFile').onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        try {
+            const data = JSON.parse(ev.target.result);
+            if (Array.isArray(data.transactions)) transactions = data.transactions;
+            if (Array.isArray(data.categories)) categories = data.categories;
+            if (typeof data.currency === "string") currency = data.currency;
+            if (data.monthlyBudgets) monthlyBudgets = data.monthlyBudgets;
+            
+            saveTransactions(transactions);
+            saveCategories(categories);
+            saveCurrency(currency);
+            saveMonthlyBudgets(monthlyBudgets);
+            
+            renderCategoryList();
+            populateSummaryFilters();
+            updateUI();
+            showToast("Import successful!", "success");
+        } catch {
+            showToast("Import failed: Invalid file.", "danger");
+        }
+    };
+    reader.readAsText(file);
+};
+
 // LocalStorage handlers
 function loadTransactions() {
     try {
@@ -1638,7 +1649,7 @@ function loadTransactions() {
 function saveTransactions(arr) {
     transactions = arr;
     localStorage.setItem('transactions', JSON.stringify(arr));
-    calculateMonthlyRollover(); // Recalculate rollovers on save
+    calculateMonthlyRollover();
     if (googleUser && isOnline) syncDataToDrive();
 }
 
@@ -1735,19 +1746,17 @@ document.addEventListener('DOMContentLoaded', function() {
         currency = loadCurrency() || "PKR";
         monthlyBudgets = loadMonthlyBudgets();
         
-        // Calculate initial rollovers
         calculateMonthlyRollover();
         
         updateUI();
-        renderCharts();
         populateSummaryFilters();
         renderCategoryList();
         
-        // Set up month/year filter change listeners
-        document.getElementById('summaryMonth').addEventListener('change', updateUI);
-        document.getElementById('summaryYear').addEventListener('change', updateUI);
+        const summaryMonth = document.getElementById('summaryMonth');
+        const summaryYear = document.getElementById('summaryYear');
+        if (summaryMonth) summaryMonth.addEventListener('change', updateUI);
+        if (summaryYear) summaryYear.addEventListener('change', updateUI);
         
-        // Initialize rollover settings toggles
         const autoRolloverToggle = document.getElementById('autoRolloverToggle');
         const allowNegativeToggle = document.getElementById('allowNegativeRollover');
         
@@ -1803,18 +1812,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Initialize Google Auth after DOM is ready
     setTimeout(() => {
         initGoogleAuth();
         updateProfileUI();
     }, 100);
     
-    // Set up manual sync button
-    const manualSyncBtn = document.getElementById('manualSyncSettings');
-    if (manualSyncBtn) {
-        manualSyncBtn.addEventListener('click', manualSync);
-    }
+    setTimeout(() => {
+        const manualSyncBtn = document.getElementById('manualSyncSettings');
+        if (manualSyncBtn) {
+            manualSyncBtn.addEventListener('click', manualSync);
+        }
+    }, 200);
     
-    // Show dashboard by default
     showTab("dashboard");
 });
