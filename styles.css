@@ -209,4 +209,53 @@ body.dark-mode .breakdown-item {
 .card-body.p-2 {
   padding: 0.5rem !important;
 }
+  /* Profile Picture Styles */
+.profile-pic-container {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.profile-pic-container:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.profile-icon {
+  font-size: 24px;
+  color: white;
+}
+
+.profile-picture {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Dropdown Styles */
+.dropdown-menu {
+  min-width: 250px;
+}
+
+.dropdown-item-text {
+  padding: 0.5rem 1rem;
+}
+
+/* Google Sign-In Button Styles */
+.g_id_signin {
+  margin: 10px 0;
+}
+
+/* Modal Styles */
+.modal-sm {
+  max-width: 300px;
+}
 }
