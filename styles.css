@@ -433,17 +433,3 @@ body.dark-mode .toast {
 #tab-transactions {
   min-height: calc(100vh - 200px);
 }
-
-/* IMMEDIATE FIX - Full height cards */
-.breakdown-container {
-  height: 500px !important;
-}
-
-.breakdown-card {
-  height: 100% !important;
-}
-
-#incomeBreakdown, #expenseBreakdown {
-  height: 100% !important;
-  min-height: 300px !important;
-}
