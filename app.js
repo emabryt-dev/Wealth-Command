@@ -5,12 +5,10 @@ let categories = loadCategories();
 let currency = loadCurrency() || "PKR";
 let currentCategoryFilter = 'all';
 
-// Google Drive Sync Configuration
+// Google Drive Sync Configuration (Simplified)
 const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
-const GOOGLE_CLIENT_ID = '86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com';
 let googleUser = null;
 let isOnline = navigator.onLine;
-let googleAuth = null;
 
 // Initialize Google Auth
 function initGoogleAuth() {
@@ -45,160 +43,6 @@ function getGoogleAccessToken() {
   }
   
   googleAuth.requestAccessToken();
-}
-
-// Updated loadDataFromDrive function
-async function loadDataFromDrive() {
-  if (!googleUser || !isOnline) return false;
-  
-  try {
-    // Search for existing file
-    const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}'&fields=files(id,name)`,
-      {
-        headers: {
-          'Authorization': `Bearer ${googleUser.access_token}`
-        }
-      }
-    );
-    
-    if (response.status === 401) {
-      // Token expired, need to re-authenticate
-      showSyncStatus('Session expired. Please sign in again.', 'warning');
-      localStorage.removeItem('googleUser');
-      googleUser = null;
-      updateSyncUI();
-      return false;
-    }
-    
-    if (!response.ok) {
-      throw new Error(`Drive API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (data.files && data.files.length > 0) {
-      const fileId = data.files[0].id;
-      
-      // Download file content
-      const fileResponse = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-        {
-          headers: {
-            'Authorization': `Bearer ${googleUser.access_token}`
-          }
-        }
-      );
-      
-      if (!fileResponse.ok) {
-        throw new Error(`File download error: ${fileResponse.status}`);
-      }
-      
-      const driveData = await fileResponse.json();
-      
-      // Merge data
-      if (driveData.transactions) {
-        transactions = mergeArrays(transactions, driveData.transactions);
-        saveTransactions(transactions);
-      }
-      if (driveData.categories) {
-        categories = mergeArrays(categories, driveData.categories);
-        saveCategories(categories);
-      }
-      if (driveData.currency) {
-        currency = driveData.currency;
-        saveCurrency(currency);
-      }
-      
-      updateUI();
-      renderCharts();
-      showSyncStatus('Data loaded from Google Drive', 'success');
-      return true;
-    } else {
-      showSyncStatus('No existing data found in Drive', 'info');
-      return false;
-    }
-  } catch (error) {
-    console.error('Error loading from Drive:', error);
-    showSyncStatus('Error loading data from Drive', 'danger');
-  }
-  return false;
-}
-
-// Updated syncDataToDrive function
-async function syncDataToDrive() {
-  if (!googleUser || !isOnline) {
-    showSyncStatus('Please sign in to sync data', 'warning');
-    return;
-  }
-  
-  try {
-    const fileData = {
-      transactions,
-      categories,
-      currency,
-      lastSync: new Date().toISOString(),
-      version: '1.0'
-    };
-    
-    // Check if file exists
-    const listResponse = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}'&fields=files(id)`,
-      {
-        headers: {
-          'Authorization': `Bearer ${googleUser.access_token}`
-        }
-      }
-    );
-    
-    if (!listResponse.ok) {
-      throw new Error(`Drive list error: ${listResponse.status}`);
-    }
-    
-    const files = await listResponse.json();
-    const existingFile = files.files?.[0];
-    
-    let response;
-    if (existingFile) {
-      // Update existing file
-      response = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${googleUser.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(fileData)
-        }
-      );
-    } else {
-      // Create new file
-      response = await fetch(
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=media',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${googleUser.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: GOOGLE_DRIVE_FILE_NAME,
-            ...fileData
-          })
-        }
-      );
-    }
-    
-    if (response.ok) {
-      showSyncStatus('Data synced to Google Drive successfully!', 'success');
-    } else {
-      throw new Error(`Drive upload error: ${response.status}`);
-    }
-  } catch (error) {
-    console.error('Error syncing to Drive:', error);
-    showSyncStatus('Error syncing to Google Drive', 'danger');
-  }
 }
 
 // Update sync UI in settings
@@ -243,10 +87,11 @@ function googleSignOut() {
 
 // Manual sync function
 function manualSync() {
-  if (googleUser && isOnline) {
-    syncDataToDrive();
-  } else if (!googleUser) {
-    googleSignIn();
+  if (googleUser) {
+    exportData();
+    showSyncStatus('Data exported locally. Google Drive sync requires additional setup.', 'info');
+  } else {
+    showGoogleSignIn();
   }
 }
 
@@ -319,29 +164,23 @@ function showSyncStatus(message, type) {
 function handleGoogleSignIn(response) {
   console.log('Google Sign-In Response:', response);
   
-  // Extract the credential (JWT)
-  const credential = response.credential;
-  
-  // Get user info from the credential
-  const userObject = parseJwt(credential);
+  const userObject = parseJwt(response.credential);
   
   googleUser = {
     id: userObject.sub,
     email: userObject.email,
     name: userObject.name,
-    picture: userObject.picture,
-    access_token: credential,
-    expires_at: userObject.exp * 1000
+    picture: userObject.picture
   };
   
-  // Save to localStorage
   localStorage.setItem('googleUser', JSON.stringify(googleUser));
+  updateProfileUI();
   
-  showSyncStatus(`Signed in as ${userObject.email}`, 'success');
-  updateSyncUI();
+  const modal = bootstrap.Modal.getInstance(document.getElementById('googleSignInModal'));
+  modal.hide();
   
-  // Now initialize Drive API with the token
-  initDriveAPI(credential);
+  showSyncStatus(`Signed in as ${userObject.email} (Local storage only)`, 'success');
+  showSyncStatus('Cloud sync requires additional setup. Data is saved locally.', 'info');
 }
 
 // Helper function to parse JWT
@@ -355,28 +194,6 @@ function parseJwt(token) {
     return JSON.parse(jsonPayload);
   } catch (e) {
     return null;
-  }
-}
-
-// Initialize Drive API with the JWT token
-async function initDriveAPI(accessToken) {
-  try {
-    // Test Drive API access
-    const response = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-    
-    if (response.ok) {
-      showSyncStatus('Google Drive access granted', 'success');
-      loadDataFromDrive();
-    } else {
-      showSyncStatus('Drive access failed. Please check permissions.', 'warning');
-    }
-  } catch (error) {
-    console.error('Drive API init error:', error);
-    showSyncStatus('Error connecting to Google Drive', 'danger');
   }
 }
 
@@ -1219,7 +1036,7 @@ function updateProfileUI() {
     signOutOption.classList.remove('d-none');
     
     if (syncStatusText) {
-      syncStatusText.textContent = `Synced with ${googleUser.email}`;
+      syncStatusText.textContent = `Signed in as ${googleUser.email} (Local storage)`;
     }
   } else {
     profilePicture.innerHTML = `<i class="bi bi-person-circle profile-icon"></i>`;
@@ -1228,7 +1045,7 @@ function updateProfileUI() {
     signOutOption.classList.add('d-none');
     
     if (syncStatusText) {
-      syncStatusText.textContent = 'Sign in to sync across devices';
+      syncStatusText.textContent = 'Sign in (Local storage only)';
     }
   }
 }
@@ -1244,10 +1061,6 @@ function googleSignOut() {
     updateProfileUI();
     showSyncStatus('Signed out successfully', 'info');
   }
-}
-
-function initDriveSync() {
-  showSyncStatus('Drive sync initialized', 'success');
 }
 
 function parseJwt(token) {
@@ -1267,29 +1080,18 @@ function parseJwt(token) {
 
 // Update the final initialization block
 document.addEventListener('DOMContentLoaded', function() {
-  // Load saved user data
   const savedUser = localStorage.getItem('googleUser');
   if (savedUser) {
     googleUser = JSON.parse(savedUser);
   }
   
-  // Update profile UI first
   updateProfileUI();
-  
-  // Then initialize the rest of the app
   renderCategoryList();
   updateUI();
   
-  // Add event listeners for sync buttons
-  document.getElementById('manualSyncSettings')?.addEventListener('click', function() {
-    if (googleUser) {
-      showSyncStatus('Syncing data...', 'info');
-      // Add your sync logic here
-    } else {
-      showGoogleSignIn();
-    }
-  });
+  document.getElementById('manualSyncSettings')?.addEventListener('click', manualSync);
 });
+
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
