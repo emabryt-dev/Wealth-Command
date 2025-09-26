@@ -5,7 +5,6 @@ let transactions = loadTransactions();
 let categories = loadCategories();
 let currency = loadCurrency() || "PKR";
 let currentCategoryFilter = 'all';
-let dashboardChart = null;
 
 // Google Drive Sync Configuration
 const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
@@ -524,9 +523,8 @@ function showTab(tab) {
         }
     }, 50);
     
-    if (tab === "dashboard") {
-        renderDashboardChart();
-    } else if (tab === "charts") {
+    // REMOVED: dashboard chart rendering
+    if (tab === "charts") {
         renderCharts();
     }
 }
@@ -1216,59 +1214,9 @@ function updateUI() {
             tbody.appendChild(row);
         });
     }
-    
-    // Update dashboard chart
-    renderDashboardChart();
 }
 
-// Dashboard Chart (Income vs Expense)
-function renderDashboardChart() {
-    const totalIncome = transactions.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-    const totalExpense = transactions.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
-    const ctx = document.getElementById('dashboardChart').getContext('2d');
-    
-    if (dashboardChart) {
-        dashboardChart.destroy();
-    }
-    
-    if (totalIncome === 0 && totalExpense === 0) {
-        // Show empty state
-        ctx.font = "14px Arial";
-        ctx.fillStyle = "#6c757d";
-        ctx.textAlign = "center";
-        ctx.fillText("No data available", ctx.canvas.width / 2, ctx.canvas.height / 2);
-        return;
-    }
-    
-    dashboardChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Income', 'Expense'],
-            datasets: [{
-                data: [totalIncome, totalExpense],
-                backgroundColor: ['#198754', '#dc3545'],
-                borderWidth: 2,
-                borderColor: '#ffffff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '60%',
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true
-                    }
-                }
-            }
-        }
-    });
-}
-
-// Charts Tab Chart
+// Charts Tab Chart (Category Breakdown only)
 let categoryChart;
 function renderCharts() {
     const catLabels = categories.map(cat => cat.name);
