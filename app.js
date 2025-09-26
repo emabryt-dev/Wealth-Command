@@ -689,17 +689,22 @@ function updateUI() {
     transactions.slice().reverse().forEach((tx, idx) => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td>${tx.date}</td>
-        <td>${tx.desc}</td>
-        <td class="fw-bold ${tx.type === 'income' ? 'text-success' : 'text-danger'}">${tx.type}</td>
-        <td>${tx.category}</td>
-        <td class="fw-bold">${tx.amount.toLocaleString()} ${currency}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="removeTransaction(${transactions.length - 1 - idx})">
-            <i class="bi bi-trash"></i>
-          </button>
-        </td>
-      `;
+    <td>${tx.date}</td>
+    <td>${tx.desc}</td>
+    <td class="fw-bold ${tx.type === 'income' ? 'text-success' : 'text-danger'}">${tx.type}</td>
+    <td>${tx.category}</td>
+    <td class="fw-bold">${tx.amount.toLocaleString()} ${currency}</td>
+    <td>
+        <div class="d-flex gap-1">
+            <button class="btn-action btn-edit" title="Edit" onclick="editTransaction(${transactions.length - 1 - idx})">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn-action btn-delete" title="Delete" onclick="removeTransaction(${transactions.length - 1 - idx})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </td>
+`;
       tbody.appendChild(row);
     });
   }
