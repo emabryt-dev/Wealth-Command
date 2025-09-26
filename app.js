@@ -1427,7 +1427,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const allowNegativeToggle = document.getElementById('allowNegativeRollover');
         
         if (autoRolloverToggle) {
-            autoRolloverToggle.checked = monthlyBudgets[getCurrentMonthKey()]?.autoRollover !== false;
+            const currentMonth = getCurrentMonthKey();
+            autoRolloverToggle.checked = monthlyBudgets[currentMonth]?.autoRollover !== false;
             autoRolloverToggle.addEventListener('change', function() {
                 Object.keys(monthlyBudgets).forEach(month => {
                     monthlyBudgets[month].autoRollover = this.checked;
@@ -1439,7 +1440,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (allowNegativeToggle) {
-            allowNegativeToggle.checked = monthlyBudgets[getCurrentMonthKey()]?.allowNegative === true;
+            const currentMonth = getCurrentMonthKey();
+            allowNegativeToggle.checked = monthlyBudgets[currentMonth]?.allowNegative === true;
             allowNegativeToggle.addEventListener('change', function() {
                 Object.keys(monthlyBudgets).forEach(month => {
                     monthlyBudgets[month].allowNegative = this.checked;
@@ -1455,25 +1457,38 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const savedUser = localStorage.getItem('googleUser');
     if (savedUser) {
-        googleUser = JSON.parse(savedUser);
-        const tokenAge = Date.now() - googleUser.acquired_at;
-        if (tokenAge > (googleUser.expires_in - 60) * 1000) {
+        try {
+            googleUser = JSON.parse(savedUser);
+            const tokenAge = Date.now() - googleUser.acquired_at;
+            if (tokenAge > (googleUser.expires_in - 60) * 1000) {
+                localStorage.removeItem('googleUser');
+                googleUser = null;
+            } else {
+                showSyncStatus('Google Drive connected', 'info');
+                loadDataFromDrive().then(success => {
+                    if (!success) {
+                        initializeApplicationData();
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error parsing saved user:', error);
             localStorage.removeItem('googleUser');
             googleUser = null;
-        } else {
-            showSyncStatus('Google Drive connected', 'info');
-            loadDataFromDrive().then(success => {
-                if (!success) {
-                    initializeApplicationData();
-                }
-            });
         }
     }
     
-    initGoogleAuth();
-    updateProfileUI();
+    // Initialize Google Auth after DOM is ready
+    setTimeout(() => {
+        initGoogleAuth();
+        updateProfileUI();
+    }, 100);
     
-    document.getElementById('manualSyncSettings')?.addEventListener('click', manualSync);
+    // Set up manual sync button
+    const manualSyncBtn = document.getElementById('manualSyncSettings');
+    if (manualSyncBtn) {
+        manualSyncBtn.addEventListener('click', manualSync);
+    }
     
     // Show dashboard by default
     showTab("dashboard");
