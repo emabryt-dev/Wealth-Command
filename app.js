@@ -982,34 +982,6 @@ window.removeTransaction = function(idx) {
     confirmationModal.show();
 };
 
-// Clear All Transactions with Confirmation
-document.getElementById('clearTransactions').addEventListener('click', function() {
-    if (transactions.length === 0) {
-        showToast('No transactions to clear', 'info');
-        return;
-    }
-    
-    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-    
-    document.getElementById('confirmationTitle').textContent = 'Clear All Transactions?';
-    document.getElementById('confirmationMessage').innerHTML = `
-        This will permanently delete all ${transactions.length} transactions.<br>
-        <strong class="text-danger">This action cannot be undone!</strong>
-    `;
-    
-    document.getElementById('confirmActionBtn').onclick = function() {
-        transactions = [];
-        saveTransactions(transactions);
-        updateUI();
-        renderCharts();
-        populateSummaryFilters();
-        confirmationModal.hide();
-        showToast('All transactions cleared', 'success');
-    };
-    
-    confirmationModal.show();
-});
-
 // Add/Edit Transaction Form
 document.getElementById('transactionForm').addEventListener('submit', function(e) {
     e.preventDefault();
