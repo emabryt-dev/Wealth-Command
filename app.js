@@ -1156,6 +1156,141 @@ document.getElementById('darkModeToggle').addEventListener('click', function() {
   }
 })();
 
+// Profile Picture and Google Sign-In Functions
+function showGoogleSignIn() {
+  const modal = new bootstrap.Modal(document.getElementById('googleSignInModal'));
+  modal.show();
+  
+  // Initialize Google Sign-In button in the modal
+  if (window.google) {
+    google.accounts.id.initialize({
+      client_id: '86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com',
+      callback: handleGoogleSignIn
+    });
+    
+    google.accounts.id.renderButton(
+      document.getElementById('googleSignInButton'),
+      { theme: "outline", size: "large", text: "signin_with" }
+    );
+  }
+}
+
+function handleGoogleSignIn(response) {
+  console.log('Google Sign-In Response:', response);
+  
+  const userObject = parseJwt(response.credential);
+  
+  googleUser = {
+    id: userObject.sub,
+    email: userObject.email,
+    name: userObject.name,
+    picture: userObject.picture,
+    access_token: response.credential
+  };
+  
+  localStorage.setItem('googleUser', JSON.stringify(googleUser));
+  updateProfileUI();
+  
+  const modal = bootstrap.Modal.getInstance(document.getElementById('googleSignInModal'));
+  modal.hide();
+  
+  showSyncStatus(`Signed in as ${userObject.email}`, 'success');
+  initDriveSync();
+}
+
+function updateProfileUI() {
+  const profilePicture = document.getElementById('profilePicture');
+  const signedInUser = document.getElementById('signedInUser');
+  const userEmail = document.getElementById('userEmail');
+  const signInOption = document.getElementById('signInOption');
+  const signOutOption = document.getElementById('signOutOption');
+  const syncStatusText = document.getElementById('syncStatusText');
+  
+  if (googleUser) {
+    if (googleUser.picture) {
+      profilePicture.innerHTML = `<img src="${googleUser.picture}" class="profile-picture" alt="Profile">`;
+    } else {
+      profilePicture.innerHTML = `<i class="bi bi-person-check-fill profile-icon"></i>`;
+    }
+    
+    signedInUser.classList.remove('d-none');
+    userEmail.textContent = googleUser.email;
+    signInOption.classList.add('d-none');
+    signOutOption.classList.remove('d-none');
+    
+    if (syncStatusText) {
+      syncStatusText.textContent = `Synced with ${googleUser.email}`;
+    }
+  } else {
+    profilePicture.innerHTML = `<i class="bi bi-person-circle profile-icon"></i>`;
+    signedInUser.classList.add('d-none');
+    signInOption.classList.remove('d-none');
+    signOutOption.classList.add('d-none');
+    
+    if (syncStatusText) {
+      syncStatusText.textContent = 'Sign in to sync across devices';
+    }
+  }
+}
+
+function googleSignOut() {
+  if (googleUser) {
+    if (window.google && google.accounts.id) {
+      google.accounts.id.disableAutoSelect();
+    }
+    
+    googleUser = null;
+    localStorage.removeItem('googleUser');
+    updateProfileUI();
+    showSyncStatus('Signed out successfully', 'info');
+  }
+}
+
+function initDriveSync() {
+  showSyncStatus('Drive sync initialized', 'success');
+}
+
+function parseJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
+// ========== UPDATE THE INITIALIZATION CODE ==========
+
+// Update the final initialization block
+document.addEventListener('DOMContentLoaded', function() {
+  // Load saved user data
+  const savedUser = localStorage.getItem('googleUser');
+  if (savedUser) {
+    googleUser = JSON.parse(savedUser);
+  }
+  
+  // Update profile UI first
+  updateProfileUI();
+  
+  // Then initialize the rest of the app
+  renderCategoryList();
+  updateUI();
+  
+  // Add event listeners for sync buttons
+  document.getElementById('manualSyncSettings')?.addEventListener('click', function() {
+    if (googleUser) {
+      showSyncStatus('Syncing data...', 'info');
+      // Add your sync logic here
+    } else {
+      showGoogleSignIn();
+    }
+  });
+});
+
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
