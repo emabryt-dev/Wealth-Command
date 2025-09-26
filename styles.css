@@ -244,7 +244,169 @@ body.dark-mode .breakdown-item {
 .dropdown-menu {
   min-width: 250px;
 }
+  
+/* Improved Card Layout */
+.breakdown-container {
+    display: flex;
+    align-items: stretch; /* Ensure equal height */
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
 
+/* Consistent card styling */
+.breakdown-card {
+    flex: 1;
+    min-height: 300px; /* Equal height */
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    border-radius: 0.6rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+}
+
+/* Income card styling */
+.income-card {
+    border-left: 4px solid #198754;
+    background: linear-gradient(135deg, #f8fff8 0%, #ffffff 100%);
+}
+
+/* Expense card styling */
+.expense-card {
+    border-left: 4px solid #dc3545;
+    background: linear-gradient(135deg, #fff8f8 0%, #ffffff 100%);
+}
+
+/* Card header improvements */
+.card-header-enhanced {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid #f0f0f0;
+    margin: -1rem -1rem 1rem -1rem;
+}
+
+.income-card .card-header-enhanced {
+    background-color: #198754;
+    color: white;
+}
+
+.expense-card .card-header-enhanced {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Table improvements with sticky header */
+.table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.6rem;
+}
+
+.table-container table {
+    margin-bottom: 0;
+}
+
+.table-container thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Improved table rows */
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.table td, .table th {
+    padding: 0.75rem 0.5rem;
+    vertical-align: middle;
+}
+
+/* Compact action buttons */
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    background: transparent;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.btn-action:hover {
+    opacity: 1;
+    background: rgba(0,0,0,0.05);
+}
+
+.btn-edit {
+    color: #6c757d;
+}
+
+.btn-delete {
+    color: #dc3545;
+}
+
+/* Breakdown list improvements */
+.breakdown-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertical centering */
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.breakdown-item:last-child {
+    border-bottom: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .breakdown-container {
+        flex-direction: column;
+    }
+    
+    .breakdown-card {
+        min-height: auto;
+    }
+    
+    .table-container {
+        max-height: 300px;
+    }
+    
+    .table td, .table th {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Dark mode support */
+body.dark-mode .breakdown-card {
+    background: #2d3748;
+    border-color: #4a5568;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .table-container thead th {
+    background-color: #4a5568;
+    color: white;
+}
+
+body.dark-mode .table-hover tbody tr:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+
+body.dark-mode .btn-action:hover {
+    background: rgba(255,255,255,0.1);
+}
+  
 .dropdown-item-text {
   padding: 0.5rem 1rem;
 }
