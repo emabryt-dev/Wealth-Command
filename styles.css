@@ -424,12 +424,25 @@ body.dark-mode .toast {
   }
 }
 
-/* Ensure main content uses available height */
-.main-content {
-  min-height: calc(100vh - 140px); /* Account for navbars */
+/* Force full height - Simple fix */
+.breakdown-container {
+  height: 60vh !important;
+  min-height: 400px !important;
 }
 
-/* Make sure the dashboard tab uses full height */
-#tab-transactions {
-  min-height: calc(100vh - 200px);
+.breakdown-card {
+  height: 100% !important;
+}
+
+.breakdown-list {
+  height: 100% !important;
+  max-height: none !important;
+}
+
+#tab-dashboard {
+  min-height: 80vh !important;
+}
+
+.main-content {
+  min-height: calc(100vh - 140px) !important;
 }
