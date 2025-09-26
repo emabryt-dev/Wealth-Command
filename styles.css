@@ -526,17 +526,6 @@ body {
   100% { width: 0%; }
 }
 
-/* Dashboard Chart */
-.dashboard-chart-container {
-  margin-top: 1.5rem;
-}
-
-.dashboard-chart-card {
-  border-radius: 0.8rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border: 1px solid #e0e0e0;
-}
-
 /* Custom Confirmation Modal */
 .confirmation-modal .modal-content {
   border-radius: 15px;
