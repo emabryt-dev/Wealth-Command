@@ -119,32 +119,33 @@
           </div>
         </div>
 
-        <!-- Income Breakdown Card -->
-        <div class="col-12 col-md-6">
-          <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">
-              <i class="bi bi-arrow-down-circle"></i> Income Breakdown
-            </div>
-            <div class="card-body p-2">
-              <div id="incomeBreakdown" class="breakdown-list">
-                <!-- Income categories will appear here -->
+        <!-- Improved Income and Expense Breakdown Cards -->
+        <div class="breakdown-container">
+          <div class="col-12 col-md-6">
+            <div class="breakdown-card income-card">
+              <div class="card-header-enhanced">
+                <i class="bi bi-arrow-down-circle"></i> Income Breakdown
               </div>
-              <div id="noIncomeCategories" class="text-center text-muted p-2">No income categories</div>
+              <div class="breakdown-list income-breakdown">
+                <div id="incomeBreakdown">
+                  <!-- Income categories will appear here -->
+                </div>
+                <div id="noIncomeCategories" class="text-center text-muted p-2">No income categories</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Expense Breakdown Card -->
-        <div class="col-12 col-md-6">
-          <div class="card shadow-sm">
-            <div class="card-header bg-danger text-white">
-              <i class="bi bi-arrow-up-circle"></i> Expense Breakdown
-            </div>
-            <div class="card-body p-2">
-              <div id="expenseBreakdown" class="breakdown-list">
-                <!-- Expense categories will appear here -->
+          <div class="col-12 col-md-6">
+            <div class="breakdown-card expense-card">
+              <div class="card-header-enhanced">
+                <i class="bi bi-arrow-up-circle"></i> Expense Breakdown
               </div>
-              <div id="noExpenseCategories" class="text-center text-muted p-2">No expense categories</div>
+              <div class="breakdown-list expense-breakdown">
+                <div id="expenseBreakdown">
+                  <!-- Expense categories will appear here -->
+                </div>
+                <div id="noExpenseCategories" class="text-center text-muted p-2">No expense categories</div>
+              </div>
             </div>
           </div>
         </div>
@@ -153,14 +154,15 @@
 
     <!-- Transactions Tab -->
     <div id="tab-transactions" class="tab-page d-none">
+      <!-- Improved Transactions Table with Sticky Header -->
       <div class="card shadow-sm mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
           <span><i class="bi bi-list-ul"></i> Transactions</span>
           <button id="clearTransactions" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Clear All</button>
         </div>
         <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-striped mb-0" id="transactionsTable">
+          <div class="table-container">
+            <table class="table table-striped table-hover mb-0" id="transactionsTable">
               <thead class="table-light">
                 <tr>
                   <th>Date</th>
@@ -168,7 +170,7 @@
                   <th>Type</th>
                   <th>Category</th>
                   <th>Amount</th>
-                  <th>Action</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="transactionsBody"></tbody>
