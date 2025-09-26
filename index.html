@@ -194,19 +194,16 @@
             </div>
           </div>
         </div>
-
-        <!-- REMOVED: Income vs Expense Chart Section -->
-        
       </div>
     </div>
 
     <!-- Transactions Tab -->
     <div id="tab-transactions" class="tab-page d-none">
-      <!-- Improved Transactions Table with Horizontal Scrolling -->
+      <!-- Improved Transactions Table with Click-to-Edit -->
       <div class="card shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header">
           <span><i class="bi bi-list-ul"></i> Transactions</span>
-          <button id="clearTransactions" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Clear All</button>
+          <!-- REMOVED: Clear All button -->
         </div>
         <div class="card-body p-0">
           <div class="table-container">
@@ -219,7 +216,7 @@
                     <th>Type</th>
                     <th>Category</th>
                     <th>Amount</th>
-                    <th>Actions</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="transactionsBody"></tbody>
@@ -231,21 +228,80 @@
       </div>
     </div>
 
-    <!-- Charts Tab (Now only has category breakdown) -->
+    <!-- Enhanced Charts Tab -->
     <div id="tab-charts" class="tab-page d-none">
-      <div class="row g-4">
-        <div class="col-12">
-          <div class="card shadow-sm mb-4">
-            <div class="card-header"><i class="bi bi-bar-chart"></i> Category Breakdown</div>
-            <div class="card-body">
-              <canvas id="categoryChart" height="200"></canvas>
+      <div class="charts-container">
+        <!-- Summary Statistics -->
+        <div class="chart-summary-stats" id="chartSummaryStats">
+          <!-- Stats will be populated dynamically -->
+        </div>
+
+        <!-- Chart Controls -->
+        <div class="chart-controls">
+          <div class="chart-type-buttons">
+            <button class="btn btn-outline-primary btn-sm active" data-chart-type="category">
+              <i class="bi bi-bar-chart"></i> Categories
+            </button>
+            <button class="btn btn-outline-primary btn-sm" data-chart-type="monthly">
+              <i class="bi bi-graph-up"></i> Monthly Trend
+            </button>
+            <button class="btn btn-outline-primary btn-sm" data-chart-type="yearly">
+              <i class="bi bi-calendar-range"></i> Yearly Comparison
+            </button>
+          </div>
+          <div class="ms-auto d-flex gap-2 align-items-center">
+            <select id="chartMonth" class="form-select form-select-sm" style="width: auto;">
+              <option value="all">All Months</option>
+            </select>
+            <select id="chartYear" class="form-select form-select-sm" style="width: auto;">
+              <option value="all">All Years</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Main Chart Container -->
+        <div class="chart-card">
+          <div class="chart-body">
+            <canvas id="mainChart" height="250"></canvas>
+            <div id="chartPlaceholder" class="chart-placeholder d-none">
+              Select a chart type to view data visualization
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Mini Charts -->
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="chart-card">
+              <div class="card-header">
+                <i class="bi bi-pie-chart"></i> Income Distribution
+              </div>
+              <div class="chart-body">
+                <canvas id="incomePieChart" height="200"></canvas>
+                <div id="incomePiePlaceholder" class="chart-placeholder">
+                  No income data available
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="chart-card">
+              <div class="card-header">
+                <i class="bi bi-pie-chart"></i> Expense Distribution
+              </div>
+              <div class="chart-body">
+                <canvas id="expensePieChart" height="200"></canvas>
+                <div id="expensePiePlaceholder" class="chart-placeholder">
+                  No expense data available
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Settings Tab -->
+    <!-- Settings Tab (unchanged) -->
     <div id="tab-settings" class="tab-page d-none">
       <div class="card shadow-sm mb-4">
         <div class="card-header"><i class="bi bi-gear"></i> Settings</div>
