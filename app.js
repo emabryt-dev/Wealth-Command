@@ -517,6 +517,13 @@ function showTab(tab) {
         btn.classList.toggle("active", t === tab);
     });
     
+    // Force a small delay for DOM update then adjust table
+    setTimeout(() => {
+        if (tab === "transactions") {
+            adjustTransactionsTable();
+        }
+    }, 50);
+    
     if (tab === "dashboard") {
         renderDashboardChart();
     } else if (tab === "charts") {
@@ -524,6 +531,31 @@ function showTab(tab) {
     }
 }
 
+// Add this function to handle table adjustments
+function adjustTransactionsTable() {
+    const tableContainer = document.querySelector('#tab-transactions .table-container');
+    const table = document.getElementById('transactionsTable');
+    const cardBody = document.querySelector('#tab-transactions .card-body');
+    
+    if (tableContainer && table) {
+        // Reset any inline styles that might be causing issues
+        tableContainer.style.height = '';
+        table.style.width = '';
+        
+        // Force a reflow to ensure proper rendering
+        setTimeout(() => {
+            const availableHeight = window.innerHeight - tableContainer.getBoundingClientRect().top - 100;
+            tableContainer.style.height = Math.max(availableHeight, 300) + 'px';
+        }, 100);
+    }
+}
+
+// Also call this on window resize
+window.addEventListener('resize', function() {
+    if (!document.getElementById('tab-transactions').classList.contains('d-none')) {
+        adjustTransactionsTable();
+    }
+});
 // Enhanced tab switching with animations
 document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.addEventListener("click", function() {
