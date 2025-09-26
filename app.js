@@ -1,10 +1,11 @@
-// Wealth Command: Complete with Google Drive Sync
+// Wealth Command: Complete with Google Drive Sync and Monthly Rollover
 
 let transactions = loadTransactions();
 let categories = loadCategories();
 let currency = loadCurrency() || "PKR";
 let currentCategoryFilter = 'all';
 let dashboardChart = null;
+let monthlyBudgets = loadMonthlyBudgets();
 
 // Google Drive Sync Configuration
 const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
@@ -65,6 +66,169 @@ window.addEventListener('offline', () => {
     isOnline = false;
     showSyncStatus('You are offline. Changes will sync when back online.', 'warning');
 });
+
+// Monthly Rollover System
+function loadMonthlyBudgets() {
+    try {
+        const budgets = JSON.parse(localStorage.getItem('monthlyBudgets')) || {};
+        // Initialize current month if not exists
+        const currentMonth = getCurrentMonthKey();
+        if (!budgets[currentMonth]) {
+            budgets[currentMonth] = {
+                startingBalance: 0,
+                income: 0,
+                expenses: 0,
+                endingBalance: 0,
+                autoRollover: true,
+                allowNegative: false
+            };
+            saveMonthlyBudgets(budgets);
+        }
+        return budgets;
+    } catch {
+        const currentMonth = getCurrentMonthKey();
+        const budgets = {};
+        budgets[currentMonth] = {
+            startingBalance: 0,
+            income: 0,
+            expenses: 0,
+            endingBalance: 0,
+            autoRollover: true,
+            allowNegative: false
+        };
+        saveMonthlyBudgets(budgets);
+        return budgets;
+    }
+}
+
+function saveMonthlyBudgets(budgets) {
+    monthlyBudgets = budgets;
+    localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
+    if (googleUser && isOnline) syncDataToDrive();
+}
+
+function getCurrentMonthKey() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getMonthKeyFromDate(dateString) {
+    const date = new Date(dateString);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function calculateMonthlyRollover() {
+    const months = Object.keys(monthlyBudgets).sort();
+    
+    for (let i = 0; i < months.length; i++) {
+        const currentMonth = months[i];
+        const monthData = monthlyBudgets[currentMonth];
+        
+        // Calculate current month totals from transactions
+        const monthTransactions = transactions.filter(tx => 
+            getMonthKeyFromDate(tx.date) === currentMonth
+        );
+        
+        monthData.income = monthTransactions
+            .filter(tx => tx.type === 'income')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+            
+        monthData.expenses = monthTransactions
+            .filter(tx => tx.type === 'expense')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+            
+        monthData.endingBalance = monthData.startingBalance + monthData.income - monthData.expenses;
+        
+        // Auto-rollover to next month if enabled
+        if (monthData.autoRollover && i < months.length - 1) {
+            const nextMonth = months[i + 1];
+            if (monthData.endingBalance >= 0 || monthData.allowNegative) {
+                monthlyBudgets[nextMonth].startingBalance = monthData.endingBalance;
+            } else {
+                monthlyBudgets[nextMonth].startingBalance = 0;
+            }
+        }
+    }
+    
+    saveMonthlyBudgets(monthlyBudgets);
+}
+
+function updateRolloverDisplay() {
+    const rolloverElement = document.getElementById('rolloverBalance');
+    const monthSel = document.getElementById('summaryMonth');
+    const yearSel = document.getElementById('summaryYear');
+    
+    const selectedMonth = monthSel.value;
+    const selectedYear = yearSel.value;
+    
+    if (selectedMonth === 'all' || selectedYear === 'all') {
+        rolloverElement.classList.add('d-none');
+        return;
+    }
+    
+    const monthKey = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+    const monthData = monthlyBudgets[monthKey];
+    
+    if (!monthData || monthData.startingBalance === 0) {
+        rolloverElement.classList.add('d-none');
+        return;
+    }
+    
+    rolloverElement.classList.remove('d-none');
+    
+    if (monthData.startingBalance > 0) {
+        rolloverElement.classList.add('rollover-positive');
+        rolloverElement.classList.remove('rollover-negative');
+    } else if (monthData.startingBalance < 0) {
+        rolloverElement.classList.add('rollover-negative');
+        rolloverElement.classList.remove('rollover-positive');
+    } else {
+        rolloverElement.classList.remove('rollover-positive', 'rollover-negative');
+    }
+    
+    document.getElementById('rolloverAmount').textContent = 
+        `${monthData.startingBalance >= 0 ? '+' : ''}${monthData.startingBalance.toLocaleString()} ${currency}`;
+    
+    const prevMonth = getPreviousMonth(monthKey);
+    document.getElementById('rolloverDescription').textContent = 
+        `Carried over from ${prevMonth}`;
+}
+
+function getPreviousMonth(monthKey) {
+    const [year, month] = monthKey.split('-').map(Number);
+    let prevYear = year;
+    let prevMonth = month - 1;
+    
+    if (prevMonth === 0) {
+        prevMonth = 12;
+        prevYear = year - 1;
+    }
+    
+    return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+}
+
+function toggleRolloverSettings() {
+    const monthSel = document.getElementById('summaryMonth');
+    const yearSel = document.getElementById('summaryYear');
+    
+    if (monthSel.value === 'all' || yearSel.value === 'all') {
+        showToast('Please select a specific month to adjust rollover settings', 'warning');
+        return;
+    }
+    
+    const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
+    const monthData = monthlyBudgets[monthKey];
+    
+    if (monthData) {
+        const newBalance = prompt('Adjust starting balance:', monthData.startingBalance);
+        if (newBalance !== null && !isNaN(parseFloat(newBalance))) {
+            monthData.startingBalance = parseFloat(newBalance);
+            saveMonthlyBudgets(monthlyBudgets);
+            updateUI();
+            showToast('Starting balance updated', 'success');
+        }
+    }
+}
 
 // Initialize Google Auth properly
 function initGoogleAuth() {
@@ -222,6 +386,10 @@ async function loadDataFromDrive() {
                 currency = driveData.currency;
                 saveCurrency(currency);
             }
+            if (driveData.monthlyBudgets) {
+                monthlyBudgets = driveData.monthlyBudgets;
+                saveMonthlyBudgets(monthlyBudgets);
+            }
             
             updateUI();
             renderCharts();
@@ -264,8 +432,9 @@ async function syncDataToDrive() {
             transactions,
             categories,
             currency,
+            monthlyBudgets,
             lastSync: new Date().toISOString(),
-            version: '1.0'
+            version: '1.1'
         };
         
         const listResponse = await fetch(
@@ -358,7 +527,150 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
     });
 });
 
-showTab("dashboard");
+// Category Transactions Modal
+let currentCategoryView = null;
+function showCategoryTransactions(type, categoryName) {
+    currentCategoryView = { type, categoryName };
+    const modal = new bootstrap.Modal(document.getElementById('categoryTransactionsModal'));
+    const title = document.getElementById('categoryTransactionsTitle');
+    const info = document.getElementById('categoryTransactionsInfo');
+    const totalAmount = document.getElementById('categoryTotalAmount');
+    const transactionsList = document.getElementById('categoryTransactionsList');
+    const noTransactions = document.getElementById('noCategoryTransactions');
+    
+    // Get filter values
+    const monthSel = document.getElementById('summaryMonth');
+    const yearSel = document.getElementById('summaryYear');
+    
+    // Filter transactions
+    let filteredTx = transactions.filter(tx => tx.type === type);
+    
+    if (categoryName !== 'all') {
+        filteredTx = filteredTx.filter(tx => tx.category === categoryName);
+    }
+    
+    // Apply month/year filter
+    if (monthSel.value !== "all" || yearSel.value !== "all") {
+        filteredTx = filteredTx.filter(tx => {
+            const d = new Date(tx.date);
+            if (isNaN(d)) return false;
+            let valid = true;
+            if (monthSel.value !== "all") valid = valid && (d.getMonth()+1) == monthSel.value;
+            if (yearSel.value !== "all") valid = valid && d.getFullYear() == yearSel.value;
+            return valid;
+        });
+    }
+    
+    // Update modal content
+    if (categoryName === 'all') {
+        title.innerHTML = `<i class="bi bi-list-ul"></i> All ${type.charAt(0).toUpperCase() + type.slice(1)} Transactions`;
+        info.textContent = `Showing ${filteredTx.length} transactions`;
+    } else {
+        title.innerHTML = `<i class="bi bi-tag"></i> ${categoryName} Transactions`;
+        info.textContent = `Showing ${filteredTx.length} ${type} transactions`;
+    }
+    
+    const total = filteredTx.reduce((sum, tx) => sum + tx.amount, 0);
+    totalAmount.textContent = `${total.toLocaleString()} ${currency}`;
+    totalAmount.className = `fw-bold fs-5 ${type === 'income' ? 'text-success' : 'text-danger'}`;
+    
+    // Populate transactions list
+    transactionsList.innerHTML = '';
+    
+    if (filteredTx.length === 0) {
+        noTransactions.classList.remove('d-none');
+    } else {
+        noTransactions.classList.add('d-none');
+        filteredTx.slice().reverse().forEach((tx, idx) => {
+            const originalIndex = transactions.length - 1 - transactions.findIndex(t => 
+                t.date === tx.date && t.desc === tx.desc && t.amount === tx.amount
+            );
+            
+            const item = document.createElement('div');
+            item.className = 'category-transaction-item';
+            item.innerHTML = `
+                <div class="category-transaction-info">
+                    <div class="fw-bold">${tx.desc}</div>
+                    <small class="text-muted">${tx.date} • ${tx.category}</small>
+                </div>
+                <div class="category-transaction-actions">
+                    <span class="fw-bold ${type === 'income' ? 'text-success' : 'text-danger'}">
+                        ${tx.amount.toLocaleString()} ${currency}
+                    </span>
+                    <button class="btn-action btn-edit" title="Edit" onclick="editTransactionFromCategory(${originalIndex})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn-action btn-delete" title="Delete" onclick="removeTransactionFromCategory(${originalIndex})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+            transactionsList.appendChild(item);
+        });
+    }
+    
+    modal.show();
+}
+
+function editTransactionFromCategory(idx) {
+    bootstrap.Modal.getInstance(document.getElementById('categoryTransactionsModal')).hide();
+    setTimeout(() => editTransaction(idx), 300);
+}
+
+function removeTransactionFromCategory(idx) {
+    const transaction = transactions[idx];
+    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+    
+    document.getElementById('confirmationTitle').textContent = 'Delete Transaction?';
+    document.getElementById('confirmationMessage').innerHTML = `
+        Are you sure you want to delete this transaction?<br>
+        <strong>${transaction.desc}</strong> - ${transaction.amount} ${currency}<br>
+        <small class="text-muted">${transaction.date} • ${transaction.category}</small>
+    `;
+    
+    document.getElementById('confirmActionBtn').onclick = function() {
+        transactions.splice(idx, 1);
+        saveTransactions(transactions);
+        updateUI();
+        renderCharts();
+        populateSummaryFilters();
+        confirmationModal.hide();
+        
+        // Reopen category modal
+        setTimeout(() => {
+            if (currentCategoryView) {
+                showCategoryTransactions(currentCategoryView.type, currentCategoryView.categoryName);
+            }
+        }, 500);
+        
+        showToast('Transaction deleted successfully', 'success');
+    };
+    
+    confirmationModal.show();
+}
+
+function addTransactionForCategory() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('categoryTransactionsModal'));
+    modal.hide();
+    
+    setTimeout(() => {
+        if (currentCategoryView && currentCategoryView.categoryName !== 'all') {
+            document.getElementById('addTransactionModalLabel').innerHTML = '<i class="bi bi-plus-circle"></i> Add Transaction';
+            document.getElementById('submitButtonText').textContent = 'Add';
+            document.getElementById('editTransactionIndex').value = '-1';
+            document.getElementById('transactionForm').reset();
+            
+            // Pre-fill category and type
+            document.getElementById('typeInput').value = currentCategoryView.type;
+            updateCategorySelect();
+            document.getElementById('categoryInput').value = currentCategoryView.categoryName;
+            
+            addTxModal.show();
+        } else {
+            document.getElementById('openAddTransactionModal').click();
+        }
+    }, 300);
+}
 
 // Settings: Currency selection
 document.getElementById("currencySelect").value = currency;
@@ -384,7 +696,7 @@ function renderCategoryList() {
     ul.innerHTML = '';
     
     const filterButtons = `
-        <div class="category-filter-buttons">
+        <div class="category-filter-buttons mb-2">
             <button class="btn btn-sm category-filter-btn ${currentCategoryFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'}" onclick="setCategoryFilter('all')">All</button>
             <button class="btn btn-sm category-filter-btn ${currentCategoryFilter === 'income' ? 'btn-success' : 'btn-outline-success'}" onclick="setCategoryFilter('income')">Income</button>
             <button class="btn btn-sm category-filter-btn ${currentCategoryFilter === 'expense' ? 'btn-danger' : 'btn-outline-danger'}" onclick="setCategoryFilter('expense')">Expense</button>
@@ -522,18 +834,23 @@ function updateCategorySelect() {
 
 document.getElementById('typeInput').addEventListener('change', updateCategorySelect);
 
-// Sleek Dashboard summary filter
+// Always open with current month filter
 function populateSummaryFilters() {
     const monthSel = document.getElementById('summaryMonth');
     const yearSel = document.getElementById('summaryYear');
     monthSel.innerHTML = '';
     yearSel.innerHTML = '';
     
-    const monthNames = ["All Months","January","February","March","April","May","June","July","August","September","October","November","December"];
+    const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    
     monthNames.forEach((m,i) => {
         const opt = document.createElement('option');
-        opt.value = i===0 ? "all" : i;
+        opt.value = i + 1;
         opt.textContent = m;
+        opt.selected = (i + 1) === currentMonth;
         monthSel.appendChild(opt);
     });
     
@@ -541,21 +858,32 @@ function populateSummaryFilters() {
         const d = new Date(tx.date);
         return isNaN(d) ? null : d.getFullYear();
     }).filter(Boolean)));
+    
+    // Always include current year
+    if (!yearsArr.includes(currentYear)) {
+        yearsArr.push(currentYear);
+    }
+    
     yearsArr.sort((a,b)=>b-a);
-    yearSel.innerHTML = '<option value="all">All Years</option>';
     yearsArr.forEach(y => {
         const opt = document.createElement('option');
         opt.value = y;
         opt.textContent = y;
+        opt.selected = y === currentYear;
         yearSel.appendChild(opt);
     });
     
-    monthSel.value = "all";
-    yearSel.value = "all";
+    // Add "All" options
+    const allMonthOpt = document.createElement('option');
+    allMonthOpt.value = "all";
+    allMonthOpt.textContent = "All Months";
+    monthSel.insertBefore(allMonthOpt, monthSel.firstChild);
+    
+    const allYearOpt = document.createElement('option');
+    allYearOpt.value = "all";
+    allYearOpt.textContent = "All Years";
+    yearSel.insertBefore(allYearOpt, yearSel.firstChild);
 }
-populateSummaryFilters();
-document.getElementById('summaryMonth').onchange = updateUI;
-document.getElementById('summaryYear').onchange = updateUI;
 
 // Add Transaction Modal
 const addTxModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
@@ -564,6 +892,11 @@ document.getElementById('openAddTransactionModal').onclick = () => {
     document.getElementById('submitButtonText').textContent = 'Add';
     document.getElementById('editTransactionIndex').value = '-1';
     document.getElementById('transactionForm').reset();
+    
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
+    
     addTxModal.show();
 };
 
@@ -673,10 +1006,14 @@ document.getElementById('transactionForm').addEventListener('submit', function(e
     }
     
     saveTransactions(transactions);
+    calculateMonthlyRollover(); // Update rollover calculations
     updateUI();
     addTxModal.hide();
     this.reset();
-    populateSummaryFilters();
+    
+    // Set default date to today for next entry
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
 });
 
 // Update UI: Dashboard, Breakdown, Transactions
@@ -698,13 +1035,28 @@ function updateUI() {
         });
     }
     
-    const totalIncome = filteredTx.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-    const totalExpense = filteredTx.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
+    // Calculate totals including rollover if applicable
+    let totalIncome = filteredTx.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
+    let totalExpense = filteredTx.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
+    let netWealth = totalIncome - totalExpense;
+    
+    // Add rollover balance if viewing specific month
+    if (monthSel.value !== "all" && yearSel.value !== "all") {
+        const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
+        const monthData = monthlyBudgets[monthKey];
+        if (monthData) {
+            netWealth += monthData.startingBalance;
+        }
+    }
+    
     document.getElementById("totalIncome").textContent = totalIncome.toLocaleString() + " " + currency;
     document.getElementById("totalExpense").textContent = totalExpense.toLocaleString() + " " + currency;
-    document.getElementById("netWealth").textContent = (totalIncome - totalExpense).toLocaleString() + " " + currency;
+    document.getElementById("netWealth").textContent = netWealth.toLocaleString() + " " + currency;
 
-    // Income Breakdown
+    // Update rollover display
+    updateRolloverDisplay();
+
+    // Income Breakdown with clickable items
     const incomeBreakdown = document.getElementById("incomeBreakdown");
     const noIncomeMsg = document.getElementById("noIncomeCategories");
     incomeBreakdown.innerHTML = "";
@@ -721,10 +1073,14 @@ function updateUI() {
             const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income")
                 .reduce((sum, tx) => sum + tx.amount, 0);
             
-            if (catAmount > 0) {
+            if (catAmount > 0 || currentCategoryFilter === 'all') {
                 hasIncomeData = true;
                 const item = document.createElement("div");
                 item.className = "breakdown-item";
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    showCategoryTransactions('income', cat.name);
+                };
                 item.innerHTML = `
                     <span class="breakdown-category">${cat.name}</span>
                     <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
@@ -738,7 +1094,7 @@ function updateUI() {
         }
     }
 
-    // Expense Breakdown
+    // Expense Breakdown with clickable items
     const expenseBreakdown = document.getElementById("expenseBreakdown");
     const noExpenseMsg = document.getElementById("noExpenseCategories");
     expenseBreakdown.innerHTML = "";
@@ -755,10 +1111,14 @@ function updateUI() {
             const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense")
                 .reduce((sum, tx) => sum + tx.amount, 0);
             
-            if (catAmount > 0) {
+            if (catAmount > 0 || currentCategoryFilter === 'all') {
                 hasExpenseData = true;
                 const item = document.createElement("div");
                 item.className = "breakdown-item";
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    showCategoryTransactions('expense', cat.name);
+                };
                 item.innerHTML = `
                     <span class="breakdown-category">${cat.name}</span>
                     <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
@@ -772,7 +1132,7 @@ function updateUI() {
         }
     }
 
-    // Transactions Table
+    // Transactions Table with enhanced description column
     const tbody = document.getElementById('transactionsBody');
     tbody.innerHTML = "";
     if (transactions.length === 0) {
@@ -780,8 +1140,8 @@ function updateUI() {
     } else {
         document.getElementById('noTransactions').style.display = 'none';
         transactions.slice().reverse().forEach((tx, idx) => {
-            const row = document.createElement('tr');
             const originalIndex = transactions.length - 1 - idx;
+            row = document.createElement('tr');
             row.innerHTML = `
                 <td>${tx.date}</td>
                 <td>${tx.desc}</td>
@@ -887,7 +1247,8 @@ document.getElementById('exportBtn').onclick = function() {
     const data = {
         transactions,
         categories,
-        currency
+        currency,
+        monthlyBudgets
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:"application/json"}));
     const a = document.createElement("a");
@@ -913,9 +1274,13 @@ document.getElementById('importFile').onchange = function(e) {
             if (Array.isArray(data.transactions)) transactions = data.transactions;
             if (Array.isArray(data.categories)) categories = data.categories;
             if (typeof data.currency === "string") currency = data.currency;
+            if (data.monthlyBudgets) monthlyBudgets = data.monthlyBudgets;
+            
             saveTransactions(transactions);
             saveCategories(categories);
             saveCurrency(currency);
+            saveMonthlyBudgets(monthlyBudgets);
+            
             renderCategoryList();
             populateSummaryFilters();
             updateUI();
@@ -940,6 +1305,7 @@ function loadTransactions() {
 function saveTransactions(arr) {
     transactions = arr;
     localStorage.setItem('transactions', JSON.stringify(arr));
+    calculateMonthlyRollover(); // Recalculate rollovers on save
     if (googleUser && isOnline) syncDataToDrive();
 }
 
@@ -1034,11 +1400,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         currency = loadCurrency() || "PKR";
+        monthlyBudgets = loadMonthlyBudgets();
+        
+        // Calculate initial rollovers
+        calculateMonthlyRollover();
         
         updateUI();
         renderCharts();
         populateSummaryFilters();
         renderCategoryList();
+        
+        // Set up month/year filter change listeners
+        document.getElementById('summaryMonth').addEventListener('change', updateUI);
+        document.getElementById('summaryYear').addEventListener('change', updateUI);
     }
 
     initializeApplicationData();
@@ -1064,4 +1438,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateProfileUI();
     
     document.getElementById('manualSyncSettings')?.addEventListener('click', manualSync);
+    
+    // Show dashboard by default
+    showTab("dashboard");
 });
