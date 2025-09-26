@@ -209,20 +209,26 @@ async function loadDataFromDrive() {
       return true;
     } else {
       // No existing file in Drive - initialize with default local data first
-    showSyncStatus('No existing data found. Initializing with local data.', 'info');
-    
-    // Ensure we have default categories and empty transactions
-    if (categories.length === 0) {
+      showSyncStatus('No existing data found. Initializing with local data.', 'info');
+      
+      // Ensure we have default categories and empty transactions
+      if (categories.length === 0) {
         categories = loadCategories(); // This loads default categories
+      }
+      
+      // Update UI with current local data
+      updateUI();
+      renderCharts();
+      
+      // Then upload to Drive
+      await syncDataToDrive();
+      return true;
     }
-    
-    // Update UI with current local data
-    updateUI();
-    renderCharts();
-    
-    // Then upload to Drive
-    await syncDataToDrive();
-    return true;
+  } catch (error) {
+    console.error('Error loading from Drive:', error);
+    showSyncStatus('Error loading from Google Drive: ' + error.message, 'danger');
+    return false;
+  }
 }
 
 // Sync data to Google Drive
@@ -882,42 +888,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ADD this validation function
-function validateAndInitializeData() {
-    let needsSave = false;
-    
-    // Ensure categories exist
-    if (!categories || categories.length === 0) {
-        categories = [
-            { name: "Salary", type: "income" },
-            { name: "Food", type: "expense" },
-            { name: "Shopping", type: "expense" },
-            { name: "Utilities", type: "expense" }
-        ];
-        needsSave = true;
-    }
-    
-    // Ensure transactions array exists
-    if (!transactions || !Array.isArray(transactions)) {
-        transactions = [];
-        needsSave = true;
-    }
-    
-    // Ensure currency exists
-    if (!currency) {
-        currency = "PKR";
-        needsSave = true;
-    }
-    
-    if (needsSave) {
-        saveTransactions(transactions);
-        saveCategories(categories);
-        saveCurrency(currency);
-    }
-    
-    return needsSave;
-}
-
 // Final Initialization
 document.addEventListener('DOMContentLoaded', function() {
   function initializeApplicationData() {
@@ -942,10 +912,10 @@ document.addEventListener('DOMContentLoaded', function() {
     renderCategoryList();
   }
 
-  // === STEP 2: Call it FIRST, before any Google Drive logic ===
+  // Call it FIRST, before any Google Drive logic
   initializeApplicationData();
   
-  // === STEP 3: Then handle Google Drive sync (modified logic) ===
+  // Then handle Google Drive sync (modified logic)
   const savedUser = localStorage.getItem('googleUser');
   if (savedUser) {
     googleUser = JSON.parse(savedUser);
