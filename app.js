@@ -974,7 +974,7 @@ document.getElementById('clearTransactions').addEventListener('click', function(
     };
     
     confirmationModal.show();
-}
+});
 
 // Add/Edit Transaction Form
 document.getElementById('transactionForm').addEventListener('submit', function(e) {
