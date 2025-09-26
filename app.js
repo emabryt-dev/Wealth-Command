@@ -535,7 +535,6 @@ function showTab(tab) {
 function adjustTransactionsTable() {
     const tableContainer = document.querySelector('#tab-transactions .table-container');
     const table = document.getElementById('transactionsTable');
-    const cardBody = document.querySelector('#tab-transactions .card-body');
     
     if (tableContainer && table) {
         // Reset any inline styles that might be causing issues
@@ -556,6 +555,7 @@ window.addEventListener('resize', function() {
         adjustTransactionsTable();
     }
 });
+
 // Enhanced tab switching with animations
 document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.addEventListener("click", function() {
@@ -1092,7 +1092,7 @@ function updateUI() {
     // Update rollover display
     updateRolloverDisplay();
 
-    // Income Breakdown with clickable items
+    // Income Breakdown with clickable items - ONLY SHOW CATEGORIES WITH AMOUNT > 0
     const incomeBreakdown = document.getElementById("incomeBreakdown");
     const noIncomeMsg = document.getElementById("noIncomeCategories");
     incomeBreakdown.innerHTML = "";
@@ -1109,8 +1109,11 @@ function updateUI() {
             const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income")
                 .reduce((sum, tx) => sum + tx.amount, 0);
             
-            if (catAmount > 0 || currentCategoryFilter === 'all') {
+            // ONLY SHOW IF AMOUNT > 0
+            if (catAmount > 0) {
                 hasIncomeData = true;
+                const transactionCount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income").length;
+                
                 const item = document.createElement("div");
                 item.className = "breakdown-item";
                 item.onclick = (e) => {
@@ -1120,6 +1123,7 @@ function updateUI() {
                 item.innerHTML = `
                     <span class="breakdown-category">${cat.name}</span>
                     <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
+                    ${transactionCount > 0 ? `<span class="category-badge">${transactionCount}</span>` : ''}
                 `;
                 incomeBreakdown.appendChild(item);
             }
@@ -1127,10 +1131,12 @@ function updateUI() {
         
         if (!hasIncomeData) {
             noIncomeMsg.style.display = 'block';
+        } else {
+            noIncomeMsg.style.display = 'none';
         }
     }
 
-    // Expense Breakdown with clickable items
+    // Expense Breakdown with clickable items - ONLY SHOW CATEGORIES WITH AMOUNT > 0
     const expenseBreakdown = document.getElementById("expenseBreakdown");
     const noExpenseMsg = document.getElementById("noExpenseCategories");
     expenseBreakdown.innerHTML = "";
@@ -1147,8 +1153,11 @@ function updateUI() {
             const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense")
                 .reduce((sum, tx) => sum + tx.amount, 0);
             
-            if (catAmount > 0 || currentCategoryFilter === 'all') {
+            // ONLY SHOW IF AMOUNT > 0
+            if (catAmount > 0) {
                 hasExpenseData = true;
+                const transactionCount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense").length;
+                
                 const item = document.createElement("div");
                 item.className = "breakdown-item";
                 item.onclick = (e) => {
@@ -1158,6 +1167,7 @@ function updateUI() {
                 item.innerHTML = `
                     <span class="breakdown-category">${cat.name}</span>
                     <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
+                    ${transactionCount > 0 ? `<span class="category-badge">${transactionCount}</span>` : ''}
                 `;
                 expenseBreakdown.appendChild(item);
             }
@@ -1165,10 +1175,12 @@ function updateUI() {
         
         if (!hasExpenseData) {
             noExpenseMsg.style.display = 'block';
+        } else {
+            noExpenseMsg.style.display = 'none';
         }
     }
 
-    // Transactions Table with enhanced description column
+    // Transactions Table with enhanced description column and horizontal scrolling
     const tbody = document.getElementById('transactionsBody');
     tbody.innerHTML = "";
     if (transactions.length === 0) {
@@ -1178,9 +1190,15 @@ function updateUI() {
         transactions.slice().reverse().forEach((tx, idx) => {
             const originalIndex = transactions.length - 1 - idx;
             const row = document.createElement('tr');
+            
+            // Add tooltip for long descriptions
+            const descCell = tx.desc.length > 30 ? 
+                `<td class="description-cell" data-fulltext="${tx.desc}">${tx.desc.substring(0, 30)}...</td>` :
+                `<td>${tx.desc}</td>`;
+            
             row.innerHTML = `
                 <td>${tx.date}</td>
-                <td>${tx.desc}</td>
+                ${descCell}
                 <td class="fw-bold ${tx.type === 'income' ? 'text-success' : 'text-danger'}">${tx.type}</td>
                 <td>${tx.category}</td>
                 <td class="fw-bold">${tx.amount.toLocaleString()} ${currency}</td>
