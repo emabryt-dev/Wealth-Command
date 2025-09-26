@@ -57,7 +57,6 @@ function getCurrentMonthKey() {
 // Now initialize monthlyBudgets after function definitions
 let monthlyBudgets = loadMonthlyBudgets();
 
-// Rest of the functions remain the same...
 function saveMonthlyBudgets(budgets) {
     monthlyBudgets = budgets;
     localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
@@ -234,9 +233,6 @@ window.addEventListener('offline', () => {
     isOnline = false;
     showSyncStatus('You are offline. Changes will sync when back online.', 'warning');
 });
-
-// Rest of the code remains exactly the same as the previous version...
-// [Include all the remaining functions exactly as they were in the previous app.js]
 
 // Initialize Google Auth properly
 function initGoogleAuth() {
