@@ -65,6 +65,9 @@ body {
   transform: translateX(-50%);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
   height: 70px;
+  position: fixed;
+  bottom: 0;
+  z-index: 1030;
 }
 
 .nav-btn {
@@ -252,45 +255,94 @@ body {
   gap: 0.5rem;
 }
 
-/* Full Height Transactions Table */
-#tab-transactions .table-container {
-  height: calc(100vh - 200px) !important;
-  max-height: none !important;
+/* Transactions Tab Specific Fixes */
+#tab-transactions {
+  min-height: calc(100vh - 140px);
+  padding-bottom: 80px;
 }
 
+#tab-transactions .card {
+  margin-bottom: 80px;
+}
+
+#tab-transactions .table-container {
+  height: calc(100vh - 280px) !important;
+  max-height: none !important;
+  overflow: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 0.6rem;
+}
+
+/* Fix table header alignment */
 #transactionsTable {
   width: 100%;
+  table-layout: fixed;
+  margin-bottom: 0;
 }
 
-#transactionsTable th:nth-child(2), /* Description column */
-#transactionsTable td:nth-child(2) {
-  width: 40% !important;
-  min-width: 200px;
-}
-
+/* Column width adjustments */
 #transactionsTable th:nth-child(1), /* Date */
 #transactionsTable td:nth-child(1) {
   width: 15% !important;
+  min-width: 100px;
+}
+
+#transactionsTable th:nth-child(2), /* Description */
+#transactionsTable td:nth-child(2) {
+  width: 35% !important;
+  min-width: 150px;
+  word-wrap: break-word;
 }
 
 #transactionsTable th:nth-child(3), /* Type */
 #transactionsTable td:nth-child(3) {
   width: 10% !important;
+  min-width: 80px;
 }
 
 #transactionsTable th:nth-child(4), /* Category */
 #transactionsTable td:nth-child(4) {
   width: 15% !important;
+  min-width: 100px;
 }
 
 #transactionsTable th:nth-child(5), /* Amount */
 #transactionsTable td:nth-child(5) {
-  width: 12% !important;
+  width: 15% !important;
+  min-width: 100px;
+  text-align: right;
 }
 
 #transactionsTable th:nth-child(6), /* Actions */
 #transactionsTable td:nth-child(6) {
-  width: 8% !important;
+  width: 10% !important;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Ensure table headers stay within container */
+#transactionsTable thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f8f9fa;
+  z-index: 10;
+  border-bottom: 2px solid #dee2e6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Better table cell styling */
+#transactionsTable td {
+  vertical-align: middle;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+  word-wrap: break-word;
+}
+
+/* Fix for description column text */
+#transactionsTable td:nth-child(2) {
+  line-height: 1.3;
 }
 
 /* Table improvements */
@@ -303,21 +355,8 @@ body {
   margin-bottom: 0;
 }
 
-.table-container thead th {
-  position: sticky;
-  top: 0;
-  background-color: #f8f9fa;
-  z-index: 10;
-  border-bottom: 2px solid #dee2e6;
-}
-
 .table-hover tbody tr:hover {
   background-color: rgba(0,0,0,0.02);
-}
-
-.table td, .table th {
-  padding: 0.75rem 0.5rem;
-  vertical-align: middle;
 }
 
 .btn-action {
@@ -480,6 +519,23 @@ body {
   color: #721c24;
 }
 
+/* Main content padding adjustment for all tabs */
+.main-content {
+  min-height: calc(100vh - 140px) !important;
+  padding-bottom: 80px !important;
+}
+
+/* Tab page specific adjustments */
+.tab-page {
+  min-height: calc(100vh - 200px);
+  padding-bottom: 20px;
+}
+
+/* Card body padding adjustment */
+.card-body {
+  padding: 1rem;
+}
+
 /* Dark mode support */
 body.dark-mode {
   background-color: #1a1a1a;
@@ -508,6 +564,7 @@ body.dark-mode .nav-btn.active {
 body.dark-mode .table-container thead th {
   background-color: #4a5568;
   color: white;
+  border-bottom: 2px solid #718096;
 }
 
 body.dark-mode .table-hover tbody tr:hover {
@@ -529,6 +586,24 @@ body.dark-mode .category-transaction-item:hover {
   background-color: #2d3748;
 }
 
+body.dark-mode #transactionsTable td {
+  border-bottom: 1px solid #4a5568;
+}
+
+body.dark-mode .table-container {
+  border-color: #4a5568;
+}
+
+body.dark-mode .category-income {
+  background-color: #22543d;
+  color: #9ae6b4;
+}
+
+body.dark-mode .category-expense {
+  background-color: #742a2a;
+  color: #feb2b2;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .breakdown-container {
@@ -539,12 +614,42 @@ body.dark-mode .category-transaction-item:hover {
     min-height: 250px;
   }
   
-  .table-container {
-    max-height: 300px;
+  #tab-transactions .table-container {
+    height: calc(100vh - 240px) !important;
+  }
+  
+  #transactionsTable th:nth-child(2),
+  #transactionsTable td:nth-child(2) {
+    width: 30% !important;
+    min-width: 120px;
+  }
+  
+  #transactionsTable th:nth-child(1),
+  #transactionsTable td:nth-child(1) {
+    width: 20% !important;
+    min-width: 80px;
+  }
+  
+  #transactionsTable th:nth-child(4),
+  #transactionsTable td:nth-child(4) {
+    width: 20% !important;
+    min-width: 90px;
+  }
+  
+  #transactionsTable th:nth-child(5),
+  #transactionsTable td:nth-child(5) {
+    width: 15% !important;
+    min-width: 80px;
+  }
+  
+  #transactionsTable th:nth-child(6),
+  #transactionsTable td:nth-child(6) {
+    width: 15% !important;
+    min-width: 70px;
   }
   
   .table td, .table th {
-    padding: 0.5rem 0.25rem;
+    padding: 0.5rem 0.3rem;
     font-size: 0.85rem;
   }
   
@@ -560,12 +665,6 @@ body.dark-mode .category-transaction-item:hover {
     max-width: none;
     left: 0;
     transform: none;
-  }
-  
-  #transactionsTable th:nth-child(2),
-  #transactionsTable td:nth-child(2) {
-    width: 35% !important;
-    min-width: 150px;
   }
   
   .category-transactions-modal .modal-dialog {
@@ -592,6 +691,60 @@ body.dark-mode .category-transaction-item:hover {
   min-height: 80vh !important;
 }
 
-.main-content {
-  min-height: calc(100vh - 140px) !important;
+/* Ensure proper spacing for all tabs */
+#tab-charts,
+#tab-settings {
+  min-height: calc(100vh - 140px);
+  padding-bottom: 20px;
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 576px) {
+  .card {
+    padding: 0.5rem;
+  }
+  
+  .card-body {
+    padding: 0.75rem;
+  }
+  
+  #transactionsTable th:nth-child(2),
+  #transactionsTable td:nth-child(2) {
+    width: 28% !important;
+    min-width: 100px;
+  }
+  
+  #transactionsTable th:nth-child(1),
+  #transactionsTable td:nth-child(1) {
+    width: 22% !important;
+    min-width: 70px;
+  }
+  
+  .btn-action {
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .nav-btn i {
+    font-size: 1.2rem;
+  }
+  
+  .nav-btn small {
+    font-size: 0.7rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  #fixedNavBar,
+  .navbar {
+    display: none !important;
+  }
+  
+  body {
+    padding-bottom: 0 !important;
+  }
+  
+  .main-content {
+    padding-bottom: 0 !important;
+  }
 }
