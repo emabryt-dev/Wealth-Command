@@ -207,35 +207,37 @@
       </div>
     </div>
 
-    <!-- Transactions Tab -->
-    <div id="tab-transactions" class="tab-page d-none">
-      <!-- Improved Transactions Table with Sticky Header -->
-      <div class="card shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-list-ul"></i> Transactions</span>
-          <button id="clearTransactions" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Clear All</button>
+<!-- Transactions Tab -->
+<div id="tab-transactions" class="tab-page d-none">
+  <!-- Improved Transactions Table with Horizontal Scrolling -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-list-ul"></i> Transactions</span>
+      <button id="clearTransactions" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Clear All</button>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-container">
+        <div class="table-responsive-container">
+          <table class="table table-striped table-hover mb-0" id="transactionsTable">
+            <thead class="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsBody"></tbody>
+          </table>
         </div>
-        <div class="card-body p-0">
-          <div class="table-container">
-            <table class="table table-striped table-hover mb-0" id="transactionsTable">
-              <thead class="table-light">
-                <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Type</th>
-                  <th>Category</th>
-                  <th>Amount</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="transactionsBody"></tbody>
-            </table>
-          </div>
-          <div id="noTransactions" class="text-center text-muted p-3">No transactions yet.</div>
-        </div>
+        <div id="noTransactions" class="text-center text-muted p-3">No transactions yet.</div>
       </div>
     </div>
-
+  </div>
+</div>
+    
     <!-- Charts Tab (Now only has category breakdown) -->
     <div id="tab-charts" class="tab-page d-none">
       <div class="row g-4">
