@@ -430,7 +430,7 @@ body.dark-mode .toast {
 }
 
 /* Make sure the dashboard tab uses full height */
-#tab-dashboard {
+#tab-transactions {
   min-height: calc(100vh - 200px);
 }
 
