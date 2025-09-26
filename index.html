@@ -77,11 +77,59 @@
     </div>
   </div>
 
+  <!-- Category Transactions Modal -->
+  <div class="modal fade category-transactions-modal" id="categoryTransactionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="categoryTransactionsTitle">
+            <i class="bi bi-list-ul"></i> Category Transactions
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span id="categoryTransactionsInfo" class="text-muted"></span>
+            <span id="categoryTotalAmount" class="fw-bold fs-5"></span>
+          </div>
+          <div class="category-transactions-list" id="categoryTransactionsList">
+            <!-- Transactions will be populated here -->
+          </div>
+          <div id="noCategoryTransactions" class="text-center text-muted p-3 d-none">
+            No transactions found for this category in the selected period.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="addTransactionForCategory()">
+            <i class="bi bi-plus-circle"></i> Add Transaction
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="main-content container py-3">
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
       <div class="row g-4">
         <div class="col-12">
+          <!-- Rollover Balance Display -->
+          <div id="rolloverBalance" class="rollover-balance d-none">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <small class="text-muted">Starting Balance</small>
+                <div class="rollover-amount" id="rolloverAmount">0</div>
+                <small id="rolloverDescription" class="text-muted"></small>
+              </div>
+              <div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleRolloverSettings()">
+                  <i class="bi bi-gear"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="card shadow-sm mb-3">
             <div class="card-body text-center">
               <h5 class="card-title">
@@ -119,7 +167,7 @@
         <!-- Improved Income and Expense Breakdown Cards -->
         <div class="breakdown-container">
           <div class="col-12 col-md-6">
-            <div class="breakdown-card income-card">
+            <div class="breakdown-card income-card" onclick="showCategoryTransactions('income', 'all')">
               <div class="card-header-enhanced">
                 <i class="bi bi-arrow-down-circle"></i> Income Breakdown
               </div>
@@ -133,7 +181,7 @@
           </div>
 
           <div class="col-12 col-md-6">
-            <div class="breakdown-card expense-card">
+            <div class="breakdown-card expense-card" onclick="showCategoryTransactions('expense', 'all')">
               <div class="card-header-enhanced">
                 <i class="bi bi-arrow-up-circle"></i> Expense Breakdown
               </div>
@@ -218,6 +266,21 @@
                 Sign in to sync across devices
               </small>
             </div>
+          </div>
+          <hr>
+
+          <!-- Monthly Rollover Settings -->
+          <div class="mb-3">
+            <label class="form-label">Monthly Rollover Settings</label>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="autoRolloverToggle" checked>
+              <label class="form-check-label" for="autoRolloverToggle">Auto-rollover balances</label>
+            </div>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="allowNegativeRollover">
+              <label class="form-check-label" for="allowNegativeRollover">Allow negative rollovers</label>
+            </div>
+            <small class="text-muted">Automatically carry over surplus/deficit to next month</small>
           </div>
           <hr>
 
@@ -361,7 +424,7 @@
   </nav>
 
   <footer class="mt-5 text-center text-muted mb-5">
-    <small>Copyright &copy; 2025 Wealth Command</small>
+    <small>Copyright &copy; 2025 Wealth Command by Ahmar Hassan</small>
   </footer>
 
   <!-- Scripts -->
