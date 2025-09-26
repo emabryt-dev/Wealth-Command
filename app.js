@@ -1,11 +1,11 @@
 // Wealth Command: Complete with Google Drive Sync and Monthly Rollover
 
+// Initialize variables first
 let transactions = loadTransactions();
 let categories = loadCategories();
 let currency = loadCurrency() || "PKR";
 let currentCategoryFilter = 'all';
 let dashboardChart = null;
-let monthlyBudgets = loadMonthlyBudgets();
 
 // Google Drive Sync Configuration
 const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
@@ -14,60 +14,7 @@ let googleUser = null;
 let googleAuth = null;
 let isOnline = navigator.onLine;
 
-// Enhanced Toast System
-function showToast(message, type = 'info', duration = 4000) {
-    const toastContainer = document.getElementById('toastContainer');
-    const toastId = 'toast-' + Date.now();
-    
-    const icons = {
-        success: 'bi-check-circle-fill',
-        info: 'bi-info-circle-fill',
-        warning: 'bi-exclamation-triangle-fill',
-        danger: 'bi-x-circle-fill'
-    };
-    
-    const toastHTML = `
-        <div id="${toastId}" class="toast toast-${type}" role="alert">
-            <div class="toast-body">
-                <div class="d-flex align-items-center">
-                    <i class="bi ${icons[type]} me-2 text-${type}"></i>
-                    <span class="flex-grow-1">${message}</span>
-                    <button type="button" class="btn-close ms-2" data-bs-dismiss="toast"></button>
-                </div>
-                <div class="toast-progress"></div>
-            </div>
-        </div>
-    `;
-    
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    const toastElement = document.getElementById(toastId);
-    const bsToast = new bootstrap.Toast(toastElement, { delay: duration });
-    
-    toastElement.addEventListener('hidden.bs.toast', () => {
-        toastElement.remove();
-    });
-    
-    bsToast.show();
-}
-
-// Replace old showSyncStatus with new toast system
-function showSyncStatus(message, type) {
-    showToast(message, type, type === 'success' ? 3000 : 5000);
-}
-
-// Check online status
-window.addEventListener('online', () => {
-    isOnline = true;
-    showSyncStatus('Back online. Syncing data...', 'info');
-    if (googleUser) syncDataToDrive();
-});
-
-window.addEventListener('offline', () => {
-    isOnline = false;
-    showSyncStatus('You are offline. Changes will sync when back online.', 'warning');
-});
-
-// Monthly Rollover System
+// Monthly Rollover System - Define functions before using them
 function loadMonthlyBudgets() {
     try {
         const budgets = JSON.parse(localStorage.getItem('monthlyBudgets')) || {};
@@ -82,7 +29,8 @@ function loadMonthlyBudgets() {
                 autoRollover: true,
                 allowNegative: false
             };
-            saveMonthlyBudgets(budgets);
+            // Use localStorage directly here to avoid circular dependency
+            localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
         }
         return budgets;
     } catch {
@@ -96,20 +44,24 @@ function loadMonthlyBudgets() {
             autoRollover: true,
             allowNegative: false
         };
-        saveMonthlyBudgets(budgets);
+        localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
         return budgets;
     }
-}
-
-function saveMonthlyBudgets(budgets) {
-    monthlyBudgets = budgets;
-    localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
-    if (googleUser && isOnline) syncDataToDrive();
 }
 
 function getCurrentMonthKey() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// Now initialize monthlyBudgets after function definitions
+let monthlyBudgets = loadMonthlyBudgets();
+
+// Rest of the functions remain the same...
+function saveMonthlyBudgets(budgets) {
+    monthlyBudgets = budgets;
+    localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
+    if (googleUser && isOnline) syncDataToDrive();
 }
 
 function getMonthKeyFromDate(dateString) {
@@ -229,6 +181,62 @@ function toggleRolloverSettings() {
         }
     }
 }
+
+// Enhanced Toast System
+function showToast(message, type = 'info', duration = 4000) {
+    const toastContainer = document.getElementById('toastContainer');
+    const toastId = 'toast-' + Date.now();
+    
+    const icons = {
+        success: 'bi-check-circle-fill',
+        info: 'bi-info-circle-fill',
+        warning: 'bi-exclamation-triangle-fill',
+        danger: 'bi-x-circle-fill'
+    };
+    
+    const toastHTML = `
+        <div id="${toastId}" class="toast toast-${type}" role="alert">
+            <div class="toast-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi ${icons[type]} me-2 text-${type}"></i>
+                    <span class="flex-grow-1">${message}</span>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="toast"></button>
+                </div>
+                <div class="toast-progress"></div>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    const toastElement = document.getElementById(toastId);
+    const bsToast = new bootstrap.Toast(toastElement, { delay: duration });
+    
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+    
+    bsToast.show();
+}
+
+// Replace old showSyncStatus with new toast system
+function showSyncStatus(message, type) {
+    showToast(message, type, type === 'success' ? 3000 : 5000);
+}
+
+// Check online status
+window.addEventListener('online', () => {
+    isOnline = true;
+    showSyncStatus('Back online. Syncing data...', 'info');
+    if (googleUser) syncDataToDrive();
+});
+
+window.addEventListener('offline', () => {
+    isOnline = false;
+    showSyncStatus('You are offline. Changes will sync when back online.', 'warning');
+});
+
+// Rest of the code remains exactly the same as the previous version...
+// [Include all the remaining functions exactly as they were in the previous app.js]
 
 // Initialize Google Auth properly
 function initGoogleAuth() {
@@ -970,7 +978,7 @@ document.getElementById('clearTransactions').addEventListener('click', function(
     };
     
     confirmationModal.show();
-});
+};
 
 // Add/Edit Transaction Form
 document.getElementById('transactionForm').addEventListener('submit', function(e) {
@@ -1141,7 +1149,7 @@ function updateUI() {
         document.getElementById('noTransactions').style.display = 'none';
         transactions.slice().reverse().forEach((tx, idx) => {
             const originalIndex = transactions.length - 1 - idx;
-            row = document.createElement('tr');
+            const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${tx.date}</td>
                 <td>${tx.desc}</td>
@@ -1413,6 +1421,34 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set up month/year filter change listeners
         document.getElementById('summaryMonth').addEventListener('change', updateUI);
         document.getElementById('summaryYear').addEventListener('change', updateUI);
+        
+        // Initialize rollover settings toggles
+        const autoRolloverToggle = document.getElementById('autoRolloverToggle');
+        const allowNegativeToggle = document.getElementById('allowNegativeRollover');
+        
+        if (autoRolloverToggle) {
+            autoRolloverToggle.checked = monthlyBudgets[getCurrentMonthKey()]?.autoRollover !== false;
+            autoRolloverToggle.addEventListener('change', function() {
+                Object.keys(monthlyBudgets).forEach(month => {
+                    monthlyBudgets[month].autoRollover = this.checked;
+                });
+                saveMonthlyBudgets(monthlyBudgets);
+                calculateMonthlyRollover();
+                updateUI();
+            });
+        }
+        
+        if (allowNegativeToggle) {
+            allowNegativeToggle.checked = monthlyBudgets[getCurrentMonthKey()]?.allowNegative === true;
+            allowNegativeToggle.addEventListener('change', function() {
+                Object.keys(monthlyBudgets).forEach(month => {
+                    monthlyBudgets[month].allowNegative = this.checked;
+                });
+                saveMonthlyBudgets(monthlyBudgets);
+                calculateMonthlyRollover();
+                updateUI();
+            });
+        }
     }
 
     initializeApplicationData();
