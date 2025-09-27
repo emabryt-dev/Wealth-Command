@@ -134,35 +134,37 @@ body {
   transform: translateY(-1px);
 }
 
-/* Improved Main Content Layout */
+/* FIXED: Improved Main Content Layout */
 .main-content {
-  min-height: calc(100vh - 140px) !important;
-  padding-bottom: 120px !important;
+  min-height: calc(100vh - 140px);
+  padding-bottom: 150px; /* Increased padding for footer */
   display: flex;
   flex-direction: column;
 }
 
 .tab-page {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: calc(100vh - 200px);
-  padding-bottom: 40px;
 }
 
-/* Improved Card Layout */
+/* FIXED: Improved Card Layout - Flexible heights */
 .breakdown-container {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   margin-bottom: 2rem;
-  min-height: 60vh !important; /* Increased height */
-  flex: 1;
+  flex: 1; /* Grow to fill available space */
+  min-height: 300px; /* Reasonable minimum */
+  max-height: 500px; /* Maximum limit */
 }
 
 .breakdown-card {
   flex: 1;
-  min-height: 320px !important; /* Increased minimum height */
   display: flex;
   flex-direction: column;
+  min-height: 200px; /* Flexible minimum */
   padding: 0;
   border-radius: 0.8rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -193,6 +195,7 @@ body {
   font-weight: 600;
   border-bottom: 1px solid #f0f0f0;
   margin: 0;
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .income-card .card-header-enhanced {
@@ -205,15 +208,14 @@ body {
   color: white;
 }
 
+/* FIXED: Proper scrolling for breakdown lists */
 .breakdown-list {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   padding: 1rem;
-  max-height: none;
-  overflow-y: auto;
-  min-height: 200px !important; /* Ensure minimum height for content */
+  overflow-y: auto; /* Enable scrolling */
+  min-height: 150px; /* Ensure space for content */
 }
 
 .breakdown-item {
@@ -224,7 +226,7 @@ body {
   border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  min-height: 50px; /* Ensure consistent height */
+  flex-shrink: 0; /* Prevent items from shrinking */
 }
 
 .breakdown-item:hover {
@@ -282,8 +284,8 @@ body {
 }
 
 #tab-transactions .table-container {
-  height: calc(100vh - 300px) !important;
-  max-height: none !important;
+  height: calc(100vh - 300px);
+  max-height: none;
   overflow: auto;
   border: 1px solid #dee2e6;
   border-radius: 0.6rem;
@@ -305,7 +307,7 @@ body {
 /* Optimized Column Widths */
 #transactionsTable th:nth-child(1),
 #transactionsTable td:nth-child(1) {
-  width: 12% !important;
+  width: 12%;
   min-width: 80px;
   position: sticky;
   left: 0;
@@ -316,7 +318,7 @@ body {
 
 #transactionsTable th:nth-child(2),
 #transactionsTable td:nth-child(2) {
-  width: 48% !important;
+  width: 48%;
   min-width: 200px;
   max-width: 300px;
   white-space: nowrap;
@@ -326,26 +328,26 @@ body {
 
 #transactionsTable th:nth-child(3),
 #transactionsTable td:nth-child(3) {
-  width: 10% !important;
+  width: 10%;
   min-width: 70px;
 }
 
 #transactionsTable th:nth-child(4),
 #transactionsTable td:nth-child(4) {
-  width: 15% !important;
+  width: 15%;
   min-width: 100px;
 }
 
 #transactionsTable th:nth-child(5),
 #transactionsTable td:nth-child(5) {
-  width: 15% !important;
+  width: 15%;
   min-width: 100px;
   text-align: right;
 }
 
 #transactionsTable th:nth-child(6),
 #transactionsTable td:nth-child(6) {
-  width: 10% !important;
+  width: 10%;
   min-width: 60px;
   text-align: center;
 }
@@ -357,12 +359,12 @@ body {
 }
 
 .clickable-row:hover {
-  background-color: rgba(13, 110, 253, 0.05) !important;
+  background-color: rgba(13, 110, 253, 0.05);
   transform: scale(1.002);
 }
 
 .clickable-row:active {
-  background-color: rgba(13, 110, 253, 0.1) !important;
+  background-color: rgba(13, 110, 253, 0.1);
 }
 
 #transactionsTable thead th {
@@ -465,20 +467,6 @@ body {
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
-  border-radius: 0.8rem 0.8rem 0 0;
-}
-
-.chart-controls .input-group {
-  max-width: 300px;
-}
-
-.chart-controls .input-group-text {
-  background: #e9ecef;
-  border-color: #dee2e6;
-}
-
-.chart-controls .form-select {
-  border-color: #dee2e6;
 }
 
 .chart-body {
@@ -500,18 +488,6 @@ body {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.chart-type-buttons .btn {
-  border-radius: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.chart-type-buttons .btn.active {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .chart-summary-stats {
@@ -550,6 +526,48 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* Enhanced chart controls to match dashboard */
+.chart-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.chart-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chart-filters .input-group {
+  max-width: 200px;
+}
+
+.chart-filters .input-group-text {
+  background: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.chart-filters .form-select {
+  border-color: #dee2e6;
+}
+
+.chart-type-buttons .btn {
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.chart-type-buttons .btn.active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
 /* Improved distribution cards */
 .distribution-card {
   border-radius: 0.8rem;
@@ -586,55 +604,6 @@ body {
   height: 250px;
   position: relative;
   background: white;
-}
-
-/* Make chart type buttons inline with filters */
-.chart-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.chart-filters {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.chart-filters .input-group {
-  max-width: 200px;
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-  .breakdown-container {
-    min-height: 50vh !important;
-  }
-  
-  .breakdown-card {
-    min-height: 280px !important;
-  }
-  
-  .chart-header-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .chart-filters {
-    justify-content: center;
-  }
-  
-  .chart-filters .input-group {
-    max-width: 150px;
-  }
-  
-  footer {
-    margin-top: 3rem !important;
-  }
 }
 
 /* Rollover Balance Styles */
@@ -745,12 +714,15 @@ body {
   padding: 1rem;
 }
 
+/* FIXED: Footer spacing */
 footer {
-  margin-top: 4rem !important; /* More space above footer */
+  margin-top: auto; /* Push to bottom */
   padding-top: 2rem;
+  padding-bottom: 2rem;
   border-top: 1px solid #dee2e6;
+  background: #f8f9fa;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 /* Dark mode support */
@@ -847,51 +819,66 @@ body.dark-mode .stat-card {
 }
 
 body.dark-mode .clickable-row:hover {
-  background-color: rgba(99, 179, 237, 0.1) !important;
+  background-color: rgba(99, 179, 237, 0.1);
+}
+
+body.dark-mode .distribution-card {
+  background: #2d3748;
+  border-color: #4a5568;
+}
+
+body.dark-mode .distribution-card .card-header {
+  background: linear-gradient(135deg, #4a5568, #2d3748);
+}
+
+body.dark-mode footer {
+  background: #2d3748;
+  border-color: #4a5568;
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
   .breakdown-container {
-    min-height: 40vh;
+    min-height: 250px;
+    max-height: 400px;
   }
   
   .breakdown-card {
-    min-height: 250px;
+    min-height: 180px;
   }
   
   #tab-transactions .table-container {
-    height: calc(100vh - 280px) !important;
+    height: calc(100vh - 280px);
   }
   
   #transactionsTable th:nth-child(2),
   #transactionsTable td:nth-child(2) {
-    width: 40% !important;
+    width: 40%;
     min-width: 150px;
     max-width: 200px;
   }
   
   #transactionsTable th:nth-child(1),
   #transactionsTable td:nth-child(1) {
-    width: 15% !important;
+    width: 15%;
     min-width: 70px;
   }
   
   #transactionsTable th:nth-child(4),
   #transactionsTable td:nth-child(4) {
-    width: 20% !important;
+    width: 20%;
     min-width: 80px;
   }
   
   #transactionsTable th:nth-child(5),
   #transactionsTable td:nth-child(5) {
-    width: 15% !important;
+    width: 15%;
     min-width: 80px;
   }
   
   #transactionsTable th:nth-child(6),
   #transactionsTable td:nth-child(6) {
-    width: 10% !important;
+    width: 10%;
     min-width: 60px;
   }
   
@@ -930,32 +917,26 @@ body.dark-mode .clickable-row:hover {
   .chart-summary-stats {
     grid-template-columns: 1fr;
   }
+  
+  .chart-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .chart-filters {
+    justify-content: center;
+  }
+  
+  .chart-filters .input-group {
+    max-width: 150px;
+  }
+  
+  .main-content {
+    padding-bottom: 130px;
+  }
 }
 
-.breakdown-container {
-  height: 50vh !important;
-  min-height: 350px !important;
-}
-
-.breakdown-card {
-  height: 100% !important;
-}
-
-.breakdown-list {
-  height: 100% !important;
-  max-height: none !important;
-}
-
-#tab-dashboard {
-  min-height: 70vh !important;
-}
-
-#tab-charts,
-#tab-settings {
-  min-height: calc(100vh - 140px);
-  padding-bottom: 40px;
-}
-
+/* Additional mobile optimizations */
 @media (max-width: 576px) {
   .card {
     padding: 0.5rem;
@@ -967,14 +948,14 @@ body.dark-mode .clickable-row:hover {
   
   #transactionsTable th:nth-child(2),
   #transactionsTable td:nth-child(2) {
-    width: 35% !important;
+    width: 35%;
     min-width: 120px;
     max-width: 150px;
   }
   
   #transactionsTable th:nth-child(1),
   #transactionsTable td:nth-child(1) {
-    width: 18% !important;
+    width: 18%;
     min-width: 60px;
   }
   
@@ -989,8 +970,14 @@ body.dark-mode .clickable-row:hover {
   .nav-btn small {
     font-size: 0.7rem;
   }
+  
+  .breakdown-container {
+    min-height: 200px;
+    max-height: 350px;
+  }
 }
 
+/* Print styles */
 @media print {
   #fixedNavBar,
   .navbar {
@@ -1000,10 +987,12 @@ body.dark-mode .clickable-row:hover {
   body {
     padding-bottom: 0 !important;
   }
+  
   .main-content {
-  min-height: calc(100vh - 140px) !important;
-  padding-bottom: 150px !important; /* Increased padding */
-  display: flex;
-  flex-direction: column;
+    padding-bottom: 0 !important;
+  }
+  
+  footer {
+    display: none !important;
   }
 }
