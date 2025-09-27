@@ -325,7 +325,6 @@ async function loadDataFromDrive() {
         return false;
     }
     
-    // Check if token is expired
     if (isTokenExpired(googleUser)) {
         showSyncStatus('Session expired. Please sign in again.', 'warning');
         googleSignOut();
@@ -335,9 +334,9 @@ async function loadDataFromDrive() {
     try {
         showSyncStatus('Loading data from Google Drive...', 'info');
         
-        // Search for the file
+        // Search for the correct file with exact name match
         const searchResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name,modifiedTime)`,
+            `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name,mimeType,modifiedTime)`,
             {
                 headers: {
                     'Authorization': `Bearer ${googleUser.access_token}`
@@ -357,10 +356,16 @@ async function loadDataFromDrive() {
         
         const searchData = await searchResponse.json();
         
-        if (searchData.files && searchData.files.length > 0) {
-            const file = searchData.files[0];
+        // Find the exact match (case-sensitive)
+        const exactMatch = searchData.files?.find(file => 
+            file.name === GOOGLE_DRIVE_FILE_NAME && 
+            file.mimeType === 'application/json'
+        );
+        
+        if (exactMatch) {
+            console.log('Found backup file:', exactMatch.name, 'ID:', exactMatch.id);
             const fileResponse = await fetch(
-                `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+                `https://www.googleapis.com/drive/v3/files/${exactMatch.id}?alt=media`,
                 {
                     headers: {
                         'Authorization': `Bearer ${googleUser.access_token}`
@@ -374,50 +379,48 @@ async function loadDataFromDrive() {
             
             const driveData = await fileResponse.json();
             
-            // Validate and load data
-            if (driveData.transactions && Array.isArray(driveData.transactions)) {
-                transactions = driveData.transactions;
-                localStorage.setItem('transactions', JSON.stringify(transactions));
+            // Enhanced validation
+            if (driveData && driveData.app === 'Wealth Command') {
+                if (driveData.transactions && Array.isArray(driveData.transactions)) {
+                    transactions = driveData.transactions;
+                    localStorage.setItem('transactions', JSON.stringify(transactions));
+                }
+                
+                if (driveData.categories && Array.isArray(driveData.categories)) {
+                    categories = driveData.categories;
+                    localStorage.setItem('categories', JSON.stringify(categories));
+                }
+                
+                if (driveData.currency) {
+                    currency = driveData.currency;
+                    localStorage.setItem('currency', currency);
+                }
+                
+                if (driveData.monthlyBudgets) {
+                    monthlyBudgets = driveData.monthlyBudgets;
+                    localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
+                }
+                
+                updateUI();
+                populateSummaryFilters();
+                renderCategoryList();
+                
+                showSyncStatus(`Data loaded from backup (${exactMatch.modifiedTime})`, 'success');
+                return true;
+            } else {
+                throw new Error('Invalid backup file format');
             }
-            
-            if (driveData.categories && Array.isArray(driveData.categories)) {
-                categories = driveData.categories;
-                localStorage.setItem('categories', JSON.stringify(categories));
-            }
-            
-            if (driveData.currency) {
-                currency = driveData.currency;
-                localStorage.setItem('currency', currency);
-            }
-            
-            if (driveData.monthlyBudgets) {
-                monthlyBudgets = driveData.monthlyBudgets;
-                localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
-            }
-            
-            // Update UI with loaded data
-            updateUI();
-            populateSummaryFilters();
-            renderCategoryList();
-            
-            showSyncStatus('Data loaded from Google Drive successfully!', 'success');
-            console.log('Data loaded from Drive:', {
-                transactions: transactions.length,
-                categories: categories.length,
-                currency: currency,
-                monthlyBudgets: Object.keys(monthlyBudgets).length
-            });
-            
-            return true;
         } else {
-            showSyncStatus('No existing data found. Creating new backup...', 'info');
-            // No file found, create one with current data
+            console.log('No Wealth Command backup file found');
+            showSyncStatus('No existing backup found. Creating new backup...', 'info');
+            
+            // Create initial backup with correct naming
             await syncDataToDrive();
             return true;
         }
     } catch (error) {
         console.error('Error loading from Drive:', error);
-        showSyncStatus('Error loading from Google Drive: ' + error.message, 'danger');
+        showSyncStatus('Error loading backup: ' + error.message, 'danger');
         return false;
     }
 }
