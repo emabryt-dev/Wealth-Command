@@ -1160,19 +1160,33 @@ function populateChartFilters() {
     const chartMonth = document.getElementById('chartMonth');
     const chartYear = document.getElementById('chartYear');
     
+    // Clear existing options
     chartMonth.innerHTML = '<option value="all">All Months</option>';
-    for (let i = 1; i <= 12; i++) {
-        const date = new Date(2023, i - 1, 1);
-        const option = document.createElement('option');
-        option.value = i;
-        option.textContent = date.toLocaleString('default', { month: 'long' });
-        chartMonth.appendChild(option);
-    }
-    
     chartYear.innerHTML = '<option value="all">All Years</option>';
-    const years = Array.from(new Set(transactions.map(tx => new Date(tx.date).getFullYear())))
-        .filter(year => !isNaN(year))
-        .sort((a, b) => b - a);
+    
+    // Populate months
+    const monthNames = ["January", "February", "March", "April", "May", "June", 
+                       "July", "August", "September", "October", "November", "December"];
+    
+    monthNames.forEach((monthName, index) => {
+        const option = document.createElement('option');
+        option.value = index + 1;
+        option.textContent = monthName;
+        chartMonth.appendChild(option);
+    });
+    
+    // Populate years from transactions
+    const years = Array.from(new Set(transactions.map(tx => {
+        const year = new Date(tx.date).getFullYear();
+        return isNaN(year) ? null : year;
+    }).filter(year => year !== null)))
+    .sort((a, b) => b - a);
+    
+    // Always include current year
+    const currentYear = new Date().getFullYear();
+    if (!years.includes(currentYear)) {
+        years.unshift(currentYear);
+    }
     
     years.forEach(year => {
         const option = document.createElement('option');
@@ -1181,10 +1195,12 @@ function populateChartFilters() {
         chartYear.appendChild(option);
     });
     
+    // Set current month/year as default
     const now = new Date();
     chartMonth.value = now.getMonth() + 1;
     chartYear.value = now.getFullYear();
     
+    // Add event listeners
     chartMonth.addEventListener('change', renderEnhancedCharts);
     chartYear.addEventListener('change', renderEnhancedCharts);
 }
@@ -1192,10 +1208,17 @@ function populateChartFilters() {
 function renderEnhancedCharts() {
     updateChartSummaryStats();
     
+    // Set up chart type buttons
     const chartTypeButtons = document.querySelectorAll('[data-chart-type]');
     chartTypeButtons.forEach(btn => {
+        // Remove existing listeners
+        btn.replaceWith(btn.cloneNode(true));
+    });
+    
+    // Re-select buttons after clone
+    document.querySelectorAll('[data-chart-type]').forEach(btn => {
         btn.addEventListener('click', function() {
-            chartTypeButtons.forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('[data-chart-type]').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             currentChartType = this.dataset.chartType;
             renderMainChart();
@@ -1204,50 +1227,6 @@ function renderEnhancedCharts() {
     
     renderMainChart();
     renderPieCharts();
-}
-
-function updateChartSummaryStats() {
-    const statsContainer = document.getElementById('chartSummaryStats');
-    const chartMonth = document.getElementById('chartMonth').value;
-    const chartYear = document.getElementById('chartYear').value;
-    
-    let filteredTx = transactions;
-    if (chartMonth !== 'all' || chartYear !== 'all') {
-        filteredTx = transactions.filter(tx => {
-            const d = new Date(tx.date);
-            if (isNaN(d)) return false;
-            let valid = true;
-            if (chartMonth !== 'all') valid = valid && (d.getMonth() + 1) == chartMonth;
-            if (chartYear !== 'all') valid = valid && d.getFullYear() == chartYear;
-            return valid;
-        });
-    }
-    
-    const totalIncome = filteredTx.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
-    const totalExpense = filteredTx.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0);
-    const netWealth = totalIncome - totalExpense;
-    const transactionCount = filteredTx.length;
-    
-    statsContainer.innerHTML = `
-        <div class="stat-card">
-            <div class="stat-value text-primary">${transactionCount}</div>
-            <div class="stat-label">Transactions</div>
-        </div>
-        <div class="stat-card income">
-            <div class="stat-value text-success">${totalIncome.toLocaleString()} ${currency}</div>
-            <div class="stat-label">Total Income</div>
-        </div>
-        <div class="stat-card expense">
-            <div class="stat-value text-danger">${totalExpense.toLocaleString()} ${currency}</div>
-            <div class="stat-label">Total Expense</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value ${netWealth >= 0 ? 'text-success' : 'text-danger'}">
-                ${netWealth.toLocaleString()} ${currency}
-            </div>
-            <div class="stat-label">Net Wealth</div>
-        </div>
-    `;
 }
 
 function renderMainChart() {
@@ -1260,6 +1239,7 @@ function renderMainChart() {
     
     if (transactions.length === 0) {
         placeholder.classList.remove('d-none');
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
     }
     
@@ -1276,7 +1256,7 @@ function renderMainChart() {
             renderMonthlyTrendChart(ctx, chartYear);
             break;
         case 'yearly':
-            renderYearlyComparisonChart(ctx);
+            renderYearlyTrendChart(ctx, chartMonth); // Changed to trend style
             break;
     }
 }
@@ -1430,48 +1410,69 @@ function renderMonthlyTrendChart(ctx, year) {
     });
 }
 
-function renderYearlyComparisonChart(ctx) {
+function renderYearlyTrendChart(ctx, month) {
     const years = Array.from(new Set(transactions.map(tx => new Date(tx.date).getFullYear())))
         .filter(year => !isNaN(year))
         .sort((a, b) => a - b);
     
     const yearlyData = {};
     years.forEach(year => {
-        yearlyData[year] = { income: 0, expense: 0 };
+        yearlyData[year] = { income: 0, expense: 0, net: 0 };
     });
     
     transactions.forEach(tx => {
-        const year = new Date(tx.date).getFullYear();
-        if (yearlyData[year]) {
-            if (tx.type === 'income') {
-                yearlyData[year].income += tx.amount;
-            } else {
-                yearlyData[year].expense += tx.amount;
+        const txDate = new Date(tx.date);
+        const txYear = txDate.getFullYear();
+        const txMonth = txDate.getMonth() + 1;
+        
+        if (month === 'all' || txMonth == month) {
+            if (yearlyData[txYear]) {
+                if (tx.type === 'income') {
+                    yearlyData[txYear].income += tx.amount;
+                } else {
+                    yearlyData[txYear].expense += tx.amount;
+                }
+                yearlyData[txYear].net = yearlyData[txYear].income - yearlyData[txYear].expense;
             }
         }
     });
     
-    const incomeData = years.map(year => yearlyData[year].income);
-    const expenseData = years.map(year => yearlyData[year].expense);
+    const incomeData = years.map(year => yearlyData[year]?.income || 0);
+    const expenseData = years.map(year => yearlyData[year]?.expense || 0);
+    const netData = years.map(year => yearlyData[year]?.net || 0);
     
     mainChart = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: years,
             datasets: [
                 {
                     label: 'Income',
                     data: incomeData,
-                    backgroundColor: '#198754',
                     borderColor: '#198754',
-                    borderWidth: 1
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    borderWidth: 3
                 },
                 {
                     label: 'Expense',
                     data: expenseData,
-                    backgroundColor: '#dc3545',
                     borderColor: '#dc3545',
-                    borderWidth: 1
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    borderWidth: 3
+                },
+                {
+                    label: 'Net Wealth',
+                    data: netData,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    borderWidth: 2,
+                    borderDash: [5, 5]
                 }
             ]
         },
@@ -1481,7 +1482,18 @@ function renderYearlyComparisonChart(ctx) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Yearly Income vs Expense Comparison'
+                    text: `Yearly Trend ${month === 'all' ? '' : `- ${new Date(2023, month-1).toLocaleString('default', {month: 'long'})}`}`,
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
                 }
             },
             scales: {
@@ -1491,8 +1503,20 @@ function renderYearlyComparisonChart(ctx) {
                         callback: function(value) {
                             return value.toLocaleString() + ' ' + currency;
                         }
+                    },
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
                     }
                 }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
             }
         }
     });
