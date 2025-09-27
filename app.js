@@ -28,32 +28,6 @@ function getMonthlyBackupFileName() {
     return `wealth_command_backup_${year}-${month}.json`;
 }
 
-// Helper function to check if monthly backup already exists
-async function monthlyBackupExists() {
-    if (!googleUser || !googleUser.access_token) return false;
-    
-    const monthlyFileName = getMonthlyBackupFileName();
-    try {
-        const searchResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=name='${monthlyFileName}' and trashed=false&fields=files(id)`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${googleUser.access_token}`
-                }
-            }
-        );
-        
-        if (searchResponse.ok) {
-            const data = await searchResponse.json();
-            return data.files && data.files.length > 0;
-        }
-        return false;
-    } catch (error) {
-        console.error('Error checking monthly backup:', error);
-        return false;
-    }
-}
-
 // Monthly Rollover System
 function loadMonthlyBudgets() {
     try {
@@ -462,106 +436,6 @@ async function loadDataFromDrive() {
     }
 }
 
-// Enhanced sync function with monthly backups
-async function syncDataToDrive() {
-    if (syncInProgress) {
-        pendingSync = true;
-        return false;
-    }
-    
-    if (!googleUser || !googleUser.access_token) {
-        console.log('Not authenticated, skipping sync');
-        return false;
-    }
-    
-    if (!isOnline) {
-        console.log('Offline, skipping sync');
-        pendingSync = true;
-        return false;
-    }
-    
-    // Check if token is expired
-    if (isTokenExpired(googleUser)) {
-        showSyncStatus('Session expired. Please sign in again.', 'warning');
-        googleSignOut();
-        return false;
-    }
-    
-    syncInProgress = true;
-    
-    try {
-        showSyncStatus('Syncing to Google Drive...', 'info');
-        
-        const currentMonth = getCurrentMonthKey();
-        const shouldCreateMonthlyBackup = lastBackupMonth !== currentMonth;
-        
-        const fileData = {
-            transactions,
-            categories,
-            currency,
-            monthlyBudgets,
-            lastSync: new Date().toISOString(),
-            lastBackupMonth: currentMonth, // Update to current month
-            version: '1.2',
-            app: 'Wealth Command'
-        };
-        
-        // Step 1: Sync main file (always)
-        console.log('Syncing main file...');
-        const mainFileSuccess = await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
-        
-        if (!mainFileSuccess) {
-            throw new Error('Failed to sync main file');
-        }
-        
-        // Step 2: Create monthly backup if needed
-        if (shouldCreateMonthlyBackup) {
-            console.log('Creating monthly backup...');
-            const monthlyFileName = getMonthlyBackupFileName();
-            const monthlyBackupData = {
-                ...fileData,
-                isMonthlyBackup: true,
-                backupMonth: currentMonth,
-                created: new Date().toISOString()
-            };
-            
-            await syncSingleFile(monthlyFileName, monthlyBackupData, false); // Don't overwrite existing monthly backups
-            
-            // Update last backup month
-            lastBackupMonth = currentMonth;
-            fileData.lastBackupMonth = currentMonth;
-            
-            // Update main file with new backup month info
-            await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
-            
-            showSyncStatus(`Data synced + monthly backup created!`, 'success');
-        } else {
-            showSyncStatus('Data synced to Google Drive successfully!', 'success');
-        }
-        
-        console.log('Sync completed successfully');
-        return true;
-    } catch (error) {
-        console.error('Error syncing to Drive:', error);
-        
-        if (error.message.includes('Authentication expired') || error.message.includes('401')) {
-            showSyncStatus('Authentication expired. Please sign in again.', 'warning');
-            googleSignOut();
-        } else {
-            showSyncStatus('Sync failed: ' + error.message, 'danger');
-        }
-        return false;
-    } finally {
-        syncInProgress = false;
-        
-        // Process pending sync if any
-        if (pendingSync) {
-            pendingSync = false;
-            setTimeout(syncDataToDrive, 1000);
-        }
-    }
-}
-
 // Helper function to sync a single file
 async function syncSingleFile(fileName, fileData, overwrite = true) {
     // Search for existing file
@@ -655,14 +529,103 @@ async function syncSingleFile(fileName, fileData, overwrite = true) {
     }
 }
 
-// Auto-sync function (debounced)
-function autoSyncToDrive() {
-    if (googleUser && isOnline) {
-        // Debounce sync to avoid too many requests
-        clearTimeout(window.syncTimeout);
-        window.syncTimeout = setTimeout(() => {
-            syncDataToDrive();
-        }, 2000); // Sync after 2 seconds of inactivity
+// Enhanced sync function with monthly backups
+async function syncDataToDrive() {
+    if (syncInProgress) {
+        pendingSync = true;
+        return false;
+    }
+    
+    if (!googleUser || !googleUser.access_token) {
+        console.log('Not authenticated, skipping sync');
+        return false;
+    }
+    
+    if (!isOnline) {
+        console.log('Offline, skipping sync');
+        pendingSync = true;
+        return false;
+    }
+    
+    // Check if token is expired
+    if (isTokenExpired(googleUser)) {
+        showSyncStatus('Session expired. Please sign in again.', 'warning');
+        googleSignOut();
+        return false;
+    }
+    
+    syncInProgress = true;
+    
+    try {
+        showSyncStatus('Syncing to Google Drive...', 'info');
+        
+        const currentMonth = getCurrentMonthKey();
+        const shouldCreateMonthlyBackup = lastBackupMonth !== currentMonth;
+        
+        const fileData = {
+            transactions,
+            categories,
+            currency,
+            monthlyBudgets,
+            lastSync: new Date().toISOString(),
+            lastBackupMonth: currentMonth,
+            version: '1.2',
+            app: 'Wealth Command'
+        };
+        
+        // Step 1: Sync main file (always)
+        console.log('Syncing main file...');
+        const mainFileSuccess = await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
+        
+        if (!mainFileSuccess) {
+            throw new Error('Failed to sync main file');
+        }
+        
+        // Step 2: Create monthly backup if needed
+        if (shouldCreateMonthlyBackup) {
+            console.log('Creating monthly backup...');
+            const monthlyFileName = getMonthlyBackupFileName();
+            const monthlyBackupData = {
+                ...fileData,
+                isMonthlyBackup: true,
+                backupMonth: currentMonth,
+                created: new Date().toISOString()
+            };
+            
+            await syncSingleFile(monthlyFileName, monthlyBackupData, false); // Don't overwrite existing monthly backups
+            
+            // Update last backup month
+            lastBackupMonth = currentMonth;
+            fileData.lastBackupMonth = currentMonth;
+            
+            // Update main file with new backup month info
+            await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
+            
+            showSyncStatus(`Data synced + monthly backup created!`, 'success');
+        } else {
+            showSyncStatus('Data synced to Google Drive successfully!', 'success');
+        }
+        
+        console.log('Sync completed successfully');
+        return true;
+    } catch (error) {
+        console.error('Error syncing to Drive:', error);
+        
+        if (error.message.includes('Authentication expired') || error.message.includes('401')) {
+            showSyncStatus('Authentication expired. Please sign in again.', 'warning');
+            googleSignOut();
+        } else {
+            showSyncStatus('Sync failed: ' + error.message, 'danger');
+        }
+        return false;
+    } finally {
+        syncInProgress = false;
+        
+        // Process pending sync if any
+        if (pendingSync) {
+            pendingSync = false;
+            setTimeout(syncDataToDrive, 1000);
+        }
     }
 }
 
@@ -729,6 +692,17 @@ window.addEventListener('offline', () => {
     showSyncStatus('You are offline. Changes will sync when back online.', 'warning');
 });
 
+// Auto-sync function (debounced)
+function autoSyncToDrive() {
+    if (googleUser && isOnline) {
+        // Debounce sync to avoid too many requests
+        clearTimeout(window.syncTimeout);
+        window.syncTimeout = setTimeout(() => {
+            syncDataToDrive();
+        }, 2000); // Sync after 2 seconds of inactivity
+    }
+}
+
 // Periodic sync (every 5 minutes when online and authenticated)
 function startPeriodicSync() {
     setInterval(() => {
@@ -738,18 +712,6 @@ function startPeriodicSync() {
         }
     }, 5 * 60 * 1000); // 5 minutes
 }
-
-// Check online status
-window.addEventListener('online', () => {
-    isOnline = true;
-    showSyncStatus('Back online. Syncing data...', 'info');
-    if (googleUser) syncDataToDrive();
-});
-
-window.addEventListener('offline', () => {
-    isOnline = false;
-    showSyncStatus('You are offline. Changes will sync when back online.', 'warning');
-});
 
 // Page navigation logic
 const tabs = ["dashboard", "transactions", "charts", "settings"];
