@@ -336,13 +336,13 @@ async function loadDataFromDrive() {
         
         // Search for the correct file with exact name match
         const searchResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name,mimeType,modifiedTime)`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${googleUser.access_token}`
-                }
-            }
-        );
+    `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and mimeType='application/json' and trashed=false&fields=files(id,name,mimeType,modifiedTime)`,
+    {
+        headers: {
+            'Authorization': `Bearer ${googleUser.access_token}`
+        }
+    }
+);
         
         if (searchResponse.status === 401) {
             showSyncStatus('Authentication expired. Please sign in again.', 'warning');
@@ -443,7 +443,6 @@ async function syncDataToDrive() {
         return false;
     }
     
-    // Check if token is expired
     if (isTokenExpired(googleUser)) {
         showSyncStatus('Session expired. Please sign in again.', 'warning');
         googleSignOut();
@@ -462,12 +461,13 @@ async function syncDataToDrive() {
             monthlyBudgets,
             lastSync: new Date().toISOString(),
             version: '1.2',
-            app: 'Wealth Command'
+            app: 'Wealth Command',
+            syncTimestamp: Date.now()
         };
-        
-        // Search for existing file
+
+        // First, search for existing file
         const searchResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and trashed=false&fields=files(id)`,
+            `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`,
             {
                 headers: {
                     'Authorization': `Bearer ${googleUser.access_token}`
@@ -487,8 +487,11 @@ async function syncDataToDrive() {
         const existingFile = searchData.files?.[0];
         
         let response;
+        
         if (existingFile) {
-            // Update existing file
+            console.log('Updating existing file:', existingFile.id, existingFile.name);
+            
+            // Update existing file - CORRECT APPROACH
             response = await fetch(
                 `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
                 {
@@ -501,48 +504,56 @@ async function syncDataToDrive() {
                 }
             );
         } else {
-            // Create new file
-            const metadata = {
-                name: GOOGLE_DRIVE_FILE_NAME,
-                mimeType: 'application/json'
-            };
+            console.log('Creating new file with name:', GOOGLE_DRIVE_FILE_NAME);
             
-            response = await fetch(
-                'https://www.googleapis.com/upload/drive/v3/files?uploadType=media',
+            // Create new file - SIMPLIFIED CORRECT APPROACH
+            // First create the file metadata
+            const createResponse = await fetch(
+                'https://www.googleapis.com/drive/v3/files',
                 {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${googleUser.access_token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(metadata)
+                    body: JSON.stringify({
+                        name: GOOGLE_DRIVE_FILE_NAME,
+                        mimeType: 'application/json',
+                        description: 'Wealth Command financial data backup'
+                    })
                 }
             );
             
-            if (response.ok) {
-                const file = await response.json();
-                // Now upload the actual data
-                response = await fetch(
-                    `https://www.googleapis.com/upload/drive/v3/files/${file.id}?uploadType=media`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': `Bearer ${googleUser.access_token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(fileData)
-                    }
-                );
+            if (!createResponse.ok) {
+                throw new Error(`File creation failed: ${createResponse.status}`);
             }
+            
+            const newFile = await createResponse.json();
+            console.log('New file created with ID:', newFile.id);
+            
+            // Then upload the content to the newly created file
+            response = await fetch(
+                `https://www.googleapis.com/upload/drive/v3/files/${newFile.id}?uploadType=media`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${googleUser.access_token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(fileData)
+                }
+            );
         }
         
         if (response.ok) {
+            const result = await response.json();
+            console.log('Sync successful, file:', result.name, 'ID:', result.id);
             showSyncStatus('Data synced to Google Drive successfully!', 'success');
-            console.log('Data synced to Drive successfully');
             return true;
         } else {
-            const errorData = await response.text();
-            throw new Error(`Upload failed: ${response.status} - ${errorData}`);
+            const errorText = await response.text();
+            console.error('Upload failed with status:', response.status, 'Response:', errorText);
+            throw new Error(`Upload failed: ${response.status}`);
         }
     } catch (error) {
         console.error('Error syncing to Drive:', error);
@@ -557,7 +568,6 @@ async function syncDataToDrive() {
     } finally {
         syncInProgress = false;
         
-        // Process pending sync if any
         if (pendingSync) {
             pendingSync = false;
             setTimeout(syncDataToDrive, 1000);
