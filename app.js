@@ -2061,3 +2061,44 @@ document.addEventListener('DOMContentLoaded', function() {
     
     showTab("dashboard");
 });
+
+// Temporary debug function - call this from browser console
+async function debugDriveFiles() {
+    if (!googleUser || !googleUser.access_token) {
+        console.log('Not authenticated');
+        return;
+    }
+    
+    try {
+        // Search for ALL files to see what's actually there
+        const searchResponse = await fetch(
+            `https://www.googleapis.com/drive/v3/files?q=trashed=false&fields=files(id,name,mimeType,size,modifiedTime)&pageSize=20`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${googleUser.access_token}`
+                }
+            }
+        );
+        
+        if (searchResponse.ok) {
+            const data = await searchResponse.json();
+            console.log('=== ALL DRIVE FILES ===');
+            data.files.forEach(file => {
+                console.log(`📁 ${file.name} (${file.mimeType}) - ${file.id} - ${new Date(file.modifiedTime).toLocaleString()}`);
+            });
+            
+            // Specifically look for our file
+            const ourFile = data.files.find(f => f.name === GOOGLE_DRIVE_FILE_NAME);
+            if (ourFile) {
+                console.log('✅ OUR FILE FOUND:', ourFile);
+            } else {
+                console.log('❌ OUR FILE NOT FOUND');
+            }
+        }
+    } catch (error) {
+        console.error('Debug error:', error);
+    }
+}
+
+// Make it globally available so you can call it from browser console
+window.debugDriveFiles = debugDriveFiles;
