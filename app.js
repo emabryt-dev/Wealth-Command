@@ -10,7 +10,7 @@ let incomePieChart = null;
 let expensePieChart = null;
 let currentChartType = 'category';
 
-// Enhanced Google Drive Sync with Auto-backup
+// Enhanced Google Drive Sync with Two-Tier Backup System
 const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
 const GOOGLE_CLIENT_ID = '86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com';
 let googleUser = null;
@@ -18,6 +18,41 @@ let googleAuth = null;
 let isOnline = navigator.onLine;
 let syncInProgress = false;
 let pendingSync = false;
+let lastBackupMonth = null;
+
+// Helper function to get monthly backup filename
+function getMonthlyBackupFileName() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `wealth_command_backup_${year}-${month}.json`;
+}
+
+// Helper function to check if monthly backup already exists
+async function monthlyBackupExists() {
+    if (!googleUser || !googleUser.access_token) return false;
+    
+    const monthlyFileName = getMonthlyBackupFileName();
+    try {
+        const searchResponse = await fetch(
+            `https://www.googleapis.com/drive/v3/files?q=name='${monthlyFileName}' and trashed=false&fields=files(id)`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${googleUser.access_token}`
+                }
+            }
+        );
+        
+        if (searchResponse.ok) {
+            const data = await searchResponse.json();
+            return data.files && data.files.length > 0;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error checking monthly backup:', error);
+        return false;
+    }
+}
 
 // Monthly Rollover System
 function loadMonthlyBudgets() {
@@ -325,6 +360,7 @@ async function loadDataFromDrive() {
         return false;
     }
     
+    // Check if token is expired
     if (isTokenExpired(googleUser)) {
         showSyncStatus('Session expired. Please sign in again.', 'warning');
         googleSignOut();
@@ -334,15 +370,15 @@ async function loadDataFromDrive() {
     try {
         showSyncStatus('Loading data from Google Drive...', 'info');
         
-        // Search for the correct file with exact name match
+        // Search for the main sync file
         const searchResponse = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and mimeType='application/json' and trashed=false&fields=files(id,name,mimeType,modifiedTime)`,
-    {
-        headers: {
-            'Authorization': `Bearer ${googleUser.access_token}`
-        }
-    }
-);
+            `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name,modifiedTime)`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${googleUser.access_token}`
+                }
+            }
+        );
         
         if (searchResponse.status === 401) {
             showSyncStatus('Authentication expired. Please sign in again.', 'warning');
@@ -356,16 +392,10 @@ async function loadDataFromDrive() {
         
         const searchData = await searchResponse.json();
         
-        // Find the exact match (case-sensitive)
-        const exactMatch = searchData.files?.find(file => 
-            file.name === GOOGLE_DRIVE_FILE_NAME && 
-            file.mimeType === 'application/json'
-        );
-        
-        if (exactMatch) {
-            console.log('Found backup file:', exactMatch.name, 'ID:', exactMatch.id);
+        if (searchData.files && searchData.files.length > 0) {
+            const file = searchData.files[0];
             const fileResponse = await fetch(
-                `https://www.googleapis.com/drive/v3/files/${exactMatch.id}?alt=media`,
+                `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
                 {
                     headers: {
                         'Authorization': `Bearer ${googleUser.access_token}`
@@ -379,53 +409,60 @@ async function loadDataFromDrive() {
             
             const driveData = await fileResponse.json();
             
-            // Enhanced validation
-            if (driveData && driveData.app === 'Wealth Command') {
-                if (driveData.transactions && Array.isArray(driveData.transactions)) {
-                    transactions = driveData.transactions;
-                    localStorage.setItem('transactions', JSON.stringify(transactions));
-                }
-                
-                if (driveData.categories && Array.isArray(driveData.categories)) {
-                    categories = driveData.categories;
-                    localStorage.setItem('categories', JSON.stringify(categories));
-                }
-                
-                if (driveData.currency) {
-                    currency = driveData.currency;
-                    localStorage.setItem('currency', currency);
-                }
-                
-                if (driveData.monthlyBudgets) {
-                    monthlyBudgets = driveData.monthlyBudgets;
-                    localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
-                }
-                
-                updateUI();
-                populateSummaryFilters();
-                renderCategoryList();
-                
-                showSyncStatus(`Data loaded from backup (${exactMatch.modifiedTime})`, 'success');
-                return true;
-            } else {
-                throw new Error('Invalid backup file format');
+            // Validate and load data
+            if (driveData.transactions && Array.isArray(driveData.transactions)) {
+                transactions = driveData.transactions;
+                localStorage.setItem('transactions', JSON.stringify(transactions));
             }
-        } else {
-            console.log('No Wealth Command backup file found');
-            showSyncStatus('No existing backup found. Creating new backup...', 'info');
             
-            // Create initial backup with correct naming
+            if (driveData.categories && Array.isArray(driveData.categories)) {
+                categories = driveData.categories;
+                localStorage.setItem('categories', JSON.stringify(categories));
+            }
+            
+            if (driveData.currency) {
+                currency = driveData.currency;
+                localStorage.setItem('currency', currency);
+            }
+            
+            if (driveData.monthlyBudgets) {
+                monthlyBudgets = driveData.monthlyBudgets;
+                localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
+            }
+            
+            // Update last backup month from loaded data
+            if (driveData.lastBackupMonth) {
+                lastBackupMonth = driveData.lastBackupMonth;
+            }
+            
+            // Update UI with loaded data
+            updateUI();
+            populateSummaryFilters();
+            renderCategoryList();
+            
+            showSyncStatus('Data loaded from Google Drive successfully!', 'success');
+            console.log('Data loaded from Drive:', {
+                transactions: transactions.length,
+                categories: categories.length,
+                currency: currency,
+                monthlyBudgets: Object.keys(monthlyBudgets).length
+            });
+            
+            return true;
+        } else {
+            showSyncStatus('No existing data found. Creating new backup...', 'info');
+            // No file found, create one with current data
             await syncDataToDrive();
             return true;
         }
     } catch (error) {
         console.error('Error loading from Drive:', error);
-        showSyncStatus('Error loading backup: ' + error.message, 'danger');
+        showSyncStatus('Error loading from Google Drive: ' + error.message, 'danger');
         return false;
     }
 }
 
-// Enhanced sync function with retry logic
+// Enhanced sync function with monthly backups
 async function syncDataToDrive() {
     if (syncInProgress) {
         pendingSync = true;
@@ -443,6 +480,7 @@ async function syncDataToDrive() {
         return false;
     }
     
+    // Check if token is expired
     if (isTokenExpired(googleUser)) {
         showSyncStatus('Session expired. Please sign in again.', 'warning');
         googleSignOut();
@@ -454,107 +492,55 @@ async function syncDataToDrive() {
     try {
         showSyncStatus('Syncing to Google Drive...', 'info');
         
+        const currentMonth = getCurrentMonthKey();
+        const shouldCreateMonthlyBackup = lastBackupMonth !== currentMonth;
+        
         const fileData = {
             transactions,
             categories,
             currency,
             monthlyBudgets,
             lastSync: new Date().toISOString(),
+            lastBackupMonth: currentMonth, // Update to current month
             version: '1.2',
-            app: 'Wealth Command',
-            syncTimestamp: Date.now()
+            app: 'Wealth Command'
         };
-
-        // First, search for existing file
-        const searchResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name)`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${googleUser.access_token}`
-                }
-            }
-        );
         
-        if (searchResponse.status === 401) {
-            throw new Error('Authentication expired');
+        // Step 1: Sync main file (always)
+        console.log('Syncing main file...');
+        const mainFileSuccess = await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
+        
+        if (!mainFileSuccess) {
+            throw new Error('Failed to sync main file');
         }
         
-        if (!searchResponse.ok) {
-            throw new Error(`Search failed: ${searchResponse.status}`);
-        }
-        
-        const searchData = await searchResponse.json();
-        const existingFile = searchData.files?.[0];
-        
-        let response;
-        
-        if (existingFile) {
-            console.log('Updating existing file:', existingFile.id, existingFile.name);
+        // Step 2: Create monthly backup if needed
+        if (shouldCreateMonthlyBackup) {
+            console.log('Creating monthly backup...');
+            const monthlyFileName = getMonthlyBackupFileName();
+            const monthlyBackupData = {
+                ...fileData,
+                isMonthlyBackup: true,
+                backupMonth: currentMonth,
+                created: new Date().toISOString()
+            };
             
-            // Update existing file - CORRECT APPROACH
-            response = await fetch(
-                `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
-                {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${googleUser.access_token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(fileData)
-                }
-            );
+            await syncSingleFile(monthlyFileName, monthlyBackupData, false); // Don't overwrite existing monthly backups
+            
+            // Update last backup month
+            lastBackupMonth = currentMonth;
+            fileData.lastBackupMonth = currentMonth;
+            
+            // Update main file with new backup month info
+            await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
+            
+            showSyncStatus(`Data synced + monthly backup created!`, 'success');
         } else {
-            console.log('Creating new file with name:', GOOGLE_DRIVE_FILE_NAME);
-            
-            // Create new file - SIMPLIFIED CORRECT APPROACH
-            // First create the file metadata
-            const createResponse = await fetch(
-                'https://www.googleapis.com/drive/v3/files',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${googleUser.access_token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: GOOGLE_DRIVE_FILE_NAME,
-                        mimeType: 'application/json',
-                        description: 'Wealth Command financial data backup'
-                    })
-                }
-            );
-            
-            if (!createResponse.ok) {
-                throw new Error(`File creation failed: ${createResponse.status}`);
-            }
-            
-            const newFile = await createResponse.json();
-            console.log('New file created with ID:', newFile.id);
-            
-            // Then upload the content to the newly created file
-            response = await fetch(
-                `https://www.googleapis.com/upload/drive/v3/files/${newFile.id}?uploadType=media`,
-                {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `Bearer ${googleUser.access_token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(fileData)
-                }
-            );
-        }
-        
-        if (response.ok) {
-            const result = await response.json();
-            console.log('Sync successful, file:', result.name, 'ID:', result.id);
             showSyncStatus('Data synced to Google Drive successfully!', 'success');
-            return true;
-        } else {
-            const errorText = await response.text();
-            console.error('Upload failed with status:', response.status, 'Response:', errorText);
-            throw new Error(`Upload failed: ${response.status}`);
         }
+        
+        console.log('Sync completed successfully');
+        return true;
     } catch (error) {
         console.error('Error syncing to Drive:', error);
         
@@ -568,10 +554,104 @@ async function syncDataToDrive() {
     } finally {
         syncInProgress = false;
         
+        // Process pending sync if any
         if (pendingSync) {
             pendingSync = false;
             setTimeout(syncDataToDrive, 1000);
         }
+    }
+}
+
+// Helper function to sync a single file
+async function syncSingleFile(fileName, fileData, overwrite = true) {
+    // Search for existing file
+    const searchResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and trashed=false&fields=files(id)`,
+        {
+            headers: {
+                'Authorization': `Bearer ${googleUser.access_token}`
+            }
+        }
+    );
+    
+    if (searchResponse.status === 401) {
+        throw new Error('Authentication expired');
+    }
+    
+    if (!searchResponse.ok) {
+        throw new Error(`Search failed: ${searchResponse.status}`);
+    }
+    
+    const searchData = await searchResponse.json();
+    const existingFile = searchData.files?.[0];
+    
+    let response;
+    
+    if (existingFile && overwrite) {
+        // Update existing file
+        console.log(`Updating existing file: ${fileName}`);
+        response = await fetch(
+            `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${googleUser.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(fileData)
+            }
+        );
+    } else if (!existingFile) {
+        // Create new file
+        console.log(`Creating new file: ${fileName}`);
+        
+        // First create the file metadata
+        const createResponse = await fetch(
+            'https://www.googleapis.com/drive/v3/files',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${googleUser.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: fileName,
+                    mimeType: 'application/json',
+                    description: `Wealth Command ${fileName.includes('backup') ? 'Monthly Backup' : 'Main Sync File'}`
+                })
+            }
+        );
+        
+        if (!createResponse.ok) {
+            throw new Error(`File creation failed: ${createResponse.status}`);
+        }
+        
+        const newFile = await createResponse.json();
+        
+        // Then upload the content
+        response = await fetch(
+            `https://www.googleapis.com/upload/drive/v3/files/${newFile.id}?uploadType=media`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${googleUser.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(fileData)
+            }
+        );
+    } else {
+        // File exists but we shouldn't overwrite (for monthly backups)
+        console.log(`File ${fileName} already exists, skipping creation`);
+        return true;
+    }
+    
+    if (response.ok) {
+        console.log(`File ${fileName} synced successfully`);
+        return true;
+    } else {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
     }
 }
 
@@ -1042,7 +1122,7 @@ function populateSummaryFilters() {
     const yearsArr = Array.from(new Set(transactions.map(tx => {
         const d = new Date(tx.date);
         return isNaN(d) ? null : d.getFullYear();
-    }).filter(Boolean)));
+    }).filter(Boolean));
     
     if (!yearsArr.includes(currentYear)) {
         yearsArr.push(currentYear);
@@ -1151,7 +1231,7 @@ document.getElementById('transactionForm').addEventListener('submit', function(e
         transactions[editIndex] = { date, desc, type, category: cat, amount };
         showToast('Transaction updated successfully', 'success');
     } else {
-        transactions.push({ date, desc, type, category: cat, amount });
+        transactions.push({ date, desc, type, category: cat, amount };
         showToast('Transaction added successfully', 'success');
     }
     
@@ -2061,44 +2141,3 @@ document.addEventListener('DOMContentLoaded', function() {
     
     showTab("dashboard");
 });
-
-// Temporary debug function - call this from browser console
-async function debugDriveFiles() {
-    if (!googleUser || !googleUser.access_token) {
-        console.log('Not authenticated');
-        return;
-    }
-    
-    try {
-        // Search for ALL files to see what's actually there
-        const searchResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=trashed=false&fields=files(id,name,mimeType,size,modifiedTime)&pageSize=20`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${googleUser.access_token}`
-                }
-            }
-        );
-        
-        if (searchResponse.ok) {
-            const data = await searchResponse.json();
-            console.log('=== ALL DRIVE FILES ===');
-            data.files.forEach(file => {
-                console.log(`📁 ${file.name} (${file.mimeType}) - ${file.id} - ${new Date(file.modifiedTime).toLocaleString()}`);
-            });
-            
-            // Specifically look for our file
-            const ourFile = data.files.find(f => f.name === GOOGLE_DRIVE_FILE_NAME);
-            if (ourFile) {
-                console.log('✅ OUR FILE FOUND:', ourFile);
-            } else {
-                console.log('❌ OUR FILE NOT FOUND');
-            }
-        }
-    } catch (error) {
-        console.error('Debug error:', error);
-    }
-}
-
-// Make it globally available so you can call it from browser console
-window.debugDriveFiles = debugDriveFiles;
