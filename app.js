@@ -1208,32 +1208,40 @@ function populateChartFilters() {
 function renderEnhancedCharts() {
     updateChartSummaryStats();
     
-    // Set up chart type buttons - FIXED VERSION
-    const chartTypeButtons = document.querySelectorAll('[data-chart-type]');
+    // Use event delegation on the parent container
+    const chartControls = document.querySelector('.chart-header-row');
     
-    // Remove existing event listeners by using event delegation
-    chartTypeButtons.forEach(btn => {
-        // Clone the button to remove event listeners
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-    });
+    // Remove any existing listener and add a fresh one
+    chartControls.removeEventListener('click', handleChartTypeClick);
+    chartControls.addEventListener('click', handleChartTypeClick);
     
-    // Re-attach event listeners to the new buttons
+    // Set initial active state
     document.querySelectorAll('[data-chart-type]').forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Remove active class from all buttons
-            document.querySelectorAll('[data-chart-type]').forEach(b => {
-                b.classList.remove('active');
-            });
-            // Add active class to clicked button
-            this.classList.add('active');
-            currentChartType = this.dataset.chartType;
-            renderMainChart();
-        });
+        if (btn.dataset.chartType === currentChartType) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     });
     
     renderMainChart();
     renderPieCharts();
+}
+
+// Separate function for better organization
+function handleChartTypeClick(event) {
+    const button = event.target.closest('[data-chart-type]');
+    if (!button) return;
+    
+    // Update active state
+    document.querySelectorAll('[data-chart-type]').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    button.classList.add('active');
+    
+    // Update chart type and render
+    currentChartType = button.dataset.chartType;
+    renderMainChart();
 }
 
 function renderMainChart() {
