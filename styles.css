@@ -154,13 +154,13 @@ body {
   flex-direction: column;
   gap: 1.5rem;
   margin-bottom: 2rem;
-  min-height: 50vh;
+  min-height: 60vh !important; /* Increased height */
   flex: 1;
 }
 
 .breakdown-card {
   flex: 1;
-  min-height: 280px;
+  min-height: 320px !important; /* Increased minimum height */
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -213,6 +213,7 @@ body {
   padding: 1rem;
   max-height: none;
   overflow-y: auto;
+  min-height: 200px !important; /* Ensure minimum height for content */
 }
 
 .breakdown-item {
@@ -223,6 +224,7 @@ body {
   border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  min-height: 50px; /* Ensure consistent height */
 }
 
 .breakdown-item:hover {
@@ -463,6 +465,20 @@ body {
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
+  border-radius: 0.8rem 0.8rem 0 0;
+}
+
+.chart-controls .input-group {
+  max-width: 300px;
+}
+
+.chart-controls .input-group-text {
+  background: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.chart-controls .form-select {
+  border-color: #dee2e6;
 }
 
 .chart-body {
@@ -484,6 +500,18 @@ body {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.chart-type-buttons .btn {
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.chart-type-buttons .btn.active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .chart-summary-stats {
@@ -520,6 +548,93 @@ body {
   color: #6c757d;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Improved distribution cards */
+.distribution-card {
+  border-radius: 0.8rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.distribution-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.distribution-card .card-header {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+  font-weight: 600;
+  border-bottom: none;
+  padding: 1rem 1.5rem;
+}
+
+.distribution-card.income .card-header {
+  background: linear-gradient(135deg, #198754, #157347);
+}
+
+.distribution-card.expense .card-header {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+.distribution-card .chart-body {
+  padding: 1.5rem;
+  height: 250px;
+  position: relative;
+  background: white;
+}
+
+/* Make chart type buttons inline with filters */
+.chart-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.chart-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chart-filters .input-group {
+  max-width: 200px;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .breakdown-container {
+    min-height: 50vh !important;
+  }
+  
+  .breakdown-card {
+    min-height: 280px !important;
+  }
+  
+  .chart-header-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .chart-filters {
+    justify-content: center;
+  }
+  
+  .chart-filters .input-group {
+    max-width: 150px;
+  }
+  
+  footer {
+    margin-top: 3rem !important;
+  }
 }
 
 /* Rollover Balance Styles */
@@ -631,9 +746,11 @@ body {
 }
 
 footer {
-  margin-top: 3rem !important;
+  margin-top: 4rem !important; /* More space above footer */
   padding-top: 2rem;
   border-top: 1px solid #dee2e6;
+  position: relative;
+  z-index: 1;
 }
 
 /* Dark mode support */
@@ -883,8 +1000,10 @@ body.dark-mode .clickable-row:hover {
   body {
     padding-bottom: 0 !important;
   }
-  
   .main-content {
-    padding-bottom: 0 !important;
+  min-height: calc(100vh - 140px) !important;
+  padding-bottom: 150px !important; /* Increased padding */
+  display: flex;
+  flex-direction: column;
   }
 }
