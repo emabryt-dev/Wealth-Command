@@ -228,78 +228,88 @@
     </div>
 
     <!-- Enhanced Charts Tab -->
-    <div id="tab-charts" class="tab-page d-none">
-      <div class="charts-container">
-        <!-- Summary Statistics -->
-        <div class="chart-summary-stats" id="chartSummaryStats">
-          <!-- Stats will be populated dynamically -->
-        </div>
+<div id="tab-charts" class="tab-page d-none">
+  <div class="charts-container">
+    <!-- Summary Statistics -->
+    <div class="chart-summary-stats" id="chartSummaryStats">
+      <!-- Stats will be populated dynamically -->
+    </div>
 
-        <!-- Chart Controls -->
-        <div class="chart-controls">
-          <div class="chart-type-buttons">
-            <button class="btn btn-outline-primary btn-sm active" data-chart-type="category">
-              <i class="bi bi-bar-chart"></i> Categories
-            </button>
-            <button class="btn btn-outline-primary btn-sm" data-chart-type="monthly">
-              <i class="bi bi-graph-up"></i> Monthly Trend
-            </button>
-            <button class="btn btn-outline-primary btn-sm" data-chart-type="yearly">
-              <i class="bi bi-calendar-range"></i> Yearly Comparison
-            </button>
-          </div>
-          <div class="ms-auto d-flex gap-2 align-items-center">
-            <select id="chartMonth" class="form-select form-select-sm" style="width: auto;">
-              <option value="all">All Months</option>
-            </select>
-            <select id="chartYear" class="form-select form-select-sm" style="width: auto;">
-              <option value="all">All Years</option>
-            </select>
-          </div>
+    <!-- Enhanced Chart Header Row -->
+    <div class="chart-header-row">
+      <div class="chart-type-buttons">
+        <button class="btn btn-outline-primary active" data-chart-type="category">
+          <i class="bi bi-bar-chart"></i> Categories
+        </button>
+        <button class="btn btn-outline-primary" data-chart-type="monthly">
+          <i class="bi bi-graph-up"></i> Monthly Trend
+        </button>
+        <button class="btn btn-outline-primary" data-chart-type="yearly">
+          <i class="bi bi-calendar-range"></i> Yearly Comparison
+        </button>
+      </div>
+      
+      <div class="chart-filters">
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="bi bi-calendar-month"></i></span>
+          <select id="chartMonth" class="form-select">
+            <option value="all">All Months</option>
+          </select>
         </div>
+        <div class="input-group">
+          <span class="input-group-text bg-light"><i class="bi bi-calendar-year"></i></span>
+          <select id="chartYear" class="form-select">
+            <option value="all">All Years</option>
+          </select>
+        </div>
+      </div>
+    </div>
 
-        <!-- Main Chart Container -->
-        <div class="chart-card">
+    <!-- Main Chart Container -->
+    <div class="chart-card">
+      <div class="chart-body">
+        <canvas id="mainChart" height="280"></canvas>
+        <div id="chartPlaceholder" class="chart-placeholder d-none">
+          <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.5;"></i>
+          <p class="mt-2">Select a chart type to view data visualization</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enhanced Distribution Cards -->
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <div class="distribution-card income">
+          <div class="card-header">
+            <i class="bi bi-pie-chart"></i> Income Distribution
+          </div>
           <div class="chart-body">
-            <canvas id="mainChart" height="250"></canvas>
-            <div id="chartPlaceholder" class="chart-placeholder d-none">
-              Select a chart type to view data visualization
+            <canvas id="incomePieChart" height="220"></canvas>
+            <div id="incomePiePlaceholder" class="chart-placeholder">
+              <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.5;"></i>
+              <p class="mt-2">No income data available</p>
             </div>
           </div>
         </div>
-
-        <!-- Additional Mini Charts -->
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <div class="chart-card">
-              <div class="card-header">
-                <i class="bi bi-pie-chart"></i> Income Distribution
-              </div>
-              <div class="chart-body">
-                <canvas id="incomePieChart" height="200"></canvas>
-                <div id="incomePiePlaceholder" class="chart-placeholder">
-                  No income data available
-                </div>
-              </div>
-            </div>
+      </div>
+      <div class="col-12 col-md-6">
+        <div class="distribution-card expense">
+          <div class="card-header">
+            <i class="bi bi-pie-chart"></i> Expense Distribution
           </div>
-          <div class="col-12 col-md-6">
-            <div class="chart-card">
-              <div class="card-header">
-                <i class="bi bi-pie-chart"></i> Expense Distribution
-              </div>
-              <div class="chart-body">
-                <canvas id="expensePieChart" height="200"></canvas>
-                <div id="expensePiePlaceholder" class="chart-placeholder">
-                  No expense data available
-                </div>
-              </div>
+          <div class="chart-body">
+            <canvas id="expensePieChart" height="220"></canvas>
+            <div id="expensePiePlaceholder" class="chart-placeholder">
+              <i class="bi bi-cart" style="font-size: 2rem; opacity: 0.5;"></i>
+              <p class="mt-2">No expense data available</p>
             </div>
           </div>
         </div>
       </div>
     </div>
-
+  </div>
+</div>
+    
     <!-- Settings Tab -->
     <div id="tab-settings" class="tab-page d-none">
       <div class="card shadow-sm mb-4">
