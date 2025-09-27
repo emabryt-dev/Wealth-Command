@@ -524,6 +524,50 @@ function showTab(tab) {
     }
 }
 
+function updateChartSummaryStats() {
+    const statsContainer = document.getElementById('chartSummaryStats');
+    const chartMonth = document.getElementById('chartMonth').value;
+    const chartYear = document.getElementById('chartYear').value;
+    
+    let filteredTx = transactions;
+    if (chartMonth !== 'all' || chartYear !== 'all') {
+        filteredTx = transactions.filter(tx => {
+            const d = new Date(tx.date);
+            if (isNaN(d)) return false;
+            let valid = true;
+            if (chartMonth !== 'all') valid = valid && (d.getMonth() + 1) == chartMonth;
+            if (chartYear !== 'all') valid = valid && d.getFullYear() == chartYear;
+            return valid;
+        });
+    }
+    
+    const totalIncome = filteredTx.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
+    const totalExpense = filteredTx.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0);
+    const netWealth = totalIncome - totalExpense;
+    const transactionCount = filteredTx.length;
+    
+    statsContainer.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-value text-primary">${transactionCount}</div>
+            <div class="stat-label">Transactions</div>
+        </div>
+        <div class="stat-card income">
+            <div class="stat-value text-success">${totalIncome.toLocaleString()} ${currency}</div>
+            <div class="stat-label">Total Income</div>
+        </div>
+        <div class="stat-card expense">
+            <div class="stat-value text-danger">${totalExpense.toLocaleString()} ${currency}</div>
+            <div class="stat-label">Total Expense</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value ${netWealth >= 0 ? 'text-success' : 'text-danger'}">
+                ${netWealth.toLocaleString()} ${currency}
+            </div>
+            <div class="stat-label">Net Wealth</div>
+        </div>
+    `;
+}
+
 function adjustTransactionsTable() {
     const tableContainer = document.querySelector('#tab-transactions .table-container');
     const table = document.getElementById('transactionsTable');
@@ -1206,22 +1250,29 @@ function populateChartFilters() {
 }
 
 function renderEnhancedCharts() {
+    // Safety check - make sure required elements exist
+    if (!document.getElementById('chartSummaryStats')) {
+        console.error('Chart summary stats element not found');
+        return;
+    }
+    
     updateChartSummaryStats();
     
-    // Use event delegation on the parent container
-    const chartControls = document.querySelector('.chart-header-row');
+    // Safety check for chart type buttons
+    const chartTypeButtons = document.querySelectorAll('[data-chart-type]');
+    if (chartTypeButtons.length === 0) {
+        console.error('Chart type buttons not found');
+        return;
+    }
     
-    // Remove any existing listener and add a fresh one
-    chartControls.removeEventListener('click', handleChartTypeClick);
-    chartControls.addEventListener('click', handleChartTypeClick);
-    
-    // Set initial active state
-    document.querySelectorAll('[data-chart-type]').forEach(btn => {
-        if (btn.dataset.chartType === currentChartType) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+    // Simple event handling without complex cloning
+    chartTypeButtons.forEach(btn => {
+        btn.onclick = function() {
+            chartTypeButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentChartType = this.dataset.chartType;
+            renderMainChart();
+        };
     });
     
     renderMainChart();
