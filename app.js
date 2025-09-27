@@ -524,50 +524,6 @@ function showTab(tab) {
     }
 }
 
-function updateChartSummaryStats() {
-    const statsContainer = document.getElementById('chartSummaryStats');
-    const chartMonth = document.getElementById('chartMonth').value;
-    const chartYear = document.getElementById('chartYear').value;
-    
-    let filteredTx = transactions;
-    if (chartMonth !== 'all' || chartYear !== 'all') {
-        filteredTx = transactions.filter(tx => {
-            const d = new Date(tx.date);
-            if (isNaN(d)) return false;
-            let valid = true;
-            if (chartMonth !== 'all') valid = valid && (d.getMonth() + 1) == chartMonth;
-            if (chartYear !== 'all') valid = valid && d.getFullYear() == chartYear;
-            return valid;
-        });
-    }
-    
-    const totalIncome = filteredTx.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
-    const totalExpense = filteredTx.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0);
-    const netWealth = totalIncome - totalExpense;
-    const transactionCount = filteredTx.length;
-    
-    statsContainer.innerHTML = `
-        <div class="stat-card">
-            <div class="stat-value text-primary">${transactionCount}</div>
-            <div class="stat-label">Transactions</div>
-        </div>
-        <div class="stat-card income">
-            <div class="stat-value text-success">${totalIncome.toLocaleString()} ${currency}</div>
-            <div class="stat-label">Total Income</div>
-        </div>
-        <div class="stat-card expense">
-            <div class="stat-value text-danger">${totalExpense.toLocaleString()} ${currency}</div>
-            <div class="stat-label">Total Expense</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value ${netWealth >= 0 ? 'text-success' : 'text-danger'}">
-                ${netWealth.toLocaleString()} ${currency}
-            </div>
-            <div class="stat-label">Net Wealth</div>
-        </div>
-    `;
-}
-
 function adjustTransactionsTable() {
     const tableContainer = document.querySelector('#tab-transactions .table-container');
     const table = document.getElementById('transactionsTable');
@@ -1200,72 +1156,61 @@ function updateUI() {
 }
 
 // Enhanced Charts Tab Functions
-function populateChartFilters() {
-    const chartMonth = document.getElementById('chartMonth');
-    const chartYear = document.getElementById('chartYear');
+function updateChartSummaryStats() {
+    const statsContainer = document.getElementById('chartSummaryStats');
+    if (!statsContainer) return;
     
-    // Clear existing options
-    chartMonth.innerHTML = '<option value="all">All Months</option>';
-    chartYear.innerHTML = '<option value="all">All Years</option>';
+    const chartMonth = document.getElementById('chartMonth')?.value || 'all';
+    const chartYear = document.getElementById('chartYear')?.value || 'all';
     
-    // Populate months
-    const monthNames = ["January", "February", "March", "April", "May", "June", 
-                       "July", "August", "September", "October", "November", "December"];
-    
-    monthNames.forEach((monthName, index) => {
-        const option = document.createElement('option');
-        option.value = index + 1;
-        option.textContent = monthName;
-        chartMonth.appendChild(option);
-    });
-    
-    // Populate years from transactions
-    const years = Array.from(new Set(transactions.map(tx => {
-        const year = new Date(tx.date).getFullYear();
-        return isNaN(year) ? null : year;
-    }).filter(year => year !== null)))
-    .sort((a, b) => b - a);
-    
-    // Always include current year
-    const currentYear = new Date().getFullYear();
-    if (!years.includes(currentYear)) {
-        years.unshift(currentYear);
+    let filteredTx = transactions;
+    if (chartMonth !== 'all' || chartYear !== 'all') {
+        filteredTx = transactions.filter(tx => {
+            const d = new Date(tx.date);
+            if (isNaN(d)) return false;
+            let valid = true;
+            if (chartMonth !== 'all') valid = valid && (d.getMonth() + 1) == chartMonth;
+            if (chartYear !== 'all') valid = valid && d.getFullYear() == chartYear;
+            return valid;
+        });
     }
     
-    years.forEach(year => {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year;
-        chartYear.appendChild(option);
-    });
+    const totalIncome = filteredTx.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
+    const totalExpense = filteredTx.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0);
+    const netWealth = totalIncome - totalExpense;
+    const transactionCount = filteredTx.length;
     
-    // Set current month/year as default
-    const now = new Date();
-    chartMonth.value = now.getMonth() + 1;
-    chartYear.value = now.getFullYear();
-    
-    // Add event listeners
-    chartMonth.addEventListener('change', renderEnhancedCharts);
-    chartYear.addEventListener('change', renderEnhancedCharts);
+    statsContainer.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-value text-primary">${transactionCount}</div>
+            <div class="stat-label">Transactions</div>
+        </div>
+        <div class="stat-card income">
+            <div class="stat-value text-success">${totalIncome.toLocaleString()} ${currency}</div>
+            <div class="stat-label">Total Income</div>
+        </div>
+        <div class="stat-card expense">
+            <div class="stat-value text-danger">${totalExpense.toLocaleString()} ${currency}</div>
+            <div class="stat-label">Total Expense</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value ${netWealth >= 0 ? 'text-success' : 'text-danger'}">
+                ${netWealth.toLocaleString()} ${currency}
+            </div>
+            <div class="stat-label">Net Wealth</div>
+        </div>
+    `;
 }
 
 function renderEnhancedCharts() {
-    // Safety check - make sure required elements exist
-    if (!document.getElementById('chartSummaryStats')) {
-        console.error('Chart summary stats element not found');
-        return;
-    }
+    if (!document.getElementById('chartSummaryStats')) return;
     
     updateChartSummaryStats();
     
-    // Safety check for chart type buttons
     const chartTypeButtons = document.querySelectorAll('[data-chart-type]');
-    if (chartTypeButtons.length === 0) {
-        console.error('Chart type buttons not found');
-        return;
-    }
+    if (chartTypeButtons.length === 0) return;
     
-    // Simple event handling without complex cloning
+    // Simple event handling
     chartTypeButtons.forEach(btn => {
         btn.onclick = function() {
             chartTypeButtons.forEach(b => b.classList.remove('active'));
@@ -1279,20 +1224,49 @@ function renderEnhancedCharts() {
     renderPieCharts();
 }
 
-// Separate function for better organization
-function handleChartTypeClick(event) {
-    const button = event.target.closest('[data-chart-type]');
-    if (!button) return;
+function populateChartFilters() {
+    const chartMonth = document.getElementById('chartMonth');
+    const chartYear = document.getElementById('chartYear');
     
-    // Update active state
-    document.querySelectorAll('[data-chart-type]').forEach(btn => {
-        btn.classList.remove('active');
+    if (!chartMonth || !chartYear) return;
+    
+    chartMonth.innerHTML = '<option value="all">All Months</option>';
+    chartYear.innerHTML = '<option value="all">All Years</option>';
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June", 
+                       "July", "August", "September", "October", "November", "December"];
+    
+    monthNames.forEach((monthName, index) => {
+        const option = document.createElement('option');
+        option.value = index + 1;
+        option.textContent = monthName;
+        chartMonth.appendChild(option);
     });
-    button.classList.add('active');
     
-    // Update chart type and render
-    currentChartType = button.dataset.chartType;
-    renderMainChart();
+    const years = Array.from(new Set(transactions.map(tx => {
+        const year = new Date(tx.date).getFullYear();
+        return isNaN(year) ? null : year;
+    }).filter(year => year !== null)))
+    .sort((a, b) => b - a);
+    
+    const currentYear = new Date().getFullYear();
+    if (!years.includes(currentYear)) {
+        years.unshift(currentYear);
+    }
+    
+    years.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        chartYear.appendChild(option);
+    });
+    
+    const now = new Date();
+    chartMonth.value = now.getMonth() + 1;
+    chartYear.value = now.getFullYear();
+    
+    chartMonth.addEventListener('change', renderEnhancedCharts);
+    chartYear.addEventListener('change', renderEnhancedCharts);
 }
 
 function renderMainChart() {
@@ -1322,7 +1296,7 @@ function renderMainChart() {
             renderMonthlyTrendChart(ctx, chartYear);
             break;
         case 'yearly':
-            renderYearlyTrendChart(ctx, chartMonth); // Changed to trend style
+            renderYearlyTrendChart(ctx, chartMonth);
             break;
     }
 }
