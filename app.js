@@ -1208,17 +1208,24 @@ function populateChartFilters() {
 function renderEnhancedCharts() {
     updateChartSummaryStats();
     
-    // Set up chart type buttons
+    // Set up chart type buttons - FIXED VERSION
     const chartTypeButtons = document.querySelectorAll('[data-chart-type]');
+    
+    // Remove existing event listeners by using event delegation
     chartTypeButtons.forEach(btn => {
-        // Remove existing listeners
-        btn.replaceWith(btn.cloneNode(true));
+        // Clone the button to remove event listeners
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
     });
     
-    // Re-select buttons after clone
+    // Re-attach event listeners to the new buttons
     document.querySelectorAll('[data-chart-type]').forEach(btn => {
         btn.addEventListener('click', function() {
-            document.querySelectorAll('[data-chart-type]').forEach(b => b.classList.remove('active'));
+            // Remove active class from all buttons
+            document.querySelectorAll('[data-chart-type]').forEach(b => {
+                b.classList.remove('active');
+            });
+            // Add active class to clicked button
             this.classList.add('active');
             currentChartType = this.dataset.chartType;
             renderMainChart();
