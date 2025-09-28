@@ -19,6 +19,7 @@ let isOnline = navigator.onLine;
 let syncInProgress = false;
 let pendingSync = false;
 let lastBackupMonth = null;
+let lastSyncTime = null;
 
 // Helper function to get monthly backup filename
 function getMonthlyBackupFileName() {
@@ -28,13 +29,34 @@ function getMonthlyBackupFileName() {
     return `wealth_command_backup_${year}-${month}.json`;
 }
 
-// Monthly Rollover System
+// Enhanced Monthly Rollover System
 function loadMonthlyBudgets() {
     try {
         const budgets = JSON.parse(localStorage.getItem('monthlyBudgets')) || {};
-        const currentMonth = getCurrentMonthKey();
-        if (!budgets[currentMonth]) {
-            budgets[currentMonth] = {
+        ensureAllMonthsHaveBudgets(budgets);
+        return budgets;
+    } catch {
+        const budgets = {};
+        ensureAllMonthsHaveBudgets(budgets);
+        localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
+        return budgets;
+    }
+}
+
+function ensureAllMonthsHaveBudgets(budgets) {
+    // Get all unique months from transactions
+    const transactionMonths = [...new Set(transactions.map(tx => getMonthKeyFromDate(tx.date)))];
+    
+    // Add current month if no transactions exist
+    const currentMonth = getCurrentMonthKey();
+    if (!transactionMonths.includes(currentMonth)) {
+        transactionMonths.push(currentMonth);
+    }
+    
+    // Ensure each month has a budget entry
+    transactionMonths.forEach(month => {
+        if (!budgets[month]) {
+            budgets[month] = {
                 startingBalance: 0,
                 income: 0,
                 expenses: 0,
@@ -42,23 +64,17 @@ function loadMonthlyBudgets() {
                 autoRollover: true,
                 allowNegative: false
             };
-            localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
         }
-        return budgets;
-    } catch {
-        const currentMonth = getCurrentMonthKey();
-        const budgets = {};
-        budgets[currentMonth] = {
-            startingBalance: 0,
-            income: 0,
-            expenses: 0,
-            endingBalance: 0,
-            autoRollover: true,
-            allowNegative: false
-        };
-        localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
-        return budgets;
-    }
+    });
+    
+    // Sort months chronologically
+    const sortedMonths = Object.keys(budgets).sort();
+    const sortedBudgets = {};
+    sortedMonths.forEach(month => {
+        sortedBudgets[month] = budgets[month];
+    });
+    
+    return sortedBudgets;
 }
 
 function getCurrentMonthKey() {
@@ -69,25 +85,35 @@ function getCurrentMonthKey() {
 let monthlyBudgets = loadMonthlyBudgets();
 
 function saveMonthlyBudgets(budgets) {
-    monthlyBudgets = budgets;
-    localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
+    monthlyBudgets = ensureAllMonthsHaveBudgets(budgets);
+    localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
     autoSyncToDrive();
 }
 
 function getMonthKeyFromDate(dateString) {
-    const date = new Date(dateString);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date)) return getCurrentMonthKey();
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    } catch {
+        return getCurrentMonthKey();
+    }
 }
 
 function calculateMonthlyRollover() {
-    const months = Object.keys(monthlyBudgets).sort();
+    console.log('Calculating monthly rollover...');
     
-    for (let i = 0; i < months.length; i++) {
-        const currentMonth = months[i];
-        const monthData = monthlyBudgets[currentMonth];
-        
+    // Ensure all months have budget entries
+    monthlyBudgets = ensureAllMonthsHaveBudgets(monthlyBudgets);
+    
+    const months = Object.keys(monthlyBudgets).sort();
+    console.log('Processing months:', months);
+    
+    // First pass: Calculate income and expenses for each month
+    months.forEach(month => {
+        const monthData = monthlyBudgets[month];
         const monthTransactions = transactions.filter(tx => 
-            getMonthKeyFromDate(tx.date) === currentMonth
+            getMonthKeyFromDate(tx.date) === month
         );
         
         monthData.income = monthTransactions
@@ -98,8 +124,17 @@ function calculateMonthlyRollover() {
             .filter(tx => tx.type === 'expense')
             .reduce((sum, tx) => sum + tx.amount, 0);
             
+        console.log(`Month ${month}: Income=${monthData.income}, Expenses=${monthData.expenses}`);
+    });
+    
+    // Second pass: Calculate ending balances and rollovers
+    for (let i = 0; i < months.length; i++) {
+        const currentMonth = months[i];
+        const monthData = monthlyBudgets[currentMonth];
+        
         monthData.endingBalance = monthData.startingBalance + monthData.income - monthData.expenses;
         
+        // Roll over to next month if auto-rollover is enabled
         if (monthData.autoRollover && i < months.length - 1) {
             const nextMonth = months[i + 1];
             if (monthData.endingBalance >= 0 || monthData.allowNegative) {
@@ -107,10 +142,12 @@ function calculateMonthlyRollover() {
             } else {
                 monthlyBudgets[nextMonth].startingBalance = 0;
             }
+            console.log(`Rollover from ${currentMonth} to ${nextMonth}: ${monthlyBudgets[nextMonth].startingBalance}`);
         }
     }
     
     saveMonthlyBudgets(monthlyBudgets);
+    console.log('Rollover calculation completed');
 }
 
 function updateRolloverDisplay() {
@@ -184,14 +221,21 @@ function toggleRolloverSettings() {
         if (newBalance !== null && !isNaN(parseFloat(newBalance))) {
             monthData.startingBalance = parseFloat(newBalance);
             saveMonthlyBudgets(monthlyBudgets);
+            calculateMonthlyRollover();
             updateUI();
             showToast('Starting balance updated', 'success');
         }
     }
 }
 
-// Enhanced Toast System
+// Enhanced Toast System for important messages only
 function showToast(message, type = 'info', duration = 4000) {
+    // Only show critical toasts, use status icons for sync messages
+    if (type === 'info' && message.includes('sync') || message.includes('Sync')) {
+        updateSyncStatus(type, message);
+        return;
+    }
+    
     const toastContainer = document.getElementById('toastContainer');
     const toastId = 'toast-' + Date.now();
     
@@ -226,15 +270,61 @@ function showToast(message, type = 'info', duration = 4000) {
     bsToast.show();
 }
 
+// Sync Status Icon System
+function updateSyncStatus(status, message = '') {
+    const syncIcon = document.getElementById('syncStatusIcon');
+    const syncTooltip = document.getElementById('syncStatusTooltip');
+    
+    if (!syncIcon) return;
+    
+    // Remove all existing classes
+    syncIcon.className = 'bi';
+    
+    switch (status) {
+        case 'success':
+            syncIcon.classList.add('bi-cloud-check', 'text-success');
+            syncTooltip.textContent = message || `Synced ${lastSyncTime ? new Date(lastSyncTime).toLocaleTimeString() : 'just now'}`;
+            break;
+        case 'info':
+        case 'syncing':
+            syncIcon.classList.add('bi-cloud-arrow-up', 'text-info', 'pulse');
+            syncTooltip.textContent = message || 'Syncing...';
+            break;
+        case 'warning':
+            syncIcon.classList.add('bi-cloud-slash', 'text-warning');
+            syncTooltip.textContent = message || 'Offline - changes will sync when online';
+            break;
+        case 'danger':
+        case 'error':
+            syncIcon.classList.add('bi-cloud-x', 'text-danger');
+            syncTooltip.textContent = message || 'Sync failed';
+            break;
+        case 'offline':
+            syncIcon.classList.add('bi-cloud-slash', 'text-muted');
+            syncTooltip.textContent = message || 'Offline';
+            break;
+        default:
+            syncIcon.classList.add('bi-cloud', 'text-muted');
+            syncTooltip.textContent = message || 'Not signed in';
+    }
+}
+
 function showSyncStatus(message, type) {
-    showToast(message, type, type === 'success' ? 3000 : 5000);
+    updateSyncStatus(type, message);
+    // Only show toast for errors
+    if (type === 'danger' || type === 'warning') {
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer.querySelector('.toast')) {
+            showToast(message, type, 5000);
+        }
+    }
 }
 
 // Enhanced Google Auth with better error handling
 function initGoogleAuth() {
     if (!window.google) {
         console.error('Google API not loaded');
-        showSyncStatus('Google authentication not available. Please refresh the page.', 'warning');
+        showSyncStatus('error', 'Google authentication not available');
         return;
     }
     
@@ -251,7 +341,7 @@ function initGoogleAuth() {
                     };
                     
                     localStorage.setItem('googleUser', JSON.stringify(googleUser));
-                    showSyncStatus('Google Drive connected successfully!', 'success');
+                    showSyncStatus('success', 'Google Drive connected!');
                     updateProfileUI();
                     
                     // Auto-load data from Drive after sign-in
@@ -268,13 +358,15 @@ function initGoogleAuth() {
                     googleUser = null;
                     localStorage.removeItem('googleUser');
                     updateProfileUI();
+                    showSyncStatus('offline', 'Signed out from Google Drive');
+                } else {
+                    showSyncStatus('error', 'Google Sign-In failed');
                 }
-                showSyncStatus('Google Sign-In failed: ' + error.message, 'danger');
             }
         });
     } catch (error) {
         console.error('Error initializing Google Auth:', error);
-        showSyncStatus('Failed to initialize Google authentication', 'danger');
+        showSyncStatus('error', 'Failed to initialize Google authentication');
     }
 }
 
@@ -310,6 +402,7 @@ function updateProfileUI() {
         if (syncStatusText) {
             syncStatusText.textContent = 'Synced with Google Drive';
         }
+        showSyncStatus('success', 'Connected to Google Drive');
     } else {
         profilePicture.innerHTML = `<i class="bi bi-person-circle profile-icon"></i>`;
         signedInUser.classList.add('d-none');
@@ -319,30 +412,31 @@ function updateProfileUI() {
         if (syncStatusText) {
             syncStatusText.textContent = 'Sign in to sync with Google Drive';
         }
+        showSyncStatus('offline', 'Sign in to sync with Google Drive');
     }
 }
 
 // Enhanced data loading from Google Drive
 async function loadDataFromDrive() {
     if (!googleUser || !googleUser.access_token) {
-        showSyncStatus('Not authenticated with Google Drive', 'warning');
+        showSyncStatus('offline', 'Not authenticated with Google Drive');
         return false;
     }
     
     if (!isOnline) {
-        showSyncStatus('Cannot load: You are offline', 'warning');
+        showSyncStatus('warning', 'Cannot load: You are offline');
         return false;
     }
     
     // Check if token is expired
     if (isTokenExpired(googleUser)) {
-        showSyncStatus('Session expired. Please sign in again.', 'warning');
+        showSyncStatus('warning', 'Session expired. Please sign in again.');
         googleSignOut();
         return false;
     }
     
     try {
-        showSyncStatus('Loading data from Google Drive...', 'info');
+        showSyncStatus('syncing', 'Loading data from Google Drive...');
         
         // Search for the main sync file
         const searchResponse = await fetch(
@@ -355,7 +449,7 @@ async function loadDataFromDrive() {
         );
         
         if (searchResponse.status === 401) {
-            showSyncStatus('Authentication expired. Please sign in again.', 'warning');
+            showSyncStatus('warning', 'Authentication expired. Please sign in again.');
             googleSignOut();
             return false;
         }
@@ -409,12 +503,16 @@ async function loadDataFromDrive() {
                 lastBackupMonth = driveData.lastBackupMonth;
             }
             
+            if (driveData.lastSync) {
+                lastSyncTime = driveData.lastSync;
+            }
+            
             // Update UI with loaded data
             updateUI();
             populateSummaryFilters();
             renderCategoryList();
             
-            showSyncStatus('Data loaded from Google Drive successfully!', 'success');
+            showSyncStatus('success', 'Data loaded from Google Drive!');
             console.log('Data loaded from Drive:', {
                 transactions: transactions.length,
                 categories: categories.length,
@@ -424,14 +522,14 @@ async function loadDataFromDrive() {
             
             return true;
         } else {
-            showSyncStatus('No existing data found. Creating new backup...', 'info');
+            showSyncStatus('info', 'No existing data found. Creating new backup...');
             // No file found, create one with current data
             await syncDataToDrive();
             return true;
         }
     } catch (error) {
         console.error('Error loading from Drive:', error);
-        showSyncStatus('Error loading from Google Drive: ' + error.message, 'danger');
+        showSyncStatus('error', 'Error loading from Google Drive');
         return false;
     }
 }
@@ -544,21 +642,21 @@ async function syncDataToDrive() {
     if (!isOnline) {
         console.log('Offline, skipping sync');
         pendingSync = true;
+        showSyncStatus('warning', 'Offline - changes queued for sync');
         return false;
     }
     
     // Check if token is expired
     if (isTokenExpired(googleUser)) {
-        showSyncStatus('Session expired. Please sign in again.', 'warning');
+        showSyncStatus('warning', 'Session expired. Please sign in again.');
         googleSignOut();
         return false;
     }
     
     syncInProgress = true;
+    showSyncStatus('syncing', 'Syncing to Google Drive...');
     
     try {
-        showSyncStatus('Syncing to Google Drive...', 'info');
-        
         const currentMonth = getCurrentMonthKey();
         const shouldCreateMonthlyBackup = lastBackupMonth !== currentMonth;
         
@@ -601,21 +699,22 @@ async function syncDataToDrive() {
             // Update main file with new backup month info
             await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
             
-            showSyncStatus(`Data synced + monthly backup created!`, 'success');
+            showSyncStatus('success', 'Data synced + monthly backup created!');
         } else {
-            showSyncStatus('Data synced to Google Drive successfully!', 'success');
+            showSyncStatus('success', 'Data synced to Google Drive!');
         }
         
+        lastSyncTime = new Date().toISOString();
         console.log('Sync completed successfully');
         return true;
     } catch (error) {
         console.error('Error syncing to Drive:', error);
         
         if (error.message.includes('Authentication expired') || error.message.includes('401')) {
-            showSyncStatus('Authentication expired. Please sign in again.', 'warning');
+            showSyncStatus('warning', 'Authentication expired. Please sign in again.');
             googleSignOut();
         } else {
-            showSyncStatus('Sync failed: ' + error.message, 'danger');
+            showSyncStatus('error', 'Sync failed: ' + error.message);
         }
         return false;
     } finally {
@@ -648,13 +747,13 @@ async function manualSync() {
     }
     
     if (!isOnline) {
-        showSyncStatus('Cannot sync: You are offline', 'warning');
+        showSyncStatus('warning', 'Cannot sync: You are offline');
         return;
     }
     
     const success = await syncDataToDrive();
     if (success) {
-        showSyncStatus('Manual sync completed successfully!', 'success');
+        showSyncStatus('success', 'Manual sync completed!');
     }
 }
 
@@ -671,13 +770,13 @@ function googleSignOut() {
     googleUser = null;
     localStorage.removeItem('googleUser');
     updateProfileUI();
-    showSyncStatus('Signed out from Google Drive', 'info');
+    showSyncStatus('offline', 'Signed out from Google Drive');
 }
 
 // Enhanced online/offline handling
 window.addEventListener('online', () => {
     isOnline = true;
-    showSyncStatus('Back online. Syncing data...', 'info');
+    showSyncStatus('info', 'Back online. Syncing data...');
     
     if (googleUser) {
         // Sync when coming back online
@@ -689,7 +788,7 @@ window.addEventListener('online', () => {
 
 window.addEventListener('offline', () => {
     isOnline = false;
-    showSyncStatus('You are offline. Changes will sync when back online.', 'warning');
+    showSyncStatus('warning', 'You are offline. Changes will sync when back online.');
 });
 
 // Auto-sync function (debounced)
@@ -713,13 +812,47 @@ function startPeriodicSync() {
     }, 5 * 60 * 1000); // 5 minutes
 }
 
-// Page navigation logic
+// Tab Persistence System
+function initTabState() {
+    const hash = window.location.hash.replace('#', '');
+    const validTabs = ['dashboard', 'transactions', 'charts', 'settings'];
+    const savedTab = localStorage.getItem('lastActiveTab');
+    
+    let initialTab = 'dashboard';
+    
+    if (validTabs.includes(hash)) {
+        initialTab = hash;
+    } else if (validTabs.includes(savedTab)) {
+        initialTab = savedTab;
+    }
+    
+    showTab(initialTab);
+}
+
+function updateUrlHash(tab) {
+    if (window.location.hash !== `#${tab}`) {
+        window.location.hash = tab;
+    }
+}
+
+// Page navigation logic with persistence
 const tabs = ["dashboard", "transactions", "charts", "settings"];
 function showTab(tab) {
+    if (!tabs.includes(tab)) {
+        tab = 'dashboard';
+    }
+    
+    // Update URL and storage
+    updateUrlHash(tab);
+    localStorage.setItem('lastActiveTab', tab);
+    
+    // Update UI
     tabs.forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle("d-none", t !== tab);
         const btn = document.querySelector(`[data-tab='${t}']`);
-        btn.classList.toggle("active", t === tab);
+        if (btn) {
+            btn.classList.toggle("active", t === tab);
+        }
     });
     
     setTimeout(() => {
@@ -732,7 +865,17 @@ function showTab(tab) {
         renderEnhancedCharts();
         populateChartFilters();
     }
+    
+    console.log(`Switched to tab: ${tab}`);
 }
+
+// Handle browser back/forward buttons
+window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '');
+    if (['dashboard', 'transactions', 'charts', 'settings'].includes(hash)) {
+        showTab(hash);
+    }
+});
 
 function adjustTransactionsTable() {
     const tableContainer = document.querySelector('#tab-transactions .table-container');
@@ -762,8 +905,10 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
     });
 });
 
-// Category Transactions Modal
+// Fixed Category Transactions Modal
 let currentCategoryView = null;
+let currentCategoryTransactions = [];
+
 function showCategoryTransactions(type, categoryName) {
     currentCategoryView = { type, categoryName };
     const modal = new bootstrap.Modal(document.getElementById('categoryTransactionsModal'));
@@ -793,44 +938,51 @@ function showCategoryTransactions(type, categoryName) {
         });
     }
     
+    // Store the filtered transactions with their original indices
+    currentCategoryTransactions = filteredTx.map(tx => {
+        const originalIndex = transactions.findIndex(t => 
+            t.date === tx.date && t.desc === tx.desc && t.amount === tx.amount && t.type === tx.type && t.category === tx.category
+        );
+        return { ...tx, originalIndex };
+    }).filter(item => item.originalIndex !== -1);
+    
     if (categoryName === 'all') {
         title.innerHTML = `<i class="bi bi-list-ul"></i> All ${type.charAt(0).toUpperCase() + type.slice(1)} Transactions`;
-        info.textContent = `Showing ${filteredTx.length} transactions`;
+        info.textContent = `Showing ${currentCategoryTransactions.length} transactions`;
     } else {
         title.innerHTML = `<i class="bi bi-tag"></i> ${categoryName} Transactions`;
-        info.textContent = `Showing ${filteredTx.length} ${type} transactions`;
+        info.textContent = `Showing ${currentCategoryTransactions.length} ${type} transactions`;
     }
     
-    const total = filteredTx.reduce((sum, tx) => sum + tx.amount, 0);
+    const total = currentCategoryTransactions.reduce((sum, tx) => sum + tx.amount, 0);
     totalAmount.textContent = `${total.toLocaleString()} ${currency}`;
     totalAmount.className = `fw-bold fs-5 ${type === 'income' ? 'text-success' : 'text-danger'}`;
     
     transactionsList.innerHTML = '';
     
-    if (filteredTx.length === 0) {
+    if (currentCategoryTransactions.length === 0) {
         noTransactions.classList.remove('d-none');
+        transactionsList.classList.add('d-none');
     } else {
         noTransactions.classList.add('d-none');
-        filteredTx.slice().reverse().forEach((tx, idx) => {
-            const originalIndex = transactions.length - 1 - transactions.findIndex(t => 
-                t.date === tx.date && t.desc === tx.desc && t.amount === tx.amount
-            );
-            
+        transactionsList.classList.remove('d-none');
+        
+        currentCategoryTransactions.slice().reverse().forEach((tx, idx) => {
             const item = document.createElement('div');
             item.className = 'category-transaction-item';
             item.innerHTML = `
                 <div class="category-transaction-info">
                     <div class="fw-bold">${tx.desc}</div>
-                    <small class="text-muted">${tx.date} â€¢ ${tx.category}</small>
+                    <small class="text-muted">${tx.date} • ${tx.category}</small>
                 </div>
                 <div class="category-transaction-actions">
                     <span class="fw-bold ${type === 'income' ? 'text-success' : 'text-danger'}">
                         ${tx.amount.toLocaleString()} ${currency}
                     </span>
-                    <button class="btn-action btn-edit" title="Edit" onclick="editTransactionFromCategory(${originalIndex})">
+                    <button class="btn-action btn-edit" title="Edit" onclick="editTransactionFromCategory(${tx.originalIndex})">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn-action btn-delete" title="Delete" onclick="removeTransactionFromCategory(${originalIndex})">
+                    <button class="btn-action btn-delete" title="Delete" onclick="removeTransactionFromCategory(${tx.originalIndex})">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -843,19 +995,27 @@ function showCategoryTransactions(type, categoryName) {
 }
 
 function editTransactionFromCategory(idx) {
-    bootstrap.Modal.getInstance(document.getElementById('categoryTransactionsModal')).hide();
+    const modal = bootstrap.Modal.getInstance(document.getElementById('categoryTransactionsModal'));
+    if (modal) {
+        modal.hide();
+    }
     setTimeout(() => editTransaction(idx), 300);
 }
 
 function removeTransactionFromCategory(idx) {
     const transaction = transactions[idx];
+    if (!transaction) {
+        showToast('Transaction not found', 'danger');
+        return;
+    }
+
     const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
     
     document.getElementById('confirmationTitle').textContent = 'Delete Transaction?';
     document.getElementById('confirmationMessage').innerHTML = `
         Are you sure you want to delete this transaction?<br>
         <strong>${transaction.desc}</strong> - ${transaction.amount} ${currency}<br>
-        <small class="text-muted">${transaction.date} â€¢ ${transaction.category}</small>
+        <small class="text-muted">${transaction.date} • ${transaction.category}</small>
     `;
     
     document.getElementById('confirmActionBtn').onclick = function() {
@@ -865,6 +1025,7 @@ function removeTransactionFromCategory(idx) {
         populateSummaryFilters();
         confirmationModal.hide();
         
+        // Refresh the category modal
         setTimeout(() => {
             if (currentCategoryView) {
                 showCategoryTransactions(currentCategoryView.type, currentCategoryView.categoryName);
@@ -879,7 +1040,9 @@ function removeTransactionFromCategory(idx) {
 
 function addTransactionForCategory() {
     const modal = bootstrap.Modal.getInstance(document.getElementById('categoryTransactionsModal'));
-    modal.hide();
+    if (modal) {
+        modal.hide();
+    }
     
     setTimeout(() => {
         if (currentCategoryView && currentCategoryView.categoryName !== 'all') {
@@ -892,6 +1055,10 @@ function addTransactionForCategory() {
             updateCategorySelect();
             document.getElementById('categoryInput').value = currentCategoryView.categoryName;
             
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateInput').value = today;
+            
+            const addTxModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
             addTxModal.show();
         } else {
             document.getElementById('openAddTransactionModal').click();
@@ -1109,6 +1276,10 @@ function populateSummaryFilters() {
     allYearOpt.value = "all";
     allYearOpt.textContent = "All Years";
     yearSel.insertBefore(allYearOpt, yearSel.firstChild);
+    
+    // Add event listeners
+    monthSel.addEventListener('change', updateUI);
+    yearSel.addEventListener('change', updateUI);
 }
 
 // Add Transaction Modal
@@ -1152,7 +1323,7 @@ window.removeTransaction = function(idx) {
     document.getElementById('confirmationMessage').innerHTML = `
         Are you sure you want to delete this transaction?<br>
         <strong>${transaction.desc}</strong> - ${transaction.amount} ${currency}<br>
-        <small class="text-muted">${transaction.date} â€¢ ${transaction.category}</small>
+        <small class="text-muted">${transaction.date} • ${transaction.category}</small>
     `;
     
     document.getElementById('confirmActionBtn').onclick = function() {
@@ -1481,7 +1652,10 @@ function populateChartFilters() {
 }
 
 function renderMainChart() {
-    const ctx = document.getElementById('mainChart').getContext('2d');
+    const ctx = document.getElementById('mainChart');
+    if (!ctx) return;
+    
+    const canvasCtx = ctx.getContext('2d');
     const placeholder = document.getElementById('chartPlaceholder');
     
     if (mainChart) {
@@ -1490,7 +1664,7 @@ function renderMainChart() {
     
     if (transactions.length === 0) {
         placeholder.classList.remove('d-none');
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        canvasCtx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
     }
     
@@ -1501,13 +1675,13 @@ function renderMainChart() {
     
     switch (currentChartType) {
         case 'category':
-            renderCategoryChart(ctx, chartMonth, chartYear);
+            renderCategoryChart(canvasCtx, chartMonth, chartYear);
             break;
         case 'monthly':
-            renderMonthlyTrendChart(ctx, chartYear);
+            renderMonthlyTrendChart(canvasCtx, chartYear);
             break;
         case 'yearly':
-            renderYearlyTrendChart(ctx, chartMonth);
+            renderYearlyTrendChart(canvasCtx, chartMonth);
             break;
     }
 }
@@ -1795,35 +1969,37 @@ function renderPieCharts() {
         incomeData[tx.category] = (incomeData[tx.category] || 0) + tx.amount;
     });
     
-    const incomeCtx = document.getElementById('incomePieChart').getContext('2d');
+    const incomeCtx = document.getElementById('incomePieChart');
     const incomePlaceholder = document.getElementById('incomePiePlaceholder');
     
     if (incomePieChart) incomePieChart.destroy();
     
-    if (Object.keys(incomeData).length === 0) {
-        incomePlaceholder.style.display = 'flex';
-    } else {
-        incomePlaceholder.style.display = 'none';
-        incomePieChart = new Chart(incomeCtx, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(incomeData),
-                datasets: [{
-                    data: Object.values(incomeData),
-                    backgroundColor: ['#198754', '#20c997', '#0dcaf0', '#6f42c1', '#fd7e14']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+    if (!incomeCtx || Object.keys(incomeData).length === 0) {
+        if (incomePlaceholder) incomePlaceholder.style.display = 'flex';
+        return;
+    }
+    
+    const incomeCanvasCtx = incomeCtx.getContext('2d');
+    incomePlaceholder.style.display = 'none';
+    incomePieChart = new Chart(incomeCanvasCtx, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(incomeData),
+            datasets: [{
+                data: Object.values(incomeData),
+                backgroundColor: ['#198754', '#20c997', '#0dcaf0', '#6f42c1', '#fd7e14']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
                 }
             }
-        });
-    }
+        }
+    });
     
     // Expense Pie Chart
     const expenseData = {};
@@ -1831,35 +2007,37 @@ function renderPieCharts() {
         expenseData[tx.category] = (expenseData[tx.category] || 0) + tx.amount;
     });
     
-    const expenseCtx = document.getElementById('expensePieChart').getContext('2d');
+    const expenseCtx = document.getElementById('expensePieChart');
     const expensePlaceholder = document.getElementById('expensePiePlaceholder');
     
     if (expensePieChart) expensePieChart.destroy();
     
-    if (Object.keys(expenseData).length === 0) {
-        expensePlaceholder.style.display = 'flex';
-    } else {
-        expensePlaceholder.style.display = 'none';
-        expensePieChart = new Chart(expenseCtx, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(expenseData),
-                datasets: [{
-                    data: Object.values(expenseData),
-                    backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1', '#20c997']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+    if (!expenseCtx || Object.keys(expenseData).length === 0) {
+        if (expensePlaceholder) expensePlaceholder.style.display = 'flex';
+        return;
+    }
+    
+    const expenseCanvasCtx = expenseCtx.getContext('2d');
+    expensePlaceholder.style.display = 'none';
+    expensePieChart = new Chart(expenseCanvasCtx, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(expenseData),
+            datasets: [{
+                data: Object.values(expenseData),
+                backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1', '#20c997']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
                 }
             }
-        });
-    }
+        }
+    });
 }
 
 // Import/Export
@@ -1974,22 +2152,34 @@ function saveCurrency(val) {
     autoSyncToDrive();
 }
 
-// Dark Mode Toggle
+// Enhanced Dark Mode Toggle
 document.getElementById('darkModeToggle').addEventListener('click', function() {
     document.body.classList.toggle('dark-mode');
-    this.classList.toggle('active');
+    this.checked = document.body.classList.contains('dark-mode');
+    
     if (document.body.classList.contains('dark-mode')) {
         localStorage.setItem('theme', 'dark');
+        showToast('Dark mode enabled', 'info');
     } else {
         localStorage.setItem('theme', 'light');
+        showToast('Light mode enabled', 'info');
     }
 });
 
+// Initialize dark mode from system preference or saved setting
 (function () {
-    const theme = localStorage.getItem('theme');
-    if (theme === 'dark') {
-        document.body.classList.add('dark-mode');
-        document.getElementById('darkModeToggle').classList.add('active');
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.checked = true;
+        } else {
+            document.body.classList.remove('dark-mode');
+            darkModeToggle.checked = false;
+        }
     }
 })();
 
@@ -2027,11 +2217,6 @@ document.addEventListener('DOMContentLoaded', function() {
         populateSummaryFilters();
         renderCategoryList();
         
-        const summaryMonth = document.getElementById('summaryMonth');
-        const summaryYear = document.getElementById('summaryYear');
-        if (summaryMonth) summaryMonth.addEventListener('change', updateUI);
-        if (summaryYear) summaryYear.addEventListener('change', updateUI);
-        
         const autoRolloverToggle = document.getElementById('autoRolloverToggle');
         const allowNegativeToggle = document.getElementById('allowNegativeRollover');
         
@@ -2064,6 +2249,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initializeApplicationData();
     
+    // Initialize tab state
+    initTabState();
+    
+    // Initialize Google Auth and sync
     const savedUser = localStorage.getItem('googleUser');
     if (savedUser) {
         try {
@@ -2072,8 +2261,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tokenAge > (googleUser.expires_in - 60) * 1000) {
                 localStorage.removeItem('googleUser');
                 googleUser = null;
+                showSyncStatus('offline', 'Session expired. Please sign in again.');
             } else {
-                showSyncStatus('Google Drive connected', 'info');
+                showSyncStatus('success', 'Google Drive connected');
                 loadDataFromDrive().then(success => {
                     if (!success) {
                         initializeApplicationData();
@@ -2084,7 +2274,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error parsing saved user:', error);
             localStorage.removeItem('googleUser');
             googleUser = null;
+            showSyncStatus('offline', 'Error loading saved session');
         }
+    } else {
+        showSyncStatus('offline', 'Sign in to sync with Google Drive');
     }
     
     setTimeout(() => {
@@ -2102,5 +2295,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start periodic sync
     startPeriodicSync();
     
-    showTab("dashboard");
+    console.log('Wealth Command initialized successfully');
 });
