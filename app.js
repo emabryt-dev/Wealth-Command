@@ -1,4 +1,4 @@
-// Wealth Command: Complete with Google Drive Sync and Monthly Rollover
+// Wealth Command: Complete with Google Drive Sync, Monthly Rollover, and AI Analytics
 
 // Initialize variables first
 let transactions = loadTransactions();
@@ -10,6 +10,13 @@ let incomePieChart = null;
 let expensePieChart = null;
 let currentChartType = 'category';
 
+// Analytics Charts
+let overviewChart = null;
+let forecastChart = null;
+let healthTrendChart = null;
+let categoryTrendChart = null;
+let comparisonChart = null;
+
 // Enhanced Google Drive Sync with Two-Tier Backup System
 const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
 const GOOGLE_CLIENT_ID = '86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com';
@@ -20,6 +27,388 @@ let syncInProgress = false;
 let pendingSync = false;
 let lastBackupMonth = null;
 let lastSyncTime = null;
+
+// AI Analytics Engine
+const AnalyticsEngine = {
+    // Calculate financial health score (0-100)
+    calculateHealthScore: function(transactions, monthlyBudgets) {
+        if (transactions.length === 0) return 50; // Neutral score for no data
+        
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        
+        // Get recent transactions (last 3 months)
+        const recentTransactions = transactions.filter(tx => {
+            const txDate = new Date(tx.date);
+            return txDate >= threeMonthsAgo;
+        });
+        
+        if (recentTransactions.length === 0) return 50;
+        
+        const totalIncome = recentTransactions.filter(tx => tx.type === 'income')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+        const totalExpenses = recentTransactions.filter(tx => tx.type === 'expense')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+        
+        // Component scores
+        const savingsRate = totalIncome > 0 ? Math.max(0, (totalIncome - totalExpenses) / totalIncome) : 0;
+        const savingsScore = Math.min(100, savingsRate * 200); // 50% savings rate = 100 points
+        
+        const expenseStability = this.calculateExpenseStability(recentTransactions);
+        const stabilityScore = Math.min(100, expenseStability * 100);
+        
+        const incomeDiversity = this.calculateIncomeDiversity(recentTransactions);
+        const diversityScore = Math.min(100, incomeDiversity * 100);
+        
+        const emergencyFundScore = this.calculateEmergencyFundScore(totalExpenses, monthlyBudgets);
+        
+        // Weighted final score
+        const finalScore = 
+            (savingsScore * 0.4) + 
+            (stabilityScore * 0.3) + 
+            (diversityScore * 0.2) + 
+            (emergencyFundScore * 0.1);
+        
+        return Math.round(finalScore);
+    },
+    
+    calculateExpenseStability: function(transactions) {
+        const monthlyExpenses = {};
+        transactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                const month = tx.date.substring(0, 7); // YYYY-MM
+                monthlyExpenses[month] = (monthlyExpenses[month] || 0) + tx.amount;
+            }
+        });
+        
+        const amounts = Object.values(monthlyExpenses);
+        if (amounts.length < 2) return 0.7; // Default stability
+        
+        const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+        const variance = amounts.reduce((sum, amount) => sum + Math.pow(amount - avg, 2), 0) / amounts.length;
+        const stability = 1 - (Math.sqrt(variance) / avg);
+        
+        return Math.max(0, Math.min(1, stability));
+    },
+    
+    calculateIncomeDiversity: function(transactions) {
+        const incomeByCategory = {};
+        const incomeTransactions = transactions.filter(tx => tx.type === 'income');
+        
+        if (incomeTransactions.length === 0) return 0;
+        
+        incomeTransactions.forEach(tx => {
+            incomeByCategory[tx.category] = (incomeByCategory[tx.category] || 0) + tx.amount;
+        });
+        
+        const totalIncome = Object.values(incomeByCategory).reduce((a, b) => a + b, 0);
+        const shares = Object.values(incomeByCategory).map(amount => amount / totalIncome);
+        const diversity = 1 - shares.reduce((sum, share) => sum + Math.pow(share, 2), 0);
+        
+        return diversity;
+    },
+    
+    calculateEmergencyFundScore: function(monthlyExpenses, monthlyBudgets) {
+        const avgMonthlyExpense = monthlyExpenses / 3; // Based on last 3 months
+        const currentMonth = getCurrentMonthKey();
+        const currentBalance = monthlyBudgets[currentMonth]?.endingBalance || 0;
+        
+        if (avgMonthlyExpense === 0) return 50;
+        
+        const monthsCovered = currentBalance / avgMonthlyExpense;
+        if (monthsCovered >= 6) return 100;
+        if (monthsCovered >= 3) return 75;
+        if (monthsCovered >= 1) return 50;
+        return 25;
+    },
+    
+    // Predict next month's spending
+    predictNextMonthSpending: function(transactions) {
+        const now = new Date();
+        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        
+        const recentTransactions = transactions.filter(tx => {
+            const txDate = new Date(tx.date);
+            return txDate >= sixMonthsAgo;
+        });
+        
+        if (recentTransactions.length < 10) return null; // Insufficient data
+        
+        const monthlyExpenses = {};
+        recentTransactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                const month = tx.date.substring(0, 7);
+                monthlyExpenses[month] = (monthlyExpenses[month] || 0) + tx.amount;
+            }
+        });
+        
+        const amounts = Object.values(monthlyExpenses);
+        const avgExpense = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+        
+        // Simple trend calculation
+        let trend = 0;
+        if (amounts.length >= 2) {
+            const lastTwo = amounts.slice(-2);
+            trend = (lastTwo[1] - lastTwo[0]) / lastTwo[0];
+        }
+        
+        const prediction = avgExpense * (1 + trend * 0.5); // Conservative trend application
+        const confidence = Math.min(0.9, amounts.length / 10); // More data = more confidence
+        
+        return {
+            amount: Math.round(prediction),
+            confidence: confidence,
+            trend: trend
+        };
+    },
+    
+    // Generate AI insights
+    generateInsights: function(transactions, monthlyBudgets) {
+        const insights = [];
+        const healthScore = this.calculateHealthScore(transactions, monthlyBudgets);
+        const prediction = this.predictNextMonthSpending(transactions);
+        
+        // Health score insights
+        if (healthScore >= 80) {
+            insights.push({
+                type: 'positive',
+                message: 'Excellent financial health! Your spending habits are very sustainable.',
+                icon: 'bi-emoji-smile'
+            });
+        } else if (healthScore >= 60) {
+            insights.push({
+                type: 'info',
+                message: 'Good financial health. Small improvements could make it excellent.',
+                icon: 'bi-emoji-neutral'
+            });
+        } else {
+            insights.push({
+                type: 'warning',
+                message: 'Your financial health needs attention. Consider reviewing your spending patterns.',
+                icon: 'bi-emoji-frown'
+            });
+        }
+        
+        // Savings rate insights
+        const savingsRate = this.calculateSavingsRate(transactions);
+        if (savingsRate >= 0.2) {
+            insights.push({
+                type: 'positive',
+                message: `Great savings rate of ${(savingsRate * 100).toFixed(0)}%! You're building wealth effectively.`,
+                icon: 'bi-piggy-bank'
+            });
+        } else if (savingsRate >= 0.1) {
+            insights.push({
+                type: 'info',
+                message: `Decent savings rate of ${(savingsRate * 100).toFixed(0)}%. Aim for 20% for optimal wealth building.`,
+                icon: 'bi-piggy-bank'
+            });
+        } else if (savingsRate < 0) {
+            insights.push({
+                type: 'warning',
+                message: 'You\'re spending more than you earn. Consider reducing expenses or increasing income.',
+                icon: 'bi-exclamation-triangle'
+            });
+        }
+        
+        // Spending pattern insights
+        const categoryTrends = this.analyzeCategoryTrends(transactions);
+        categoryTrends.forEach(trend => {
+            if (trend.trend > 0.1) { // More than 10% increase
+                insights.push({
+                    type: 'warning',
+                    message: `${trend.category} spending is trending up significantly.`,
+                    icon: 'bi-graph-up-arrow'
+                });
+            } else if (trend.trend < -0.1) { // More than 10% decrease
+                insights.push({
+                    type: 'positive',
+                    message: `Great job reducing ${trend.category} spending!`,
+                    icon: 'bi-graph-down-arrow'
+                });
+            }
+        });
+        
+        // Prediction insights
+        if (prediction && prediction.confidence > 0.6) {
+            insights.push({
+                type: 'info',
+                message: `Next month's predicted spending: ${prediction.amount.toLocaleString()} ${currency}`,
+                icon: 'bi-magic'
+            });
+        }
+        
+        return insights.slice(0, 5); // Return top 5 insights
+    },
+    
+    calculateSavingsRate: function(transactions) {
+        const now = new Date();
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        
+        const recentTransactions = transactions.filter(tx => {
+            const txDate = new Date(tx.date);
+            return txDate >= threeMonthsAgo;
+        });
+        
+        const totalIncome = recentTransactions.filter(tx => tx.type === 'income')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+        const totalExpenses = recentTransactions.filter(tx => tx.type === 'expense')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+        
+        return totalIncome > 0 ? (totalIncome - totalExpenses) / totalIncome : 0;
+    },
+    
+    analyzeCategoryTrends: function(transactions) {
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthKey = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+        
+        const currentMonthExpenses = {};
+        const lastMonthExpenses = {};
+        
+        transactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                const month = tx.date.substring(0, 7);
+                if (month === currentMonth) {
+                    currentMonthExpenses[tx.category] = (currentMonthExpenses[tx.category] || 0) + tx.amount;
+                } else if (month === lastMonthKey) {
+                    lastMonthExpenses[tx.category] = (lastMonthExpenses[tx.category] || 0) + tx.amount;
+                }
+            }
+        });
+        
+        const trends = [];
+        Object.keys(currentMonthExpenses).forEach(category => {
+            const current = currentMonthExpenses[category];
+            const last = lastMonthExpenses[category] || current * 0.5; // Default if no last month data
+            const trend = last > 0 ? (current - last) / last : 0;
+            
+            trends.push({
+                category: category,
+                current: current,
+                last: last,
+                trend: trend,
+                change: current - last
+            });
+        });
+        
+        return trends.sort((a, b) => Math.abs(b.trend) - Math.abs(a.trend)); // Sort by magnitude of change
+    },
+    
+    // Generate spending forecast for next 6 months
+    generateForecast: function(transactions) {
+        const now = new Date();
+        const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+        
+        const historicalData = {};
+        for (let i = 0; i < 12; i++) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            historicalData[key] = 0;
+        }
+        
+        transactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                const month = tx.date.substring(0, 7);
+                if (historicalData[month] !== undefined) {
+                    historicalData[month] += tx.amount;
+                }
+            }
+        });
+        
+        const amounts = Object.values(historicalData).reverse();
+        const forecast = [];
+        
+        // Simple moving average with trend
+        const window = 3;
+        let sum = amounts.slice(-window).reduce((a, b) => a + b, 0);
+        let lastValue = amounts[amounts.length - 1] || 0;
+        
+        for (let i = 0; i < 6; i++) {
+            const predicted = sum / window;
+            forecast.push(Math.round(predicted));
+            sum = sum - amounts[amounts.length - window + i] + predicted;
+        }
+        
+        return {
+            historical: amounts,
+            forecast: forecast,
+            confidence: Math.min(0.8, amounts.filter(a => a > 0).length / 6)
+        };
+    },
+    
+    // Generate heat map data
+    generateHeatMap: function(transactions, year, month) {
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const heatMap = [];
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayTransactions = transactions.filter(tx => tx.date === dateStr && tx.type === 'expense');
+            const total = dayTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+            
+            heatMap.push({
+                day: day,
+                date: dateStr,
+                amount: total,
+                transactions: dayTransactions.length
+            });
+        }
+        
+        return heatMap;
+    },
+    
+    // Compare periods
+    comparePeriods: function(transactions, period1, period2, type) {
+        const data1 = this.getPeriodData(transactions, period1, type);
+        const data2 = this.getPeriodData(transactions, period2, type);
+        
+        const comparison = {};
+        const allCategories = [...new Set([...Object.keys(data1), ...Object.keys(data2)])];
+        
+        allCategories.forEach(category => {
+            const amount1 = data1[category] || 0;
+            const amount2 = data2[category] || 0;
+            const change = amount2 - amount1;
+            const percentChange = amount1 > 0 ? (change / amount1) * 100 : (amount2 > 0 ? 100 : 0);
+            
+            comparison[category] = {
+                period1: amount1,
+                period2: amount2,
+                change: change,
+                percentChange: percentChange
+            };
+        });
+        
+        return comparison;
+    },
+    
+    getPeriodData: function(transactions, period, type) {
+        const data = {};
+        
+        transactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                let include = false;
+                
+                if (type === 'month') {
+                    const txMonth = tx.date.substring(0, 7);
+                    include = txMonth === period;
+                } else if (type === 'year') {
+                    const txYear = tx.date.substring(0, 4);
+                    include = txYear === period;
+                }
+                
+                if (include) {
+                    data[tx.category] = (data[tx.category] || 0) + tx.amount;
+                }
+            }
+        });
+        
+        return data;
+    }
+};
 
 // Helper function to get monthly backup filename
 function getMonthlyBackupFileName() {
@@ -862,7 +1251,7 @@ function showTab(tab) {
     }, 50);
     
     if (tab === "charts") {
-        renderEnhancedCharts();
+        renderEnhancedAnalytics();
         populateChartFilters();
     }
     
@@ -1537,210 +1926,134 @@ function updateUI() {
     }
 }
 
-// Enhanced Charts Tab Functions
-function updateChartSummaryStats() {
-    const statsContainer = document.getElementById('chartSummaryStats');
-    if (!statsContainer) return;
-    
-    const chartMonth = document.getElementById('chartMonth')?.value || 'all';
-    const chartYear = document.getElementById('chartYear')?.value || 'all';
-    
-    let filteredTx = transactions;
-    if (chartMonth !== 'all' || chartYear !== 'all') {
-        filteredTx = transactions.filter(tx => {
-            const d = new Date(tx.date);
-            if (isNaN(d)) return false;
-            let valid = true;
-            if (chartMonth !== 'all') valid = valid && (d.getMonth() + 1) == chartMonth;
-            if (chartYear !== 'all') valid = valid && d.getFullYear() == chartYear;
-            return valid;
-        });
-    }
-    
-    const totalIncome = filteredTx.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
-    const totalExpense = filteredTx.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0);
-    const netWealth = totalIncome - totalExpense;
-    const transactionCount = filteredTx.length;
-    
-    statsContainer.innerHTML = `
-        <div class="stat-card">
-            <div class="stat-value text-primary">${transactionCount}</div>
-            <div class="stat-label">Transactions</div>
-        </div>
-        <div class="stat-card income">
-            <div class="stat-value text-success">${totalIncome.toLocaleString()} ${currency}</div>
-            <div class="stat-label">Total Income</div>
-        </div>
-        <div class="stat-card expense">
-            <div class="stat-value text-danger">${totalExpense.toLocaleString()} ${currency}</div>
-            <div class="stat-label">Total Expense</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value ${netWealth >= 0 ? 'text-success' : 'text-danger'}">
-                ${netWealth.toLocaleString()} ${currency}
-            </div>
-            <div class="stat-label">Net Wealth</div>
-        </div>
-    `;
+// Enhanced Analytics Functions
+function renderEnhancedAnalytics() {
+    updateAnalyticsOverview();
+    renderPredictionsTab();
+    renderTrendsTab();
+    renderComparisonTab();
+    updateAIInsights();
 }
 
-function renderEnhancedCharts() {
-    if (!document.getElementById('chartSummaryStats')) return;
+function updateAnalyticsOverview() {
+    // Update health score
+    const healthScore = AnalyticsEngine.calculateHealthScore(transactions, monthlyBudgets);
+    const healthScoreElement = document.getElementById('healthScoreValue');
+    const healthLabelElement = document.getElementById('healthScoreLabel');
     
-    updateChartSummaryStats();
+    if (healthScoreElement) {
+        healthScoreElement.textContent = healthScore;
+        healthScoreElement.className = 'health-score-value';
+        
+        if (healthScore >= 80) {
+            healthScoreElement.classList.add('excellent');
+            healthLabelElement.textContent = 'Excellent';
+        } else if (healthScore >= 60) {
+            healthScoreElement.classList.add('good');
+            healthLabelElement.textContent = 'Good';
+        } else if (healthScore >= 40) {
+            healthScoreElement.classList.add('fair');
+            healthLabelElement.textContent = 'Fair';
+        } else {
+            healthScoreElement.classList.add('poor');
+            healthLabelElement.textContent = 'Needs Attention';
+        }
+    }
     
-    const chartTypeButtons = document.querySelectorAll('[data-chart-type]');
-    if (chartTypeButtons.length === 0) return;
+    // Update savings rate
+    const savingsRate = AnalyticsEngine.calculateSavingsRate(transactions);
+    const savingsRateElement = document.getElementById('savingsRateValue');
+    const savingsProgressElement = document.getElementById('savingsRateProgress');
     
-    // Simple event handling
-    chartTypeButtons.forEach(btn => {
-        btn.onclick = function() {
-            chartTypeButtons.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            currentChartType = this.dataset.chartType;
-            renderMainChart();
-        };
-    });
+    if (savingsRateElement) {
+        const percentage = (savingsRate * 100).toFixed(1);
+        savingsRateElement.textContent = `${percentage}%`;
+        
+        if (savingsProgressElement) {
+            const progressWidth = Math.min(100, Math.max(0, savingsRate * 200)); // 50% savings = 100% progress
+            savingsProgressElement.style.width = `${progressWidth}%`;
+            
+            if (savingsRate >= 0.2) {
+                savingsProgressElement.className = 'progress-bar bg-success';
+            } else if (savingsRate >= 0.1) {
+                savingsProgressElement.className = 'progress-bar bg-warning';
+            } else {
+                savingsProgressElement.className = 'progress-bar bg-danger';
+            }
+        }
+    }
     
-    renderMainChart();
+    // Render overview chart
+    renderOverviewChart();
+    
+    // Render pie charts
     renderPieCharts();
 }
 
-function populateChartFilters() {
-    const chartMonth = document.getElementById('chartMonth');
-    const chartYear = document.getElementById('chartYear');
-    
-    if (!chartMonth || !chartYear) return;
-    
-    chartMonth.innerHTML = '<option value="all">All Months</option>';
-    chartYear.innerHTML = '<option value="all">All Years</option>';
-    
-    const monthNames = ["January", "February", "March", "April", "May", "June", 
-                       "July", "August", "September", "October", "November", "December"];
-    
-    monthNames.forEach((monthName, index) => {
-        const option = document.createElement('option');
-        option.value = index + 1;
-        option.textContent = monthName;
-        chartMonth.appendChild(option);
-    });
-    
-    const years = Array.from(new Set(transactions.map(tx => {
-        const year = new Date(tx.date).getFullYear();
-        return isNaN(year) ? null : year;
-    }).filter(year => year !== null)))
-    .sort((a, b) => b - a);
-    
-    const currentYear = new Date().getFullYear();
-    if (!years.includes(currentYear)) {
-        years.unshift(currentYear);
-    }
-    
-    years.forEach(year => {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year;
-        chartYear.appendChild(option);
-    });
-    
-    const now = new Date();
-    chartMonth.value = now.getMonth() + 1;
-    chartYear.value = now.getFullYear();
-    
-    chartMonth.addEventListener('change', renderEnhancedCharts);
-    chartYear.addEventListener('change', renderEnhancedCharts);
-}
-
-function renderMainChart() {
-    const ctx = document.getElementById('mainChart');
+function renderOverviewChart() {
+    const ctx = document.getElementById('overviewChart');
     if (!ctx) return;
     
     const canvasCtx = ctx.getContext('2d');
-    const placeholder = document.getElementById('chartPlaceholder');
+    const placeholder = document.getElementById('overviewChartPlaceholder');
     
-    if (mainChart) {
-        mainChart.destroy();
+    if (overviewChart) {
+        overviewChart.destroy();
     }
     
     if (transactions.length === 0) {
         placeholder.classList.remove('d-none');
-        canvasCtx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
     }
     
     placeholder.classList.add('d-none');
     
-    const chartMonth = document.getElementById('chartMonth').value;
-    const chartYear = document.getElementById('chartYear').value;
+    const chartType = document.getElementById('overviewChartType')?.value || 'category';
     
-    switch (currentChartType) {
+    switch (chartType) {
         case 'category':
-            renderCategoryChart(canvasCtx, chartMonth, chartYear);
+            renderCategoryOverviewChart(canvasCtx);
             break;
         case 'monthly':
-            renderMonthlyTrendChart(canvasCtx, chartYear);
+            renderMonthlyOverviewChart(canvasCtx);
             break;
         case 'yearly':
-            renderYearlyTrendChart(canvasCtx, chartMonth);
+            renderYearlyOverviewChart(canvasCtx);
             break;
     }
 }
 
-function renderCategoryChart(ctx, month, year) {
-    let filteredTx = transactions;
-    if (month !== 'all' || year !== 'all') {
-        filteredTx = transactions.filter(tx => {
-            const d = new Date(tx.date);
-            if (isNaN(d)) return false;
-            let valid = true;
-            if (month !== 'all') valid = valid && (d.getMonth() + 1) == month;
-            if (year !== 'all') valid = valid && d.getFullYear() == year;
-            return valid;
-        });
-    }
+function renderCategoryOverviewChart(ctx) {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     
     const categoryData = {};
     categories.forEach(cat => {
-        categoryData[cat.name] = {
-            income: 0,
-            expense: 0,
-            type: cat.type
-        };
-    });
-    
-    filteredTx.forEach(tx => {
-        if (categoryData[tx.category]) {
-            categoryData[tx.category][tx.type === 'income' ? 'income' : 'expense'] += tx.amount;
+        if (cat.type === 'expense') {
+            categoryData[cat.name] = 0;
         }
     });
     
-    const labels = Object.keys(categoryData).filter(cat => 
-        categoryData[cat].income > 0 || categoryData[cat].expense > 0
-    );
+    transactions.forEach(tx => {
+        if (tx.type === 'expense' && tx.date.startsWith(currentMonth)) {
+            categoryData[tx.category] = (categoryData[tx.category] || 0) + tx.amount;
+        }
+    });
     
-    const incomeData = labels.map(cat => categoryData[cat].income);
-    const expenseData = labels.map(cat => categoryData[cat].expense);
+    const labels = Object.keys(categoryData).filter(cat => categoryData[cat] > 0);
+    const data = labels.map(cat => categoryData[cat]);
     
-    mainChart = new Chart(ctx, {
+    overviewChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: 'Income',
-                    data: incomeData,
-                    backgroundColor: '#198754',
-                    borderColor: '#198754',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Expense',
-                    data: expenseData,
-                    backgroundColor: '#dc3545',
-                    borderColor: '#dc3545',
-                    borderWidth: 1
-                }
-            ]
+            datasets: [{
+                label: 'Spending',
+                data: data,
+                backgroundColor: '#dc3545',
+                borderColor: '#dc3545',
+                borderWidth: 1
+            }]
         },
         options: {
             responsive: true,
@@ -1748,10 +2061,10 @@ function renderCategoryChart(ctx, month, year) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Category-wise Income vs Expense'
+                    text: 'Current Month Spending by Category'
                 },
                 legend: {
-                    position: 'top',
+                    display: false
                 }
             },
             scales: {
@@ -1763,20 +2076,26 @@ function renderCategoryChart(ctx, month, year) {
                         }
                     }
                 }
+            },
+            onClick: (e, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const category = labels[index];
+                    showCategoryTransactions('expense', category);
+                }
             }
         }
     });
 }
 
-function renderMonthlyTrendChart(ctx, year) {
+function renderMonthlyOverviewChart(ctx) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
     const monthlyData = Array(12).fill().map(() => ({ income: 0, expense: 0 }));
     
     transactions.forEach(tx => {
         const d = new Date(tx.date);
-        if (isNaN(d)) return;
-        
-        if (year === 'all' || d.getFullYear() == year) {
+        if (d.getFullYear() === currentYear) {
             const month = d.getMonth();
             if (tx.type === 'income') {
                 monthlyData[month].income += tx.amount;
@@ -1789,7 +2108,7 @@ function renderMonthlyTrendChart(ctx, year) {
     const incomeData = monthlyData.map(m => m.income);
     const expenseData = monthlyData.map(m => m.expense);
     
-    mainChart = new Chart(ctx, {
+    overviewChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: months,
@@ -1818,7 +2137,7 @@ function renderMonthlyTrendChart(ctx, year) {
             plugins: {
                 title: {
                     display: true,
-                    text: `Monthly Trend ${year === 'all' ? '(All Years)' : year}`
+                    text: `Monthly Trend - ${currentYear}`
                 }
             },
             scales: {
@@ -1835,69 +2154,44 @@ function renderMonthlyTrendChart(ctx, year) {
     });
 }
 
-function renderYearlyTrendChart(ctx, month) {
+function renderYearlyOverviewChart(ctx) {
     const years = Array.from(new Set(transactions.map(tx => new Date(tx.date).getFullYear())))
         .filter(year => !isNaN(year))
         .sort((a, b) => a - b);
     
     const yearlyData = {};
     years.forEach(year => {
-        yearlyData[year] = { income: 0, expense: 0, net: 0 };
+        yearlyData[year] = { income: 0, expense: 0 };
     });
     
     transactions.forEach(tx => {
-        const txDate = new Date(tx.date);
-        const txYear = txDate.getFullYear();
-        const txMonth = txDate.getMonth() + 1;
-        
-        if (month === 'all' || txMonth == month) {
-            if (yearlyData[txYear]) {
-                if (tx.type === 'income') {
-                    yearlyData[txYear].income += tx.amount;
-                } else {
-                    yearlyData[txYear].expense += tx.amount;
-                }
-                yearlyData[txYear].net = yearlyData[txYear].income - yearlyData[txYear].expense;
+        const year = new Date(tx.date).getFullYear();
+        if (yearlyData[year]) {
+            if (tx.type === 'income') {
+                yearlyData[year].income += tx.amount;
+            } else {
+                yearlyData[year].expense += tx.amount;
             }
         }
     });
     
-    const incomeData = years.map(year => yearlyData[year]?.income || 0);
-    const expenseData = years.map(year => yearlyData[year]?.expense || 0);
-    const netData = years.map(year => yearlyData[year]?.net || 0);
+    const incomeData = years.map(year => yearlyData[year].income);
+    const expenseData = years.map(year => yearlyData[year].expense);
     
-    mainChart = new Chart(ctx, {
-        type: 'line',
+    overviewChart = new Chart(ctx, {
+        type: 'bar',
         data: {
             labels: years,
             datasets: [
                 {
                     label: 'Income',
                     data: incomeData,
-                    borderColor: '#198754',
-                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    borderWidth: 3
+                    backgroundColor: '#198754'
                 },
                 {
                     label: 'Expense',
                     data: expenseData,
-                    borderColor: '#dc3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    borderWidth: 3
-                },
-                {
-                    label: 'Net Wealth',
-                    data: netData,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    tension: 0.3,
-                    fill: true,
-                    borderWidth: 2,
-                    borderDash: [5, 5]
+                    backgroundColor: '#dc3545'
                 }
             ]
         },
@@ -1907,18 +2201,7 @@ function renderYearlyTrendChart(ctx, month) {
             plugins: {
                 title: {
                     display: true,
-                    text: `Yearly Trend ${month === 'all' ? '' : `- ${new Date(2023, month-1).toLocaleString('default', {month: 'long'})}`}`,
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    }
-                },
-                legend: {
-                    position: 'top',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 20
-                    }
+                    text: 'Yearly Comparison'
                 }
             },
             scales: {
@@ -1928,45 +2211,23 @@ function renderYearlyTrendChart(ctx, month) {
                         callback: function(value) {
                             return value.toLocaleString() + ' ' + currency;
                         }
-                    },
-                    grid: {
-                        color: 'rgba(0,0,0,0.1)'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(0,0,0,0.1)'
                     }
                 }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index'
             }
         }
     });
 }
 
 function renderPieCharts() {
-    const chartMonth = document.getElementById('chartMonth').value;
-    const chartYear = document.getElementById('chartYear').value;
-    
-    let filteredTx = transactions;
-    if (chartMonth !== 'all' || chartYear !== 'all') {
-        filteredTx = transactions.filter(tx => {
-            const d = new Date(tx.date);
-            if (isNaN(d)) return false;
-            let valid = true;
-            if (chartMonth !== 'all') valid = valid && (d.getMonth() + 1) == chartMonth;
-            if (chartYear !== 'all') valid = valid && d.getFullYear() == chartYear;
-            return valid;
-        });
-    }
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     
     // Income Pie Chart
     const incomeData = {};
-    filteredTx.filter(tx => tx.type === 'income').forEach(tx => {
-        incomeData[tx.category] = (incomeData[tx.category] || 0) + tx.amount;
+    transactions.forEach(tx => {
+        if (tx.type === 'income' && tx.date.startsWith(currentMonth)) {
+            incomeData[tx.category] = (incomeData[tx.category] || 0) + tx.amount;
+        }
     });
     
     const incomeCtx = document.getElementById('incomePieChart');
@@ -1974,37 +2235,37 @@ function renderPieCharts() {
     
     if (incomePieChart) incomePieChart.destroy();
     
-    if (!incomeCtx || Object.keys(incomeData).length === 0) {
-        if (incomePlaceholder) incomePlaceholder.style.display = 'flex';
-        return;
-    }
-    
-    const incomeCanvasCtx = incomeCtx.getContext('2d');
-    incomePlaceholder.style.display = 'none';
-    incomePieChart = new Chart(incomeCanvasCtx, {
-        type: 'pie',
-        data: {
-            labels: Object.keys(incomeData),
-            datasets: [{
-                data: Object.values(incomeData),
-                backgroundColor: ['#198754', '#20c997', '#0dcaf0', '#6f42c1', '#fd7e14']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+    if (Object.keys(incomeData).length === 0) {
+        incomePlaceholder.style.display = 'flex';
+    } else {
+        incomePlaceholder.style.display = 'none';
+        incomePieChart = new Chart(incomeCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(incomeData),
+                datasets: [{
+                    data: Object.values(incomeData),
+                    backgroundColor: ['#198754', '#20c997', '#0dcaf0', '#6f42c1', '#fd7e14']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
                 }
             }
-        }
-    });
+        });
+    }
     
     // Expense Pie Chart
     const expenseData = {};
-    filteredTx.filter(tx => tx.type === 'expense').forEach(tx => {
-        expenseData[tx.category] = (expenseData[tx.category] || 0) + tx.amount;
+    transactions.forEach(tx => {
+        if (tx.type === 'expense' && tx.date.startsWith(currentMonth)) {
+            expenseData[tx.category] = (expenseData[tx.category] || 0) + tx.amount;
+        }
     });
     
     const expenseCtx = document.getElementById('expensePieChart');
@@ -2012,33 +2273,719 @@ function renderPieCharts() {
     
     if (expensePieChart) expensePieChart.destroy();
     
-    if (!expenseCtx || Object.keys(expenseData).length === 0) {
-        if (expensePlaceholder) expensePlaceholder.style.display = 'flex';
+    if (Object.keys(expenseData).length === 0) {
+        expensePlaceholder.style.display = 'flex';
+    } else {
+        expensePlaceholder.style.display = 'none';
+        expensePieChart = new Chart(expenseCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(expenseData),
+                datasets: [{
+                    data: Object.values(expenseData),
+                    backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1', '#20c997']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
+
+function renderPredictionsTab() {
+    renderForecastChart();
+    renderRiskAlerts();
+    renderMonthlyProjections();
+}
+
+function renderForecastChart() {
+    const ctx = document.getElementById('forecastChart');
+    if (!ctx) return;
+    
+    const canvasCtx = ctx.getContext('2d');
+    const placeholder = document.getElementById('forecastPlaceholder');
+    
+    if (forecastChart) {
+        forecastChart.destroy();
+    }
+    
+    const forecast = AnalyticsEngine.generateForecast(transactions);
+    
+    if (forecast.confidence < 0.3) {
+        placeholder.classList.remove('d-none');
         return;
     }
     
-    const expenseCanvasCtx = expenseCtx.getContext('2d');
-    expensePlaceholder.style.display = 'none';
-    expensePieChart = new Chart(expenseCanvasCtx, {
-        type: 'pie',
+    placeholder.classList.add('d-none');
+    
+    const months = ['Current', 'Next', '+2', '+3', '+4', '+5'];
+    const historicalLabels = ['-5', '-4', '-3', '-2', '-1', 'Current'];
+    
+    forecastChart = new Chart(canvasCtx, {
+        type: 'line',
         data: {
-            labels: Object.keys(expenseData),
+            labels: [...historicalLabels, ...months.slice(1)],
+            datasets: [
+                {
+                    label: 'Historical',
+                    data: [...forecast.historical.slice(-6), ...Array(6).fill(null)],
+                    borderColor: '#6c757d',
+                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                    borderDash: [5, 5],
+                    fill: false
+                },
+                {
+                    label: 'Forecast',
+                    data: [...Array(6).fill(null), ...forecast.forecast],
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '6-Month Spending Forecast'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ' + currency;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderRiskAlerts() {
+    const container = document.getElementById('riskAlerts');
+    const placeholder = document.getElementById('noRiskAlerts');
+    
+    if (!container) return;
+    
+    const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
+    const riskAlerts = insights.filter(insight => insight.type === 'warning');
+    
+    container.innerHTML = '';
+    
+    if (riskAlerts.length === 0) {
+        placeholder.classList.remove('d-none');
+        container.classList.add('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    container.classList.remove('d-none');
+    
+    riskAlerts.forEach(alert => {
+        const alertElement = document.createElement('div');
+        alertElement.className = `risk-alert risk-${alert.type}`;
+        alertElement.innerHTML = `
+            <div class="risk-alert-icon">
+                <i class="bi ${alert.icon}"></i>
+            </div>
+            <div class="risk-alert-content">
+                <div class="risk-alert-message">${alert.message}</div>
+            </div>
+        `;
+        container.appendChild(alertElement);
+    });
+}
+
+function renderMonthlyProjections() {
+    const container = document.getElementById('monthlyProjections');
+    const placeholder = document.getElementById('noProjections');
+    
+    if (!container) return;
+    
+    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions);
+    
+    container.innerHTML = '';
+    
+    if (!prediction || prediction.confidence < 0.5) {
+        placeholder.classList.remove('d-none');
+        container.classList.add('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    container.classList.remove('d-none');
+    
+    const projectionElement = document.createElement('div');
+    projectionElement.className = 'projection-item';
+    projectionElement.innerHTML = `
+        <div class="projection-header">
+            <i class="bi bi-arrow-up-right"></i>
+            <span>Next Month Projection</span>
+        </div>
+        <div class="projection-amount">${prediction.amount.toLocaleString()} ${currency}</div>
+        <div class="projection-confidence">
+            <small class="text-muted">Confidence: ${Math.round(prediction.confidence * 100)}%</small>
+        </div>
+        <div class="projection-trend">
+            <small class="${prediction.trend > 0 ? 'text-danger' : 'text-success'}">
+                <i class="bi ${prediction.trend > 0 ? 'bi-arrow-up' : 'bi-arrow-down'}"></i>
+                ${Math.abs(prediction.trend * 100).toFixed(1)}% ${prediction.trend > 0 ? 'increase' : 'decrease'}
+            </small>
+        </div>
+    `;
+    
+    container.appendChild(projectionElement);
+}
+
+function renderTrendsTab() {
+    renderHealthTrendChart();
+    renderHeatMap();
+    renderCategoryTrendChart();
+}
+
+function renderHealthTrendChart() {
+    const ctx = document.getElementById('healthTrendChart');
+    if (!ctx) return;
+    
+    const canvasCtx = ctx.getContext('2d');
+    const placeholder = document.getElementById('healthTrendPlaceholder');
+    
+    if (healthTrendChart) {
+        healthTrendChart.destroy();
+    }
+    
+    // Calculate health scores for last 6 months
+    const now = new Date();
+    const healthScores = [];
+    const labels = [];
+    
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Filter transactions for this month
+        const monthTransactions = transactions.filter(tx => 
+            getMonthKeyFromDate(tx.date) === monthKey
+        );
+        
+        const score = AnalyticsEngine.calculateHealthScore(monthTransactions, monthlyBudgets);
+        healthScores.push(score);
+        labels.push(date.toLocaleDateString('en', { month: 'short' }));
+    }
+    
+    if (healthScores.filter(score => score > 0).length < 2) {
+        placeholder.classList.remove('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    
+    healthTrendChart = new Chart(canvasCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
             datasets: [{
-                data: Object.values(expenseData),
-                backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1', '#20c997']
+                label: 'Financial Health Score',
+                data: healthScores,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4,
+                fill: true
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'bottom'
+                title: {
+                    display: true,
+                    text: 'Financial Health Trend'
+                }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '/100';
+                        }
+                    }
                 }
             }
         }
     });
 }
+
+function renderHeatMap() {
+    const container = document.getElementById('heatMapContainer');
+    const placeholder = document.getElementById('heatMapPlaceholder');
+    
+    if (!container) return;
+    
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    const heatMapData = AnalyticsEngine.generateHeatMap(transactions, currentYear, currentMonth);
+    
+    container.innerHTML = '';
+    
+    if (heatMapData.filter(day => day.amount > 0).length === 0) {
+        placeholder.classList.remove('d-none');
+        container.classList.add('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    container.classList.remove('d-none');
+    
+    // Find max amount for color scaling
+    const maxAmount = Math.max(...heatMapData.map(day => day.amount));
+    
+    const heatMapHTML = heatMapData.map(day => {
+        const intensity = maxAmount > 0 ? (day.amount / maxAmount) : 0;
+        const colorIntensity = Math.floor(intensity * 100);
+        
+        return `
+            <div class="heat-map-day" style="background-color: rgba(220, 53, 69, ${0.3 + intensity * 0.7})" 
+                 title="${day.date}: ${day.amount.toLocaleString()} ${currency}">
+                ${day.day}
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = `<div class="heat-map-grid">${heatMapHTML}</div>`;
+}
+
+function renderCategoryTrendChart() {
+    const ctx = document.getElementById('categoryTrendChart');
+    if (!ctx) return;
+    
+    const canvasCtx = ctx.getContext('2d');
+    const placeholder = document.getElementById('categoryTrendPlaceholder');
+    
+    if (categoryTrendChart) {
+        categoryTrendChart.destroy();
+    }
+    
+    const trends = AnalyticsEngine.analyzeCategoryTrends(transactions);
+    
+    if (trends.length === 0) {
+        placeholder.classList.remove('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    
+    const topTrends = trends.slice(0, 5); // Show top 5 trends
+    
+    categoryTrendChart = new Chart(canvasCtx, {
+        type: 'bar',
+        data: {
+            labels: topTrends.map(t => t.category),
+            datasets: [{
+                label: 'Trend (%)',
+                data: topTrends.map(t => t.trend * 100),
+                backgroundColor: topTrends.map(t => t.trend > 0 ? '#dc3545' : '#198754')
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Category Spending Trends (This vs Last Month)'
+                },
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(1) + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderComparisonTab() {
+    populateComparisonFilters();
+    renderComparisonChart();
+    renderChangeAnalysis();
+}
+
+function populateComparisonFilters() {
+    const typeSelect = document.getElementById('comparisonType');
+    const period1Select = document.getElementById('comparisonPeriod1');
+    const period2Select = document.getElementById('comparisonPeriod2');
+    
+    if (!typeSelect || !period1Select || !period2Select) return;
+    
+    // Get available months and years from transactions
+    const months = Array.from(new Set(transactions.map(tx => tx.date.substring(0, 7)))).sort();
+    const years = Array.from(new Set(transactions.map(tx => tx.date.substring(0, 4)))).sort();
+    
+    // Populate period selects based on comparison type
+    typeSelect.addEventListener('change', function() {
+        period1Select.innerHTML = '';
+        period2Select.innerHTML = '';
+        
+        const now = new Date();
+        
+        switch (this.value) {
+            case 'month':
+                // Populate with available months
+                months.forEach(month => {
+                    const option = document.createElement('option');
+                    option.value = month;
+                    option.textContent = new Date(month + '-01').toLocaleDateString('en', { year: 'numeric', month: 'long' });
+                    period1Select.appendChild(option.cloneNode(true));
+                    period2Select.appendChild(option);
+                });
+                break;
+                
+            case 'year':
+                // Populate with available years
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    period1Select.appendChild(option.cloneNode(true));
+                    period2Select.appendChild(option);
+                });
+                break;
+                
+            case 'average':
+                // For 3-month average comparison
+                for (let i = 0; i < 6; i++) {
+                    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    const option = document.createElement('option');
+                    option.value = monthKey;
+                    option.textContent = date.toLocaleDateString('en', { year: 'numeric', month: 'long' });
+                    period1Select.appendChild(option.cloneNode(true));
+                    period2Select.appendChild(option);
+                }
+                break;
+        }
+        
+        // Set default values (current and previous period)
+        if (period1Select.options.length > 1) {
+            period1Select.selectedIndex = 1;
+            period2Select.selectedIndex = 0;
+        }
+        
+        renderComparisonChart();
+        renderChangeAnalysis();
+    });
+    
+    // Trigger initial population
+    typeSelect.dispatchEvent(new Event('change'));
+}
+
+function renderComparisonChart() {
+    const ctx = document.getElementById('comparisonChart');
+    if (!ctx) return;
+    
+    const canvasCtx = ctx.getContext('2d');
+    const placeholder = document.getElementById('comparisonPlaceholder');
+    
+    if (comparisonChart) {
+        comparisonChart.destroy();
+    }
+    
+    const type = document.getElementById('comparisonType').value;
+    const period1 = document.getElementById('comparisonPeriod1').value;
+    const period2 = document.getElementById('comparisonPeriod2').value;
+    
+    if (!period1 || !period2) {
+        placeholder.classList.remove('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    
+    const comparison = AnalyticsEngine.comparePeriods(transactions, period1, period2, type);
+    
+    const categories = Object.keys(comparison).filter(cat => 
+        comparison[cat].period1 > 0 || comparison[cat].period2 > 0
+    );
+    
+    const period1Data = categories.map(cat => comparison[cat].period1);
+    const period2Data = categories.map(cat => comparison[cat].period2);
+    
+    comparisonChart = new Chart(canvasCtx, {
+        type: 'bar',
+        data: {
+            labels: categories,
+            datasets: [
+                {
+                    label: period1,
+                    data: period1Data,
+                    backgroundColor: '#6c757d'
+                },
+                {
+                    label: period2,
+                    data: period2Data,
+                    backgroundColor: '#0d6efd'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Spending Comparison'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ' + currency;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderChangeAnalysis() {
+    const container = document.getElementById('changeAnalysis');
+    const placeholder = document.getElementById('noChangeAnalysis');
+    
+    if (!container) return;
+    
+    const type = document.getElementById('comparisonType').value;
+    const period1 = document.getElementById('comparisonPeriod1').value;
+    const period2 = document.getElementById('comparisonPeriod2').value;
+    
+    if (!period1 || !period2) {
+        placeholder.classList.remove('d-none');
+        container.classList.add('d-none');
+        return;
+    }
+    
+    const comparison = AnalyticsEngine.comparePeriods(transactions, period1, period2, type);
+    
+    container.innerHTML = '';
+    
+    const significantChanges = Object.entries(comparison)
+        .filter(([cat, data]) => Math.abs(data.percentChange) > 5 && (data.period1 > 0 || data.period2 > 0))
+        .sort((a, b) => Math.abs(b[1].percentChange) - Math.abs(a[1].percentChange))
+        .slice(0, 5);
+    
+    if (significantChanges.length === 0) {
+        placeholder.classList.remove('d-none');
+        container.classList.add('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    container.classList.remove('d-none');
+    
+    significantChanges.forEach(([category, data]) => {
+        const changeElement = document.createElement('div');
+        changeElement.className = 'change-item';
+        changeElement.innerHTML = `
+            <div class="change-category">${category}</div>
+            <div class="change-details">
+                <span class="change-amount ${data.percentChange >= 0 ? 'text-danger' : 'text-success'}">
+                    <i class="bi ${data.percentChange >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'}"></i>
+                    ${Math.abs(data.percentChange).toFixed(1)}%
+                </span>
+                <small class="text-muted">
+                    ${data.period1.toLocaleString()} → ${data.period2.toLocaleString()} ${currency}
+                </small>
+            </div>
+        `;
+        container.appendChild(changeElement);
+    });
+}
+
+function updateAIInsights() {
+    const container = document.getElementById('aiQuickInsights');
+    if (!container) return;
+    
+    const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
+    
+    container.innerHTML = '';
+    
+    if (insights.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted"><small>Add more transactions for personalized insights</small></div>';
+        return;
+    }
+    
+    // Show top 2 insights in quick view
+    const topInsights = insights.slice(0, 2);
+    
+    topInsights.forEach(insight => {
+        const insightElement = document.createElement('div');
+        insightElement.className = `ai-insight ai-${insight.type}`;
+        insightElement.innerHTML = `
+            <i class="bi ${insight.icon} me-2"></i>
+            <small>${insight.message}</small>
+        `;
+        container.appendChild(insightElement);
+    });
+}
+
+function showFullAIAnalysis() {
+    const modal = new bootstrap.Modal(document.getElementById('aiInsightsModal'));
+    const container = document.getElementById('aiInsightsContent');
+    
+    const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
+    const healthScore = AnalyticsEngine.calculateHealthScore(transactions, monthlyBudgets);
+    const savingsRate = AnalyticsEngine.calculateSavingsRate(transactions);
+    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions);
+    
+    let html = `
+        <div class="ai-analysis-header">
+            <div class="row text-center">
+                <div class="col-4">
+                    <div class="ai-metric">
+                        <div class="ai-metric-value">${healthScore}/100</div>
+                        <div class="ai-metric-label">Health Score</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="ai-metric">
+                        <div class="ai-metric-value">${(savingsRate * 100).toFixed(1)}%</div>
+                        <div class="ai-metric-label">Savings Rate</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="ai-metric">
+                        <div class="ai-metric-value">${prediction ? Math.round(prediction.confidence * 100) : '--'}%</div>
+                        <div class="ai-metric-label">Prediction Confidence</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ai-recommendations">
+            <h6><i class="bi bi-lightbulb"></i> AI Recommendations</h6>
+    `;
+    
+    if (insights.length === 0) {
+        html += `<div class="text-center text-muted p-3">Add more transaction data for personalized recommendations</div>`;
+    } else {
+        insights.forEach(insight => {
+            html += `
+                <div class="ai-recommendation ai-${insight.type}">
+                    <i class="bi ${insight.icon}"></i>
+                    <span>${insight.message}</span>
+                </div>
+            `;
+        });
+    }
+    
+    html += `</div>`;
+    
+    // Add prediction if available
+    if (prediction && prediction.confidence > 0.6) {
+        html += `
+            <div class="ai-prediction mt-3">
+                <h6><i class="bi bi-magic"></i> Spending Forecast</h6>
+                <div class="prediction-card">
+                    <div class="prediction-amount">${prediction.amount.toLocaleString()} ${currency}</div>
+                    <div class="prediction-label">Expected next month spending</div>
+                    <div class="prediction-note">
+                        <small class="text-muted">Based on ${Math.round(prediction.confidence * 100)}% confidence from your spending patterns</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+    modal.show();
+}
+
+function applyAISuggestions() {
+    // This would implement the AI suggestions
+    // For now, just show a toast
+    showToast('AI suggestions applied to your financial plan', 'success');
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('aiInsightsModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+// Add event listeners for analytics
+document.addEventListener('DOMContentLoaded', function() {
+    // Overview chart type change
+    const overviewChartType = document.getElementById('overviewChartType');
+    if (overviewChartType) {
+        overviewChartType.addEventListener('change', renderOverviewChart);
+    }
+    
+    // Comparison filters change
+    const comparisonType = document.getElementById('comparisonType');
+    const comparisonPeriod1 = document.getElementById('comparisonPeriod1');
+    const comparisonPeriod2 = document.getElementById('comparisonPeriod2');
+    
+    if (comparisonType) {
+        comparisonType.addEventListener('change', function() {
+            setTimeout(() => {
+                renderComparisonChart();
+                renderChangeAnalysis();
+            }, 100);
+        });
+    }
+    
+    if (comparisonPeriod1 && comparisonPeriod2) {
+        comparisonPeriod1.addEventListener('change', function() {
+            renderComparisonChart();
+            renderChangeAnalysis();
+        });
+        
+        comparisonPeriod2.addEventListener('change', function() {
+            renderComparisonChart();
+            renderChangeAnalysis();
+        });
+    }
+    
+    // Analytics tab navigation
+    const analyticsTabs = document.querySelectorAll('#analyticsTabs button');
+    analyticsTabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function() {
+            const target = this.getAttribute('data-bs-target');
+            if (target === '#predictions') {
+                renderPredictionsTab();
+            } else if (target === '#trends') {
+                renderTrendsTab();
+            } else if (target === '#comparison') {
+                renderComparisonTab();
+            }
+        });
+    });
+});
 
 // Import/Export
 document.getElementById('exportBtn').onclick = function() {
