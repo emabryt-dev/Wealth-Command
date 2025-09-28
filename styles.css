@@ -1,6 +1,6 @@
 body {
   background-color: #f8f9fa;
-  transition: background-color 0.2s;
+  transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 0.97rem;
   padding-bottom: 80px;
 }
@@ -50,6 +50,54 @@ body {
 }
 .tab-page.d-none {
   display: none !important;
+}
+
+/* Sync Status Icon */
+.sync-status-container {
+  position: relative;
+  display: inline-block;
+  margin-right: 10px;
+}
+
+#syncStatusIcon {
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sync-status-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1060;
+  pointer-events: none;
+}
+
+.sync-status-container:hover .sync-status-tooltip {
+  opacity: 1;
+  visibility: visible;
+  bottom: 120%;
+}
+
+/* Pulse animation for syncing */
+.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
 }
 
 /* Enhanced Bottom Navigation */
@@ -725,21 +773,43 @@ footer {
   z-index: 2;
 }
 
-/* Dark mode support */
+/* Enhanced Dark Mode */
 body.dark-mode {
-  background-color: #1a1a1a;
-  color: #ffffff;
+  background-color: #1a1d23;
+  color: #e9ecef;
+}
+
+body.dark-mode .navbar {
+  background-color: #2d3748 !important;
+  border-bottom: 1px solid #4a5568;
+}
+
+body.dark-mode .card {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  color: #e9ecef;
 }
 
 body.dark-mode .breakdown-card {
-  background: #2d3748;
+  background: linear-gradient(135deg, #2d3748, #4a5568);
   border-color: #4a5568;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
+body.dark-mode .income-card {
+  border-left: 4px solid #48bb78;
+  background: linear-gradient(135deg, #2d3748, #2f855a);
+}
+
+body.dark-mode .expense-card {
+  border-left: 4px solid #f56565;
+  background: linear-gradient(135deg, #2d3748, #c53030);
+}
+
 body.dark-mode #fixedNavBar {
   background: rgba(45, 55, 72, 0.95);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #4a5568;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .nav-btn {
@@ -750,9 +820,13 @@ body.dark-mode .nav-btn.active {
   color: #63b3ed;
 }
 
+body.dark-mode .nav-btn.active small {
+  color: #63b3ed;
+}
+
 body.dark-mode .table-container thead th {
   background-color: #4a5568;
-  color: white;
+  color: #e9ecef;
   border-bottom: 2px solid #718096;
 }
 
@@ -766,22 +840,23 @@ body.dark-mode .table-hover tbody tr:hover td {
 
 body.dark-mode .toast {
   background: rgba(45, 55, 72, 0.95);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e9ecef;
+  border: 1px solid #4a5568;
 }
 
 body.dark-mode .rollover-balance {
-  background: linear-gradient(135deg, #1e3a5f, #2d1b69);
+  background: linear-gradient(135deg, #2d3748, #4a5568);
   border-left: 4px solid #63b3ed;
 }
 
 body.dark-mode .category-transaction-item:hover {
-  background-color: #2d3748;
+  background-color: #4a5568;
 }
 
 body.dark-mode #transactionsTable td {
   border-bottom: 1px solid #4a5568;
   background: #2d3748;
+  color: #e9ecef;
 }
 
 body.dark-mode .table-container {
@@ -801,6 +876,7 @@ body.dark-mode .category-expense {
 body.dark-mode #transactionsTable th:nth-child(1),
 body.dark-mode #transactionsTable td:nth-child(1) {
   background: #4a5568;
+  color: #e9ecef;
 }
 
 body.dark-mode .chart-card {
@@ -815,7 +891,16 @@ body.dark-mode .chart-controls {
 
 body.dark-mode .stat-card {
   background: linear-gradient(135deg, #4a5568, #2d3748);
-  color: white;
+  color: #e9ecef;
+  border-left-color: #63b3ed;
+}
+
+body.dark-mode .stat-card.income {
+  border-left-color: #48bb78;
+}
+
+body.dark-mode .stat-card.expense {
+  border-left-color: #f56565;
 }
 
 body.dark-mode .clickable-row:hover {
@@ -831,9 +916,78 @@ body.dark-mode .distribution-card .card-header {
   background: linear-gradient(135deg, #4a5568, #2d3748);
 }
 
+body.dark-mode .distribution-card.income .card-header {
+  background: linear-gradient(135deg, #2f855a, #22543d);
+}
+
+body.dark-mode .distribution-card.expense .card-header {
+  background: linear-gradient(135deg, #c53030, #742a2a);
+}
+
 body.dark-mode footer {
   background: #2d3748;
   border-color: #4a5568;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background-color: #4a5568;
+  border-color: #718096;
+  color: #e9ecef;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+  background-color: #4a5568;
+  border-color: #63b3ed;
+  color: #e9ecef;
+}
+
+body.dark-mode .input-group-text {
+  background-color: #718096;
+  border-color: #718096;
+  color: #e9ecef;
+}
+
+body.dark-mode .modal-content {
+  background-color: #2d3748;
+  color: #e9ecef;
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: #4a5568;
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: #4a5568;
+}
+
+body.dark-mode .btn-close {
+  filter: invert(1);
+}
+
+body.dark-mode .dropdown-menu {
+  background-color: #2d3748;
+  border-color: #4a5568;
+}
+
+body.dark-mode .dropdown-item {
+  color: #e9ecef;
+}
+
+body.dark-mode .dropdown-item:hover {
+  background-color: #4a5568;
+  color: #e9ecef;
+}
+
+body.dark-mode .alert-info {
+  background-color: #2c5282;
+  border-color: #2b6cb0;
+  color: #bee3f8;
+}
+
+body.dark-mode .chart-placeholder {
+  color: #a0aec0;
 }
 
 /* Responsive design */
@@ -934,6 +1088,14 @@ body.dark-mode footer {
   .main-content {
     padding-bottom: 130px;
   }
+  
+  .sync-status-container {
+    margin-right: 5px;
+  }
+  
+  #syncStatusIcon {
+    font-size: 1.1rem;
+  }
 }
 
 /* Additional mobile optimizations */
@@ -975,6 +1137,10 @@ body.dark-mode footer {
     min-height: 200px;
     max-height: 350px;
   }
+  
+  .sync-status-tooltip {
+    display: none; /* Hide tooltip on very small screens */
+  }
 }
 
 /* Print styles */
@@ -993,6 +1159,10 @@ body.dark-mode footer {
   }
   
   footer {
+    display: none !important;
+  }
+  
+  .sync-status-container {
     display: none !important;
   }
 }
