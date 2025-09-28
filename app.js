@@ -1201,6 +1201,52 @@ function startPeriodicSync() {
     }, 5 * 60 * 1000); // 5 minutes
 }
 
+//Populate Chart Tab
+function populateChartFilters() {
+    const chartMonth = document.getElementById('chartMonth');
+    const chartYear = document.getElementById('chartYear');
+    
+    if (!chartMonth || !chartYear) return;
+    
+    chartMonth.innerHTML = '<option value="all">All Months</option>';
+    chartYear.innerHTML = '<option value="all">All Years</option>';
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June", 
+                       "July", "August", "September", "October", "November", "December"];
+    
+    monthNames.forEach((monthName, index) => {
+        const option = document.createElement('option');
+        option.value = index + 1;
+        option.textContent = monthName;
+        chartMonth.appendChild(option);
+    });
+    
+    const years = Array.from(new Set(transactions.map(tx => {
+        const year = new Date(tx.date).getFullYear();
+        return isNaN(year) ? null : year;
+    }).filter(year => year !== null)))
+    .sort((a, b) => b - a);
+    
+    const currentYear = new Date().getFullYear();
+    if (!years.includes(currentYear)) {
+        years.unshift(currentYear);
+    }
+    
+    years.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        chartYear.appendChild(option);
+    });
+    
+    const now = new Date();
+    chartMonth.value = now.getMonth() + 1;
+    chartYear.value = now.getFullYear();
+    
+    chartMonth.addEventListener('change', renderEnhancedAnalytics);
+    chartYear.addEventListener('change', renderEnhancedAnalytics);
+}
+
 // Tab Persistence System
 function initTabState() {
     const hash = window.location.hash.replace('#', '');
@@ -1257,7 +1303,6 @@ function showTab(tab) {
     
     console.log(`Switched to tab: ${tab}`);
 }
-
 // Handle browser back/forward buttons
 window.addEventListener('hashchange', () => {
     const hash = window.location.hash.replace('#', '');
@@ -3097,6 +3142,12 @@ function saveCurrency(val) {
     currency = val;
     localStorage.setItem("currency", val);
     autoSyncToDrive();
+}
+
+// Overview chart type change
+const overviewChartType = document.getElementById('overviewChartType');
+if (overviewChartType) {
+    overviewChartType.addEventListener('change', renderOverviewChart);
 }
 
 // Enhanced Dark Mode Toggle
