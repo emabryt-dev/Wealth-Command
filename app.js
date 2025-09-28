@@ -1084,7 +1084,8 @@ function populateSummaryFilters() {
     const yearsArr = Array.from(new Set(transactions.map(tx => {
         const d = new Date(tx.date);
         return isNaN(d) ? null : d.getFullYear();
-    }).filter(Boolean));
+    }).filter(Boolean)
+    ));
     
     if (!yearsArr.includes(currentYear)) {
         yearsArr.push(currentYear);
