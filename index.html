@@ -112,6 +112,29 @@
     </div>
   </div>
 
+  <!-- AI Insights Modal -->
+  <div class="modal fade" id="aiInsightsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-robot"></i> AI Insights & Recommendations</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="aiInsightsContent">
+            <!-- AI insights will be populated here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="applyAISuggestions()">
+            <i class="bi bi-check-circle"></i> Apply Suggestions
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="main-content container py-3">
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
@@ -230,81 +253,277 @@
       </div>
     </div>
 
-    <!-- Enhanced Charts Tab -->
+    <!-- Enhanced Analytics Tab -->
     <div id="tab-charts" class="tab-page d-none">
-      <div class="charts-container">
-        <!-- Summary Statistics -->
-        <div class="chart-summary-stats" id="chartSummaryStats">
-          <!-- Stats will be populated dynamically -->
-        </div>
-
-        <!-- Enhanced Chart Header Row -->
-        <div class="chart-header-row">
-          <div class="chart-type-buttons">
-            <button class="btn btn-outline-primary active" data-chart-type="category">
-              <i class="bi bi-bar-chart"></i> Categories
-            </button>
-            <button class="btn btn-outline-primary" data-chart-type="monthly">
-              <i class="bi bi-graph-up"></i> Monthly Trend
-            </button>
-            <button class="btn btn-outline-primary" data-chart-type="yearly">
-              <i class="bi bi-calendar-range"></i> Yearly Comparison
-            </button>
-          </div>
-          
-          <div class="chart-filters">
-            <div class="input-group">
-              <span class="input-group-text bg-light"><i class="bi bi-calendar-month"></i></span>
-              <select id="chartMonth" class="form-select">
-                <option value="all">All Months</option>
-              </select>
-            </div>
-            <div class="input-group">
-              <span class="input-group-text bg-light"><i class="bi bi-calendar-year"></i></span>
-              <select id="chartYear" class="form-select">
-                <option value="all">All Years</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Main Chart Container -->
-        <div class="chart-card">
-          <div class="chart-body">
-            <canvas id="mainChart" height="280"></canvas>
-            <div id="chartPlaceholder" class="chart-placeholder d-none">
-              <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.5;"></i>
-              <p class="mt-2">Select a chart type to view data visualization</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Enhanced Distribution Cards -->
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <div class="distribution-card income">
-              <div class="card-header">
-                <i class="bi bi-pie-chart"></i> Income Distribution
+      <div class="analytics-container">
+        <!-- AI Insights Header -->
+        <div class="ai-insights-header">
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <div class="health-score-card">
+                <div class="health-score-header">
+                  <i class="bi bi-heart-pulse"></i> Financial Health
+                </div>
+                <div class="health-score-value" id="healthScoreValue">--</div>
+                <div class="health-score-label" id="healthScoreLabel">Calculating...</div>
+                <div class="health-score-trend" id="healthScoreTrend"></div>
               </div>
-              <div class="chart-body">
-                <canvas id="incomePieChart" height="220"></canvas>
-                <div id="incomePiePlaceholder" class="chart-placeholder">
-                  <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.5;"></i>
-                  <p class="mt-2">No income data available</p>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="savings-rate-card">
+                <div class="savings-rate-header">
+                  <i class="bi bi-piggy-bank"></i> Savings Rate
+                </div>
+                <div class="savings-rate-value" id="savingsRateValue">--</div>
+                <div class="savings-rate-label" id="savingsRateLabel">This Month</div>
+                <div class="savings-rate-progress">
+                  <div class="progress">
+                    <div id="savingsRateProgress" class="progress-bar" role="progressbar"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="ai-recommendations-card">
+                <div class="ai-recommendations-header">
+                  <i class="bi bi-robot"></i> AI Insights
+                </div>
+                <div id="aiQuickInsights" class="ai-quick-insights">
+                  <div class="text-center text-muted">
+                    <small>Analyzing your spending patterns...</small>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="showFullAIAnalysis()">
+                  <i class="bi bi-graph-up"></i> View Full Analysis
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics Navigation -->
+        <div class="analytics-nav">
+          <div class="nav nav-pills nav-fill" id="analyticsTabs" role="tablist">
+            <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button">
+              <i class="bi bi-speedometer2"></i> Overview
+            </button>
+            <button class="nav-link" id="predictions-tab" data-bs-toggle="pill" data-bs-target="#predictions" type="button">
+              <i class="bi bi-graph-up-arrow"></i> Predictions
+            </button>
+            <button class="nav-link" id="trends-tab" data-bs-toggle="pill" data-bs-target="#trends" type="button">
+              <i class="bi bi-bar-chart"></i> Trends
+            </button>
+            <button class="nav-link" id="comparison-tab" data-bs-toggle="pill" data-bs-target="#comparison" type="button">
+              <i class="bi bi-calendar-range"></i> Comparison
+            </button>
+          </div>
+        </div>
+
+        <!-- Analytics Content -->
+        <div class="tab-content" id="analyticsTabContent">
+          <!-- Overview Tab -->
+          <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-12 col-lg-8">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <i class="bi bi-graph-up"></i> Spending Overview
+                    <div class="chart-controls">
+                      <select id="overviewChartType" class="form-select form-select-sm">
+                        <option value="category">By Category</option>
+                        <option value="monthly">Monthly Trend</option>
+                        <option value="yearly">Yearly Comparison</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="overviewChart" height="300"></canvas>
+                    <div id="overviewChartPlaceholder" class="chart-placeholder">
+                      <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <p class="mt-2">Select a chart type to view data visualization</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-4">
+                <div class="distribution-card income">
+                  <div class="card-header">
+                    <i class="bi bi-pie-chart"></i> Income Distribution
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="incomePieChart" height="250"></canvas>
+                    <div id="incomePiePlaceholder" class="chart-placeholder">
+                      <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.5;"></i>
+                      <p class="mt-2">No income data available</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="distribution-card expense mt-3">
+                  <div class="card-header">
+                    <i class="bi bi-pie-chart"></i> Expense Distribution
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="expensePieChart" height="250"></canvas>
+                    <div id="expensePiePlaceholder" class="chart-placeholder">
+                      <i class="bi bi-cart" style="font-size: 2rem; opacity: 0.5;"></i>
+                      <p class="mt-2">No expense data available</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="col-12 col-md-6">
-            <div class="distribution-card expense">
-              <div class="card-header">
-                <i class="bi bi-pie-chart"></i> Expense Distribution
+
+          <!-- Predictions Tab -->
+          <div class="tab-pane fade" id="predictions" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <i class="bi bi-magic"></i> Spending Forecast
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="forecastChart" height="300"></canvas>
+                    <div id="forecastPlaceholder" class="chart-placeholder">
+                      <i class="bi bi-graph-up" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <p class="mt-2">Need more data for accurate predictions</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="chart-body">
-                <canvas id="expensePieChart" height="220"></canvas>
-                <div id="expensePiePlaceholder" class="chart-placeholder">
-                  <i class="bi bi-cart" style="font-size: 2rem; opacity: 0.5;"></i>
-                  <p class="mt-2">No expense data available</p>
+              <div class="col-12 col-lg-6">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <i class="bi bi-exclamation-triangle"></i> Risk Alerts
+                  </div>
+                  <div class="chart-body">
+                    <div id="riskAlerts" class="risk-alerts-container">
+                      <!-- Risk alerts will be populated here -->
+                    </div>
+                    <div id="noRiskAlerts" class="chart-placeholder">
+                      <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <p class="mt-2">No spending risks detected</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="chart-card mt-3">
+                  <div class="chart-header">
+                    <i class="bi bi-calendar-heart"></i> Monthly Projections
+                  </div>
+                  <div class="chart-body">
+                    <div id="monthlyProjections" class="projections-container">
+                      <!-- Monthly projections will be populated here -->
+                    </div>
+                    <div id="noProjections" class="chart-placeholder">
+                      <i class="bi bi-calculator" style="font-size: 2rem; opacity: 0.5;"></i>
+                      <p class="mt-2">Insufficient data for projections</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trends Tab -->
+          <div class="tab-pane fade" id="trends" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <i class="bi bi-heart-pulse"></i> Financial Health Trend
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="healthTrendChart" height="200"></canvas>
+                    <div id="healthTrendPlaceholder" class="chart-placeholder">
+                      <i class="bi bi-heart-pulse" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <p class="mt-2">Tracking your financial health over time...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <i class="bi bi-calendar-week"></i> Spending Heat Map
+                  </div>
+                  <div class="chart-body">
+                    <div id="heatMapContainer" class="heat-map-container">
+                      <!-- Heat map will be populated here -->
+                    </div>
+                    <div id="heatMapPlaceholder" class="chart-placeholder">
+                      <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <p class="mt-2">Heat map requires transaction data</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <i class="bi bi-arrow-up-right"></i> Category Trends
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="categoryTrendChart" height="300"></canvas>
+                    <div id="categoryTrendPlaceholder" class="chart-placeholder">
+                      <i class="bi bi-tag" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <p class="mt-2">Analyzing category spending trends...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comparison Tab -->
+          <div class="tab-pane fade" id="comparison" role="tabpanel">
+            <div class="row g-3">
+              <div class="col-12">
+                <div class="comparison-controls">
+                  <div class="row g-2">
+                    <div class="col-md-4">
+                      <select id="comparisonType" class="form-select">
+                        <option value="month">Month vs Month</option>
+                        <option value="year">Year vs Year</option>
+                        <option value="average">vs 3-Month Average</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <select id="comparisonPeriod1" class="form-select"></select>
+                    </div>
+                    <div class="col-md-4">
+                      <select id="comparisonPeriod2" class="form-select"></select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <i class="bi bi-bar-chart"></i> Spending Comparison
+                  </div>
+                  <div class="chart-body">
+                    <canvas id="comparisonChart" height="300"></canvas>
+                    <div id="comparisonPlaceholder" class="chart-placeholder">
+                      <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <p class="mt-2">Select periods to compare</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="chart-card">
+                  <div class="chart-header">
+                    <i class="bi bi-percent"></i> Change Analysis
+                  </div>
+                  <div class="chart-body">
+                    <div id="changeAnalysis" class="change-analysis-container">
+                      <!-- Change analysis will be populated here -->
+                    </div>
+                    <div id="noChangeAnalysis" class="chart-placeholder">
+                      <i class="bi bi-arrow-left-right" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <p class="mt-2">Compare periods to see changes</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -485,7 +704,7 @@
         </button>
         <button class="nav-btn" data-tab="charts">
           <i class="bi bi-bar-chart"></i>
-          <small>Charts</small>
+          <small>Analytics</small>
         </button>
         <button class="nav-btn" data-tab="settings">
           <i class="bi bi-gear"></i>
