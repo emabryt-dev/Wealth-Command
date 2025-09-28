@@ -20,8 +20,11 @@
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <a class="navbar-brand" href="#">Wealth Command</a>
       <div class="d-flex align-items-center gap-2">
-        <!-- Dark Mode Toggle -->
-        <button id="darkModeToggle" class="btn btn-outline-light btn-sm"><i class="bi bi-moon"></i></button>
+        <!-- Sync Status Icon -->
+        <div class="sync-status-container">
+          <i class="bi bi-cloud" id="syncStatusIcon" title="Sync status"></i>
+          <div class="sync-status-tooltip" id="syncStatusTooltip">Checking sync status...</div>
+        </div>
         
         <!-- Profile Picture -->
         <div class="dropdown">
@@ -58,7 +61,7 @@
     </div>
   </nav>
 
-  <!-- Toast Container for Sync Status -->
+  <!-- Toast Container for Important Messages -->
   <div class="toast-container" id="toastContainer"></div>
 
   <!-- Google Sign-In Modal -->
@@ -315,6 +318,15 @@
       <div class="card shadow-sm mb-4">
         <div class="card-header"><i class="bi bi-gear"></i> Settings</div>
         <div class="card-body">
+          <!-- Dark Mode Toggle -->
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="darkModeToggle">
+              <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
+            </div>
+          </div>
+          <hr>
+
           <!-- Cloud Sync Section -->
           <div class="mb-3">
             <label class="form-label">Cloud Sync</label>
