@@ -238,31 +238,42 @@ button:focus-visible,
 }
 
 /* ===============================
-   Bottom Navigation
+   Bottom Navigation (OLD VERSION RESTORED)
 =================================*/
 .bottom-nav {
   position: fixed;
-  inset-block-end: 0;
-  inset-inline: 0;
-  background: var(--bg-card);
+  bottom: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  width: 90%;
+  max-width: 500px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   display: flex;
   justify-content: space-around;
-  padding-block: var(--space-2);
+  padding: var(--space-2) 0;
+  z-index: 1000;
+  transition: background 0.3s ease, transform 0.3s ease;
 }
 .bottom-nav button {
   background: none;
-  color: var(--text);
-  font-size: 1.2rem;
+  border: none;
+  color: var(--text-light);
+  font-size: 1.4rem;
   flex: 1;
   padding: var(--space-2) 0;
-  transition: color 0.3s;
+  cursor: pointer;
+  transition: color 0.3s, transform 0.2s;
 }
 .bottom-nav button.active {
   color: var(--primary);
+  transform: scale(1.1);
 }
 .bottom-nav button:focus-visible {
   outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* ===============================
