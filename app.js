@@ -1194,7 +1194,7 @@ document.getElementById('transactionForm').addEventListener('submit', function(e
         transactions[editIndex] = { date, desc, type, category: cat, amount };
         showToast('Transaction updated successfully', 'success');
     } else {
-        transactions.push({ date, desc, type, category: cat, amount };
+        transactions.push({ date, desc, type, category: cat, amount });
         showToast('Transaction added successfully', 'success');
     }
     
