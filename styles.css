@@ -201,7 +201,7 @@ body {
   min-height: calc(100vh - 200px);
 }
 
-/* FIXED: Improved Card Layout - Flexible heights with proper bottom spacing */
+/* FIXED: Improved Card Layout - Fixed overlap with proper bottom spacing */
 .breakdown-container {
   display: flex;
   flex-direction: column;
@@ -210,7 +210,7 @@ body {
   flex: 1;
   min-height: 300px;
   max-height: 500px;
-  padding-bottom: 20px;
+  padding-bottom: 90px; /* Increased padding to account for nav bar */
 }
 
 .breakdown-card {
@@ -226,6 +226,7 @@ body {
   width: 100%;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-bottom: 10px; /* Extra bottom margin */
 }
 
 .breakdown-card:hover {
@@ -269,7 +270,23 @@ body {
   padding: 1rem;
   overflow-y: auto;
   min-height: 150px;
-  max-height: calc(100vh - 400px);
+  max-height: calc(100vh - 450px); /* Reduced max-height to ensure it doesn't extend behind nav */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.3) transparent;
+}
+
+/* Webkit scrollbar styling */
+.breakdown-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.breakdown-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.breakdown-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.3);
+  border-radius: 2px;
 }
 
 .breakdown-item {
@@ -595,6 +612,300 @@ body {
 
 .projection-table tr:hover {
   background-color: #f8f9fa;
+}
+
+/* Enhanced Income & Expense Planner */
+.income-planner-container {
+  background: white;
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+}
+
+.planner-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.planner-month-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+}
+
+.planner-month-header {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.planner-income-sources, .planner-expense-categories {
+  margin-bottom: 1rem;
+}
+
+.planner-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.planner-total {
+  font-weight: bold;
+  border-top: 2px solid #dee2e6;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Enhanced Heat Map */
+.heat-map-enhanced {
+  padding: 1rem;
+}
+
+.heat-map-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.heat-map-day-enhanced {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.heat-map-day-enhanced:hover {
+  transform: scale(1.1);
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.heat-map-day-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.heat-map-day-number {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.heat-map-day-amount {
+  font-size: 0.6rem;
+  opacity: 0.8;
+}
+
+.heat-map-legend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+
+.heat-map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.heat-map-legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 0.25rem;
+}
+
+.heat-map-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.heat-map-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6c757d;
+  padding: 0.25rem;
+}
+
+/* Enhanced Category Trends */
+.category-trends-enhanced {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.category-trend-card {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border-left: 4px solid;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.category-trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.category-trend-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.category-trend-amount {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.category-trend-change {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.category-trend-change.positive {
+  color: #198754;
+}
+
+.category-trend-change.negative {
+  color: #dc3545;
+}
+
+.category-trend-progress {
+  margin-top: 0.5rem;
+}
+
+.category-trend-insight {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Enhanced Comparison Charts */
+.comparison-chart-enhanced {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.radar-chart-container, .bubble-chart-container {
+  background: white;
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.comparison-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.metric-card {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.metric-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.metric-change {
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.metric-change.positive {
+  color: #198754;
+}
+
+.metric-change.negative {
+  color: #dc3545;
+}
+
+/* Enhanced 3-Month Average Comparison */
+.average-comparison-container {
+  background: white;
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+}
+
+.average-periods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.average-period {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.average-period-header {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.average-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.average-stat {
+  font-size: 0.85rem;
+}
+
+.average-stat-value {
+  font-weight: 600;
+  color: #0d6efd;
 }
 
 /* Trends Tab Styles */
@@ -1432,6 +1743,41 @@ body.dark-mode .projection-table tr:hover {
   background-color: #4a5568;
 }
 
+body.dark-mode .income-planner-container {
+  background: #2d3748;
+  border-color: #4a5568;
+}
+
+body.dark-mode .planner-month-card {
+  background: #4a5568;
+  border-color: #718096;
+}
+
+body.dark-mode .planner-item {
+  background: #2d3748;
+}
+
+body.dark-mode .category-trend-card {
+  background: #2d3748;
+}
+
+body.dark-mode .radar-chart-container,
+body.dark-mode .bubble-chart-container {
+  background: #2d3748;
+}
+
+body.dark-mode .metric-card {
+  background: #4a5568;
+}
+
+body.dark-mode .average-comparison-container {
+  background: #2d3748;
+}
+
+body.dark-mode .average-period {
+  background: #4a5568;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .breakdown-container {
@@ -1566,6 +1912,22 @@ body.dark-mode .projection-table tr:hover {
     height: 55px;
     font-size: 1.3rem;
   }
+  
+  .planner-month-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-trends-enhanced {
+    grid-template-columns: 1fr;
+  }
+  
+  .comparison-chart-enhanced {
+    grid-template-columns: 1fr;
+  }
+  
+  .average-periods {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Additional mobile optimizations */
@@ -1627,6 +1989,14 @@ body.dark-mode .projection-table tr:hover {
   .projection-table th,
   .projection-table td {
     padding: 0.5rem 0.3rem;
+  }
+  
+  .heat-map-calendar {
+    grid-template-columns: repeat(7, 1fr);
+  }
+  
+  .heat-map-day-enhanced {
+    font-size: 0.6rem;
   }
 }
 
