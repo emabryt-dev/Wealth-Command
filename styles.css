@@ -23,14 +23,176 @@ body {
   padding-bottom: 80px;
 }
 
-/* ===== ENHANCED SALARY CALCULATOR STYLES ===== */
+/* ===== MODERN SYNC STATUS ICONS ===== */
+.sync-status-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+}
+
+.sync-status-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Success State - Green with Checkmark */
+.sync-status-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  animation: pulseSuccess 2s infinite;
+}
+
+.sync-status-success::before {
+  content: "✓";
+}
+
+/* Syncing State - Orange with Spinner */
+.sync-status-syncing {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  animation: rotate 1.5s linear infinite;
+}
+
+.sync-status-syncing::before {
+  content: "⟳";
+}
+
+/* Error State - Red with Exclamation */
+.sync-status-error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  animation: shake 0.8s ease-in-out;
+}
+
+.sync-status-error::before {
+  content: "!";
+}
+
+/* Offline State - Gray with Cloud Slash */
+.sync-status-offline {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  color: white;
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+}
+
+.sync-status-offline::before {
+  content: "☁";
+  font-size: 0.9rem;
+}
+
+/* Sync Status Animations */
+@keyframes pulseSuccess {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6); }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+.sync-status-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1060;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+}
+
+.sync-status-container:hover .sync-status-tooltip {
+  opacity: 1;
+  visibility: visible;
+  bottom: 120%;
+}
+
+/* ===== QUICK ADD FLOATING ACTION BUTTON ===== */
+.quick-add-fab {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
+  color: white;
+  border: none;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 1040;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-add-fab:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6);
+}
+
+.quick-add-fab:active {
+  transform: scale(0.95);
+}
+
+/* Quick Add Modal */
+.quick-add-modal .modal-dialog {
+  max-width: 400px;
+}
+
+.quick-add-form .input-group {
+  margin-bottom: 1rem;
+}
+
+.quick-add-form .form-control {
+  border-radius: 0.5rem;
+}
+
+/* ===== ENHANCED FINANCIAL PLANNER TAB STYLES ===== */
+.financial-planner-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Enhanced Salary Calculator */
 .salary-calculator-card {
   background: white;
   border-radius: 0.8rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border: 1px solid var(--light-border);
   overflow: hidden;
-  margin-bottom: 1.5rem;
 }
 
 .salary-calculator-header {
@@ -62,14 +224,13 @@ body {
   margin-bottom: 0.5rem;
 }
 
-/* ===== ENHANCED CASH FLOW FORECAST STYLES ===== */
+/* Enhanced Cash Flow Forecast */
 .cash-flow-card {
   background: white;
   border-radius: 0.8rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border: 1px solid var(--light-border);
   overflow: hidden;
-  margin-bottom: 1.5rem;
 }
 
 .cash-flow-header {
@@ -191,16 +352,80 @@ body {
   background: rgba(0,0,0,0.08);
 }
 
-/* ===== DARK MODE ENHANCEMENTS ===== */
+/* Expense Planner */
+.expense-planner-card {
+  background: white;
+  border-radius: 0.8rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid var(--light-border);
+  overflow: hidden;
+}
+
+.expense-planner-header {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 1.25rem 1.5rem;
+  font-weight: 600;
+}
+
+.expense-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.expense-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.expense-item:hover {
+  background-color: #f8f9fa;
+}
+
+.expense-item:last-child {
+  border-bottom: none;
+}
+
+.expense-details {
+  flex: 1;
+}
+
+.expense-amount {
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.expense-date {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* ===== DARK MODE STYLES ===== */
+body.dark-mode {
+  background-color: var(--dark-bg);
+  color: var(--dark-text);
+}
+
+body.dark-mode .card,
 body.dark-mode .salary-calculator-card,
+body.dark-mode .expense-planner-card,
 body.dark-mode .cash-flow-card {
   background-color: var(--dark-card);
   border-color: var(--dark-border);
+  color: var(--dark-text);
 }
 
 body.dark-mode .salary-summary {
   background: linear-gradient(135deg, #1a3c2f, #1e4535);
   border-left-color: #10b981;
+}
+
+body.dark-mode .expense-item:hover {
+  background-color: #374151;
 }
 
 body.dark-mode .forecast-controls,
@@ -259,9 +484,17 @@ body.dark-mode .editable-cell input {
   #cashFlowTable td {
     padding: 0.5rem 0.3rem;
   }
+  
+  .quick-add-fab {
+    bottom: 80px;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 480px) {
   .salary-net-amount {
     font-size: 1.2rem;
   }
@@ -275,19 +508,6 @@ body.dark-mode .editable-cell input {
   }
 }
 
-/* Print Styles */
-@media print {
-  .forecast-controls,
-  .scenario-controls,
-  .btn-action-sm {
-    display: none !important;
-  }
-  
-  #cashFlowTable {
-    font-size: 0.8rem;
-  }
-}
-
 /* ===== EXISTING STYLES (Preserved) ===== */
 .navbar {
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
@@ -295,6 +515,12 @@ body.dark-mode .editable-cell input {
 .card {
   border-radius: 0.6rem;
   padding: 0.6rem 0.8rem;
+}
+#netWealth, #totalIncome, #totalExpense {
+  font-size: 1.4rem;
+}
+.card-title {
+  font-size: 1.05rem;
 }
 .input-group-text {
   font-size: 1rem;
@@ -309,23 +535,32 @@ body.dark-mode .editable-cell input {
   font-size: 0.97rem;
   padding: 0.35rem 0.7rem;
 }
-.main-content {
-  min-height: calc(100vh - 140px);
-  padding-bottom: 150px;
-  display: flex;
-  flex-direction: column;
+.btn-lg {
+  font-size: 1.01rem;
+  padding: 0.7rem 1.1rem;
+}
+.btn-sm {
+  font-size: 0.89rem;
+  padding: 0.25rem 0.5rem;
+}
+.modal-title {
+  font-size: 1.02rem;
+}
+.modal-content {
+  font-size: 0.97rem;
 }
 .tab-page {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - 200px);
+  display: block;
+}
+.tab-page.d-none {
+  display: none !important;
 }
 
 /* Enhanced Bottom Navigation */
 #fixedNavBar {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 20px 20px 0 0;
   margin: 0 auto;
@@ -334,6 +569,9 @@ body.dark-mode .editable-cell input {
   transform: translateX(-50%);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
   height: 70px;
+  position: fixed;
+  bottom: 0;
+  z-index: 1030;
 }
 
 .nav-btn {
@@ -351,40 +589,75 @@ body.dark-mode .editable-cell input {
   min-height: 70px;
 }
 
+.nav-btn i {
+  font-size: 1.4rem;
+  margin-bottom: 0.2rem;
+  transition: all 0.3s ease;
+}
+
+.nav-btn small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
 .nav-btn.active {
   color: #0d6efd;
 }
 
-/* Quick Add FAB */
-.quick-add-fab {
-  position: fixed;
-  bottom: 90px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), #1d4ed8);
-  color: white;
-  border: none;
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  cursor: pointer;
-  z-index: 1040;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.nav-btn.active i {
+  transform: translateY(-2px);
+  font-weight: bold;
 }
 
-.quick-add-fab:hover {
-  transform: scale(1.1) translateY(-2px);
-  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.6);
+.nav-btn.active small {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.nav-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.7; transform: translateX(-50%) scale(1.2); }
+}
+
+.nav-btn:hover:not(.active) {
+  color: #495057;
+  transform: translateY(-1px);
+}
+
+/* FIXED: Improved Main Content Layout */
+.main-content {
+  min-height: calc(100vh - 140px);
+  padding-bottom: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 200px);
 }
 
 /* Dark mode adjustments for existing elements */
 body.dark-mode #fixedNavBar {
   background: rgba(45, 55, 72, 0.95);
   border-top: 1px solid var(--dark-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .nav-btn {
@@ -392,6 +665,10 @@ body.dark-mode .nav-btn {
 }
 
 body.dark-mode .nav-btn.active {
+  color: #63b3ed;
+}
+
+body.dark-mode .nav-btn.active small {
   color: #63b3ed;
 }
 
@@ -406,4 +683,44 @@ body.dark-mode .input-group-text {
   background-color: #718096;
   border-color: #718096;
   color: var(--dark-text);
+}
+
+body.dark-mode .modal-content {
+  background-color: var(--dark-card);
+  color: var(--dark-text);
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: var(--dark-border);
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: var(--dark-border);
+}
+
+body.dark-mode .btn-close {
+  filter: invert(1);
+}
+
+/* Print Styles */
+@media print {
+  #fixedNavBar,
+  .navbar,
+  .quick-add-fab {
+    display: none !important;
+  }
+  
+  body {
+    padding-bottom: 0 !important;
+  }
+  
+  .main-content {
+    padding-bottom: 0 !important;
+  }
+  
+  .forecast-controls,
+  .scenario-controls,
+  .btn-action-sm {
+    display: none !important;
+  }
 }
