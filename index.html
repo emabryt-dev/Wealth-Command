@@ -20,9 +20,9 @@
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <a class="navbar-brand" href="#">Wealth Command</a>
       <div class="d-flex align-items-center gap-2">
-        <!-- Sync Status Icon -->
+        <!-- Modern Sync Status Icon -->
         <div class="sync-status-container">
-          <i class="bi bi-cloud" id="syncStatusIcon" title="Sync status"></i>
+          <div class="sync-status-icon sync-status-offline" id="syncStatusIcon" title="Checking sync status..."></div>
           <div class="sync-status-tooltip" id="syncStatusTooltip">Checking sync status...</div>
         </div>
         
@@ -60,6 +60,11 @@
       </div>
     </div>
   </nav>
+
+  <!-- Quick Add Floating Action Button -->
+  <button class="quick-add-fab" id="quickAddFab" title="Quick Add Transaction">
+    <i class="bi bi-plus-lg"></i>
+  </button>
 
   <!-- Toast Container for Important Messages -->
   <div class="toast-container" id="toastContainer"></div>
@@ -112,6 +117,48 @@
     </div>
   </div>
 
+  <!-- Quick Add Transaction Modal -->
+  <div class="modal fade quick-add-modal" id="quickAddModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Quick Add Transaction</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="quickAddForm" class="quick-add-form">
+            <div class="row g-2">
+              <div class="col-12">
+                <input type="text" class="form-control" id="quickDescInput" placeholder="Description" required>
+              </div>
+              <div class="col-6">
+                <input type="number" class="form-control" id="quickAmountInput" placeholder="Amount" step="0.01" required>
+              </div>
+              <div class="col-6">
+                <select class="form-select" id="quickTypeInput" required>
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <select class="form-select" id="quickCategoryInput" required>
+                  <!-- Categories populate here -->
+                </select>
+              </div>
+            </div>
+            <div id="quickFormAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" onclick="submitQuickAdd()">
+            <i class="bi bi-check-circle"></i> Add
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- AI Insights Modal -->
   <div class="modal fade" id="aiInsightsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -129,6 +176,29 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           <button type="button" class="btn btn-primary" onclick="applyAISuggestions()">
             <i class="bi bi-check-circle"></i> Apply Suggestions
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Debt Strategy Modal -->
+  <div class="modal fade" id="debtStrategyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-graph-up"></i> Debt Payoff Strategy</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="debtStrategyContent">
+            <!-- Debt strategy content will be populated here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="applyDebtStrategy()">
+            <i class="bi bi-check-circle"></i> Apply Strategy
           </button>
         </div>
       </div>
@@ -248,6 +318,257 @@
               </table>
             </div>
             <div id="noTransactions" class="text-center text-muted p-3">No transactions yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Financial Planner Tab -->
+    <div id="tab-financial-planner" class="tab-page d-none">
+      <div class="financial-planner-container">
+        <!-- Salary Calculator -->
+        <div class="salary-calculator-card">
+          <div class="salary-calculator-header">
+            <i class="bi bi-calculator"></i> Salary & Income Calculator
+          </div>
+          <div class="salary-input-grid">
+            <div class="input-group">
+              <span class="input-group-text">Basic Salary</span>
+              <input type="number" class="form-control" id="basicSalary" placeholder="0.00" step="0.01">
+            </div>
+            <div class="input-group">
+              <span class="input-group-text">Work Hours/Day</span>
+              <input type="number" class="form-control" id="workHoursPerDay" value="9" step="0.5">
+            </div>
+            <div class="input-group">
+              <span class="input-group-text">Month Type</span>
+              <select class="form-select" id="monthType">
+                <option value="30">30 Days (198 hours)</option>
+                <option value="31">31 Days (207 hours)</option>
+                <option value="28">28 Days (186 hours)</option>
+                <option value="29">29 Days (193.5 hours)</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <span class="input-group-text">Overtime Rate</span>
+              <input type="number" class="form-control" id="overtimeRate" placeholder="0.00" step="0.01">
+            </div>
+            <div class="input-group">
+              <span class="input-group-text">Overtime Hours</span>
+              <input type="number" class="form-control" id="overtimeHours" placeholder="0" step="0.5">
+            </div>
+            <div class="input-group">
+              <span class="input-group-text">KPI Bonus</span>
+              <input type="number" class="form-control" id="kpiBonus" placeholder="0.00" step="0.01">
+            </div>
+            <div class="input-group">
+              <span class="input-group-text">Other Income</span>
+              <input type="number" class="form-control" id="otherIncome" placeholder="0.00" step="0.01">
+            </div>
+            <div class="input-group">
+              <span class="input-group-text">Deductions</span>
+              <input type="number" class="form-control" id="deductions" placeholder="0.00" step="0.01">
+            </div>
+          </div>
+          <div class="salary-summary">
+            <div class="salary-net-amount" id="calculatedNetSalary">0.00</div>
+            <div class="text-muted">Projected Monthly Take-Home</div>
+            <div class="mt-2">
+              <button class="btn btn-success btn-sm" onclick="addSalaryToForecast()">
+                <i class="bi bi-calendar-plus"></i> Add to Cash Flow Forecast
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense Planner -->
+        <div class="expense-planner-card">
+          <div class="expense-planner-header">
+            <i class="bi bi-calendar-check"></i> Expense Planner
+          </div>
+          <div class="p-3">
+            <div class="row g-2 mb-3">
+              <div class="col-md-4">
+                <input type="text" class="form-control" id="plannedExpenseDesc" placeholder="Expense description">
+              </div>
+              <div class="col-md-2">
+                <input type="number" class="form-control" id="plannedExpenseAmount" placeholder="Amount" step="0.01">
+              </div>
+              <div class="col-md-3">
+                <select class="form-select" id="plannedExpenseCategory">
+                  <!-- Categories populate here -->
+                </select>
+              </div>
+              <div class="col-md-2">
+                <input type="month" class="form-control" id="plannedExpenseMonth">
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-primary w-100" onclick="addPlannedExpense()">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="expense-list">
+              <div id="plannedExpensesList">
+                <!-- Planned expenses will be populated here -->
+              </div>
+              <div id="noPlannedExpenses" class="text-center text-muted p-3">
+                No planned expenses added yet.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cash Flow Forecast -->
+        <div class="cash-flow-card">
+          <div class="cash-flow-header">
+            <i class="bi bi-graph-up"></i> Cash Flow Forecast
+          </div>
+          <div class="forecast-controls">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-3">
+                <label class="form-label">Forecast Period</label>
+                <select class="form-select" id="forecastPeriod">
+                  <option value="3">3 Months</option>
+                  <option value="6">6 Months</option>
+                  <option value="12">12 Months</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Starting Balance</label>
+                <input type="number" class="form-control" id="startingBalance" value="0" step="0.01">
+              </div>
+              <div class="col-md-6 d-flex align-items-end">
+                <button class="btn btn-primary me-2" onclick="generateForecast()">
+                  <i class="bi bi-lightning"></i> Generate Forecast
+                </button>
+                <button class="btn btn-outline-secondary" onclick="saveForecastScenario()">
+                  <i class="bi bi-save"></i> Save Scenario
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="forecast-chart-container">
+            <canvas id="cashFlowChart"></canvas>
+            <div id="forecastPlaceholder" class="chart-placeholder">
+              <i class="bi bi-graph-up" style="font-size: 3rem; opacity: 0.5;"></i>
+              <p class="mt-2">Generate a forecast to see your financial future</p>
+            </div>
+          </div>
+          <div class="scenario-controls">
+            <h6 class="mb-3">Savings Scenarios</h6>
+            <div class="scenario-item">
+              <label class="form-label">Reduce Dining Out by</label>
+              <input type="range" class="form-range scenario-slider" id="diningOutReduction" min="0" max="100" value="0">
+              <span class="scenario-impact" id="diningOutImpact">+$0</span>
+            </div>
+            <div class="scenario-item">
+              <label class="form-label">Reduce Shopping by</label>
+              <input type="range" class="form-range scenario-slider" id="shoppingReduction" min="0" max="100" value="0">
+              <span class="scenario-impact" id="shoppingImpact">+$0</span>
+            </div>
+            <div class="scenario-item">
+              <label class="form-label">Increase Income by</label>
+              <input type="range" class="form-range scenario-slider" id="incomeIncrease" min="0" max="50" value="0">
+              <span class="scenario-impact" id="incomeImpact">+$0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debt Manager Tab -->
+    <div id="tab-debt-manager" class="tab-page d-none">
+      <div class="debt-manager-container">
+        <!-- Debt Overview Cards -->
+        <div class="debt-overview-cards">
+          <div class="debt-card owed">
+            <div class="debt-card-header">
+              <i class="bi bi-arrow-up-circle"></i> Total You Owe
+            </div>
+            <div class="debt-amount owed" id="totalOwedAmount">0</div>
+            <div class="text-muted">Across <span id="totalOwedLoans">0</span> loans</div>
+          </div>
+          <div class="debt-card owing">
+            <div class="debt-card-header">
+              <i class="bi bi-arrow-down-circle"></i> Total Owed to You
+            </div>
+            <div class="debt-amount owing" id="totalOwingAmount">0</div>
+            <div class="text-muted">Across <span id="totalOwingLoans">0</span> loans</div>
+          </div>
+          <div class="debt-card">
+            <div class="debt-card-header">
+              <i class="bi bi-calendar"></i> Next Payment Due
+            </div>
+            <div class="debt-amount" id="nextPaymentAmount">0</div>
+            <div class="text-muted" id="nextPaymentDate">No payments due</div>
+          </div>
+        </div>
+
+        <!-- Debt Sections -->
+        <div class="debt-sections">
+          <!-- Loans You Owe -->
+          <div class="debt-section">
+            <div class="debt-section-header owed">
+              <i class="bi bi-arrow-up-circle"></i> Loans You Owe
+              <button class="btn btn-sm btn-light ms-2" onclick="showAddDebtModal('owed')">
+                <i class="bi bi-plus"></i> Add Loan
+              </button>
+            </div>
+            <div class="debt-list" id="owedLoansList">
+              <!-- Owed loans will be populated here -->
+            </div>
+            <div id="noOwedLoans" class="text-center text-muted p-3">
+              No loans added yet.
+            </div>
+          </div>
+
+          <!-- Loans You Are Owed -->
+          <div class="debt-section">
+            <div class="debt-section-header owing">
+              <i class="bi bi-arrow-down-circle"></i> Loans You Are Owed
+              <button class="btn btn-sm btn-light ms-2" onclick="showAddDebtModal('owing')">
+                <i class="bi bi-plus"></i> Add Loan
+              </button>
+            </div>
+            <div class="debt-list" id="owingLoansList">
+              <!-- Owing loans will be populated here -->
+            </div>
+            <div id="noOwingLoans" class="text-center text-muted p-3">
+              No loans owed to you yet.
+            </div>
+          </div>
+        </div>
+
+        <!-- Debt Payoff Strategy -->
+        <div class="debt-strategy">
+          <h5><i class="bi bi-graph-up"></i> AI-Powered Debt Payoff Strategy</h5>
+          <p class="text-muted">Let AI analyze your debts and recommend the optimal payoff strategy.</p>
+          
+          <div class="strategy-comparison">
+            <div class="strategy-option" onclick="selectStrategy('avalanche')">
+              <div class="strategy-name">Avalanche Method</div>
+              <div class="strategy-desc">Pay highest interest first</div>
+              <div class="strategy-savings" id="avalancheSavings">Save $0</div>
+            </div>
+            <div class="strategy-option" onclick="selectStrategy('snowball')">
+              <div class="strategy-name">Snowball Method</div>
+              <div class="strategy-desc">Pay smallest balance first</div>
+              <div class="strategy-savings" id="snowballSavings">Save $0</div>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <button class="btn btn-primary" onclick="calculateDebtStrategy()">
+              <i class="bi bi-calculator"></i> Calculate Optimal Strategy
+            </button>
+            <button class="btn btn-outline-secondary ms-2" onclick="viewDebtProjection()">
+              <i class="bi bi-calendar-range"></i> View Projection
+            </button>
+          </div>
+
+          <div id="debtStrategyResult" class="mt-3">
+            <!-- Strategy results will be populated here -->
           </div>
         </div>
       </div>
@@ -426,6 +747,28 @@
 
           <!-- Trends Tab -->
           <div class="tab-pane fade" id="trends" role="tabpanel">
+            <div class="analytics-controls">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <select id="trendsYear" class="form-select">
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <select id="trendsCategory" class="form-select">
+                    <option value="all">All Categories</option>
+                    <!-- Categories will be populated -->
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <button class="btn btn-primary w-100" onclick="renderEnhancedTrends()">
+                    <i class="bi bi-arrow-clockwise"></i> Update Trends
+                  </button>
+                </div>
+              </div>
+            </div>
             <div class="row g-3">
               <div class="col-12">
                 <div class="chart-card">
@@ -445,6 +788,14 @@
                 <div class="chart-card">
                   <div class="chart-header">
                     <i class="bi bi-calendar-week"></i> Spending Heat Map
+                    <div class="heat-map-controls">
+                      <select id="heatMapMonth" class="form-select form-select-sm">
+                        <!-- Months will be populated -->
+                      </select>
+                      <select id="heatMapYear" class="form-select form-select-sm">
+                        <!-- Years will be populated -->
+                      </select>
+                    </div>
                   </div>
                   <div class="chart-body">
                     <div id="heatMapContainer" class="heat-map-container">
@@ -452,7 +803,7 @@
                     </div>
                     <div id="heatMapPlaceholder" class="chart-placeholder">
                       <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Heat map requires transaction data</p>
+                      <p class="mt-2">Select a month to view spending heat map</p>
                     </div>
                   </div>
                 </div>
@@ -463,7 +814,9 @@
                     <i class="bi bi-arrow-up-right"></i> Category Trends
                   </div>
                   <div class="chart-body">
-                    <canvas id="categoryTrendChart" height="300"></canvas>
+                    <div class="category-trends-chart">
+                      <canvas id="categoryTrendChart" height="300"></canvas>
+                    </div>
                     <div id="categoryTrendPlaceholder" class="chart-placeholder">
                       <i class="bi bi-tag" style="font-size: 3rem; opacity: 0.5;"></i>
                       <p class="mt-2">Analyzing category spending trends...</p>
@@ -472,30 +825,90 @@
                 </div>
               </div>
             </div>
+
+            <!-- Spending Insights -->
+            <div class="insights-grid">
+              <div class="insight-card">
+                <div class="insight-icon text-info">
+                  <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="insight-message" id="temporalInsight">
+                  Analyzing your spending patterns...
+                </div>
+                <div class="insight-detail" id="temporalDetail">
+                  Loading temporal analysis...
+                </div>
+              </div>
+              <div class="insight-card warning">
+                <div class="insight-icon text-warning">
+                  <i class="bi bi-lightning"></i>
+                </div>
+                <div class="insight-message" id="velocityInsight">
+                  Checking spending velocity...
+                </div>
+                <div class="insight-detail" id="velocityDetail">
+                  Loading velocity analysis...
+                </div>
+              </div>
+              <div class="insight-card success">
+                <div class="insight-icon text-success">
+                  <i class="bi bi-shuffle"></i>
+                </div>
+                <div class="insight-message" id="crossoverInsight">
+                  Analyzing category relationships...
+                </div>
+                <div class="insight-detail" id="crossoverDetail">
+                  Loading crossover analysis...
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Comparison Tab -->
           <div class="tab-pane fade" id="comparison" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="comparison-controls">
-                  <div class="row g-2">
-                    <div class="col-md-4">
-                      <select id="comparisonType" class="form-select">
-                        <option value="month">Month vs Month</option>
-                        <option value="year">Year vs Year</option>
-                        <option value="average">vs 3-Month Average</option>
-                      </select>
-                    </div>
-                    <div class="col-md-4">
-                      <select id="comparisonPeriod1" class="form-select"></select>
-                    </div>
-                    <div class="col-md-4">
-                      <select id="comparisonPeriod2" class="form-select"></select>
-                    </div>
-                  </div>
+            <div class="analytics-controls">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <select id="comparisonType" class="form-select">
+                    <option value="month">Month vs Month</option>
+                    <option value="year">Year vs Year</option>
+                    <option value="average">vs 3-Month Average</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <select id="comparisonPeriod1" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                  <select id="comparisonPeriod2" class="form-select"></select>
                 </div>
               </div>
+            </div>
+
+            <!-- Comparison Summary -->
+            <div class="comparison-summary">
+              <div class="summary-card">
+                <div class="summary-label">Total Change</div>
+                <div class="summary-value" id="totalChangeAmount">$0</div>
+                <div class="summary-change" id="totalChangePercent">0%</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-label">Income Change</div>
+                <div class="summary-value" id="incomeChangeAmount">$0</div>
+                <div class="summary-change" id="incomeChangePercent">0%</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-label">Expense Change</div>
+                <div class="summary-value" id="expenseChangeAmount">$0</div>
+                <div class="summary-change" id="expenseChangePercent">0%</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-label">Savings Impact</div>
+                <div class="summary-value" id="savingsImpactAmount">$0</div>
+                <div class="summary-change" id="savingsImpactPercent">0%</div>
+              </div>
+            </div>
+
+            <div class="row g-3">
               <div class="col-12 col-lg-6">
                 <div class="chart-card">
                   <div class="chart-header">
@@ -582,6 +995,12 @@
               <option value="PKR">PKR - Pakistani Rupee</option>
               <option value="USD">USD - US Dollar</option>
               <option value="EUR">EUR - Euro</option>
+              <option value="GBP">GBP - British Pound</option>
+              <option value="CAD">CAD - Canadian Dollar</option>
+              <option value="AUD">AUD - Australian Dollar</option>
+              <option value="JPY">JPY - Japanese Yen</option>
+              <option value="CNY">CNY - Chinese Yuan</option>
+              <option value="INR">INR - Indian Rupee</option>
             </select>
           </div>
 
@@ -668,6 +1087,57 @@
     </div>
   </div>
 
+  <!-- Add Debt Modal -->
+  <div class="modal fade" id="addDebtModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addDebtModalLabel"><i class="bi bi-plus-circle"></i> Add Loan</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="debtForm">
+            <input type="hidden" id="debtType" value="owed">
+            <input type="hidden" id="editDebtIndex" value="-1">
+            <div class="row g-2">
+              <div class="col-12">
+                <label for="debtName" class="form-label">Loan Name/Description</label>
+                <input type="text" class="form-control" id="debtName" required>
+              </div>
+              <div class="col-6">
+                <label for="debtAmount" class="form-label">Principal Amount</label>
+                <input type="number" class="form-control" id="debtAmount" step="0.01" required>
+              </div>
+              <div class="col-6">
+                <label for="debtInterest" class="form-label">Interest Rate (%)</label>
+                <input type="number" class="form-control" id="debtInterest" step="0.01" value="0">
+              </div>
+              <div class="col-6">
+                <label for="debtMonthlyPayment" class="form-label">Monthly Payment</label>
+                <input type="number" class="form-control" id="debtMonthlyPayment" step="0.01" required>
+              </div>
+              <div class="col-6">
+                <label for="debtDueDate" class="form-label">Due Date</label>
+                <input type="date" class="form-control" id="debtDueDate" required>
+              </div>
+              <div class="col-12">
+                <label for="debtLender" class="form-label" id="debtLenderLabel">Lender</label>
+                <input type="text" class="form-control" id="debtLender">
+              </div>
+            </div>
+            <div id="debtFormAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" onclick="submitDebtForm()">
+            <i class="bi bi-check-circle"></i> <span id="submitDebtButtonText">Add</span>
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Confirmation Modal -->
   <div class="modal fade confirmation-modal" id="confirmationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -701,6 +1171,14 @@
         <button class="nav-btn" data-tab="transactions">
           <i class="bi bi-list-ul"></i>
           <small>Transactions</small>
+        </button>
+        <button class="nav-btn" data-tab="financial-planner">
+          <i class="bi bi-calculator"></i>
+          <small>Planner</small>
+        </button>
+        <button class="nav-btn" data-tab="debt-manager">
+          <i class="bi bi-currency-exchange"></i>
+          <small>Debt</small>
         </button>
         <button class="nav-btn" data-tab="charts">
           <i class="bi bi-bar-chart"></i>
