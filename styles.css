@@ -21,6 +21,10 @@ body {
 .input-group-text {
   font-size: 1rem;
   padding: 0.3rem 0.7rem;
+  height: 2.0rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .form-select, .form-control {
   font-size: 0.93rem;
@@ -197,7 +201,7 @@ body {
   min-height: calc(100vh - 200px);
 }
 
-/* FIXED: Improved Card Layout - Flexible heights */
+/* FIXED: Improved Card Layout - Flexible heights with proper bottom spacing */
 .breakdown-container {
   display: flex;
   flex-direction: column;
@@ -206,6 +210,7 @@ body {
   flex: 1;
   min-height: 300px;
   max-height: 500px;
+  padding-bottom: 20px;
 }
 
 .breakdown-card {
@@ -256,7 +261,7 @@ body {
   color: white;
 }
 
-/* FIXED: Proper scrolling for breakdown lists */
+/* FIXED: Proper scrolling for breakdown lists with mobile-safe bottom spacing */
 .breakdown-list {
   flex: 1;
   display: flex;
@@ -264,6 +269,7 @@ body {
   padding: 1rem;
   overflow-y: auto;
   min-height: 150px;
+  max-height: calc(100vh - 400px);
 }
 
 .breakdown-item {
@@ -290,6 +296,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding-bottom: 20px;
 }
 
 /* AI Insights Header */
@@ -540,6 +547,56 @@ body {
   font-size: 0.85rem;
 }
 
+/* Enhanced Projections Section */
+.yearly-projections-container {
+  background: white;
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+}
+
+.projection-controls {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.projection-input-group {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.projection-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.projection-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.projection-table th,
+.projection-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.projection-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.projection-table tr:hover {
+  background-color: #f8f9fa;
+}
+
 /* Trends Tab Styles */
 .heat-map-container {
   padding: 1rem;
@@ -567,6 +624,27 @@ body {
 .heat-map-day:hover {
   transform: scale(1.1);
   z-index: 1;
+}
+
+.heat-map-legend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+
+.heat-map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.heat-map-legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 0.25rem;
 }
 
 /* Comparison Tab Styles */
@@ -892,6 +970,35 @@ body {
   color: #dc3545;
 }
 
+/* Quick Add Button */
+.quick-add-btn {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 20px rgba(13, 110, 253, 0.3);
+  z-index: 1020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.quick-add-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 25px rgba(13, 110, 253, 0.4);
+}
+
+.quick-add-btn:active {
+  transform: scale(0.95);
+}
+
 /* Rollover Balance Styles */
 .rollover-balance {
   background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
@@ -1011,6 +1118,48 @@ footer {
   z-index: 2;
 }
 
+/* Salary Calculator Styles */
+.salary-calculator-card {
+  background: white;
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid #e0e0e0;
+  margin-bottom: 1.5rem;
+}
+
+.salary-input-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.salary-result-card {
+  background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  text-align: center;
+  border-left: 4px solid #2196f3;
+}
+
+.salary-breakdown {
+  margin-top: 1rem;
+}
+
+.salary-breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.salary-breakdown-item:last-child {
+  border-bottom: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
 /* Enhanced Dark Mode */
 body.dark-mode {
   background-color: #1a1d23;
@@ -1060,6 +1209,12 @@ body.dark-mode .nav-btn.active {
 
 body.dark-mode .nav-btn.active small {
   color: #63b3ed;
+}
+
+body.dark-mode .input-group-text {
+  background-color: #4a5568;
+  border-color: #718096;
+  color: #e9ecef;
 }
 
 body.dark-mode .table-container thead th {
@@ -1256,6 +1411,27 @@ body.dark-mode .chart-placeholder {
   color: #a0aec0;
 }
 
+body.dark-mode .salary-calculator-card {
+  background: #2d3748;
+  border-color: #4a5568;
+}
+
+body.dark-mode .salary-result-card {
+  background: linear-gradient(135deg, #2d3748, #4a5568);
+}
+
+body.dark-mode .projection-controls {
+  background: #4a5568;
+}
+
+body.dark-mode .projection-table th {
+  background-color: #4a5568;
+}
+
+body.dark-mode .projection-table tr:hover {
+  background-color: #4a5568;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .breakdown-container {
@@ -1365,6 +1541,31 @@ body.dark-mode .chart-placeholder {
   #syncStatusIcon {
     font-size: 1.1rem;
   }
+  
+  .salary-input-group {
+    grid-template-columns: 1fr;
+  }
+  
+  .projection-input-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .projection-input {
+    min-width: 100%;
+  }
+  
+  .heat-map-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .quick-add-btn {
+    bottom: 80px;
+    right: 15px;
+    width: 55px;
+    height: 55px;
+    font-size: 1.3rem;
+  }
 }
 
 /* Additional mobile optimizations */
@@ -1412,11 +1613,20 @@ body.dark-mode .chart-placeholder {
   }
   
   .heat-map-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
   
   .ai-metric-value {
     font-size: 1.5rem;
+  }
+  
+  .projection-table {
+    font-size: 0.8rem;
+  }
+  
+  .projection-table th,
+  .projection-table td {
+    padding: 0.5rem 0.3rem;
   }
 }
 
@@ -1444,6 +1654,10 @@ body.dark-mode .chart-placeholder {
   }
   
   .btn-action {
+    display: none !important;
+  }
+  
+  .quick-add-btn {
     display: none !important;
   }
 }
