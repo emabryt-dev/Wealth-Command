@@ -5,6 +5,7 @@ class FinancialPlanner {
         this.cashFlowData = [];
         this.forecastMonths = 12;
         this.startingBalance = 0;
+        this.baseExpenses = 2000; // Default base expenses
         
         this.initializeEventListeners();
         this.calculateSalary();
@@ -34,11 +35,15 @@ class FinancialPlanner {
 
         // Scenario controls
         document.getElementById('incomeAdjustment').addEventListener('input', (e) => {
-            document.getElementById('incomeImpact').textContent = e.target.value + '%';
+            const value = parseInt(e.target.value);
+            document.getElementById('incomeImpact').textContent = value + '%';
+            document.getElementById('incomeImpact').className = 'scenario-impact ' + (value >= 0 ? 'positive' : 'negative');
             this.applyScenarioAdjustments();
         });
         document.getElementById('expenseAdjustment').addEventListener('input', (e) => {
-            document.getElementById('expenseImpact').textContent = e.target.value + '%';
+            const value = parseInt(e.target.value);
+            document.getElementById('expenseImpact').textContent = value + '%';
+            document.getElementById('expenseImpact').className = 'scenario-impact ' + (value >= 0 ? 'positive' : 'negative');
             this.applyScenarioAdjustments();
         });
     }
@@ -148,9 +153,8 @@ class FinancialPlanner {
             // Calculate other income (placeholder - could be enhanced)
             const otherIncome = 0;
 
-            // Calculate expenses (based on historical average or user input)
-            const baseExpenses = this.calculateBaseExpenses();
-            const expenses = baseExpenses * (1 + expenseAdjustment);
+            // Calculate expenses
+            const expenses = this.baseExpenses * (1 + expenseAdjustment);
 
             const totalIncome = salaryIncome + otherIncome;
             const netFlow = totalIncome - expenses;
@@ -319,16 +323,10 @@ class FinancialPlanner {
 
         this.cashFlowData[monthIndex].salaryIncome = salaryIncome * (1 + incomeAdjustment);
         this.cashFlowData[monthIndex].otherIncome = 0;
-        this.cashFlowData[monthIndex].expenses = this.calculateBaseExpenses() * (1 + expenseAdjustment);
+        this.cashFlowData[monthIndex].expenses = this.baseExpenses * (1 + expenseAdjustment);
 
         this.recalculateMonth(monthIndex);
         this.regenerateForecastFrom(monthIndex);
-    }
-
-    calculateBaseExpenses() {
-        // Placeholder - in a real app, this would calculate based on historical data
-        // For now, return a reasonable estimate based on typical expenses
-        return 2000; // $2000 monthly expenses as baseline
     }
 
     applyScenarioAdjustments() {
@@ -372,17 +370,22 @@ class FinancialPlanner {
     showToast(message, type = 'info') {
         // Simple toast implementation
         const toast = document.createElement('div');
-        toast.className = `alert alert-${type} alert-dismissible fade show`;
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.top = '20px';
+        toast.style.right = '20px';
+        toast.style.zIndex = '9999';
+        toast.style.minWidth = '300px';
         toast.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
-        const container = document.querySelector('.main-content');
-        container.insertBefore(toast, container.firstChild);
+        document.body.appendChild(toast);
         
         setTimeout(() => {
-            toast.remove();
+            if (toast.parentNode) {
+                toast.remove();
+            }
         }, 5000);
     }
 }
@@ -399,10 +402,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const icon = this.querySelector('i');
         if (document.body.classList.contains('dark-mode')) {
             icon.className = 'fas fa-sun';
+            localStorage.setItem('theme', 'dark');
         } else {
             icon.className = 'fas fa-moon';
+            localStorage.setItem('theme', 'light');
         }
     });
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('themeToggle').querySelector('i').className = 'fas fa-sun';
+    }
 
     // Tab navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -418,4 +430,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById(targetTab).classList.remove('d-none');
         });
     });
+
+    // Set financial planner as active tab by default
+    document.querySelector('[data-tab="tab-financial-planner"]').classList.add('active');
+    document.getElementById('tab-financial-planner').classList.remove('d-none');
 });
