@@ -35,7 +35,7 @@
                 <!-- Enhanced Salary Calculator -->
                 <div class="salary-calculator-card">
                     <div class="salary-calculator-header">
-                        <i class="fas fa-calculator me-2"></i>Salary & Income Calculator
+                        <i class="fas fa-calculator me-2"></i>Enhanced Salary & Income Calculator
                     </div>
                     <div class="salary-input-grid">
                         <div class="input-group">
@@ -48,7 +48,7 @@
                         </div>
                         <div class="input-group">
                             <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" id="baseSalary" placeholder="Base Amount">
+                            <input type="number" class="form-control" id="baseSalary" placeholder="Base Amount" value="0">
                         </div>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-clock"></i></span>
@@ -122,7 +122,7 @@
                 <!-- Enhanced Cash Flow Forecast -->
                 <div class="cash-flow-card">
                     <div class="cash-flow-header">
-                        <i class="fas fa-chart-line me-2"></i>Cash Flow Forecast
+                        <i class="fas fa-chart-line me-2"></i>Enhanced Cash Flow Forecast
                     </div>
                     
                     <div class="forecast-controls">
@@ -203,14 +203,91 @@
                     </div>
                 </div>
 
-                <!-- Expense Planner (Existing) -->
+                <!-- Existing Expense Planner -->
                 <div class="expense-planner-card">
                     <div class="expense-planner-header">
                         <i class="fas fa-chart-pie me-2"></i>Expense Planner
                     </div>
                     <div class="expense-list">
-                        <!-- Existing expense list content -->
+                        <div class="expense-item">
+                            <div class="expense-details">
+                                <div class="fw-bold">Rent/Mortgage</div>
+                                <div class="expense-date">Monthly</div>
+                            </div>
+                            <div class="expense-amount">$1,500.00</div>
+                        </div>
+                        <div class="expense-item">
+                            <div class="expense-details">
+                                <div class="fw-bold">Utilities</div>
+                                <div class="expense-date">Monthly</div>
+                            </div>
+                            <div class="expense-amount">$300.00</div>
+                        </div>
+                        <div class="expense-item">
+                            <div class="expense-details">
+                                <div class="fw-bold">Groceries</div>
+                                <div class="expense-date">Weekly</div>
+                            </div>
+                            <div class="expense-amount">$200.00</div>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other existing tabs (minimal content to show structure) -->
+        <div id="tab-dashboard" class="tab-page d-none">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Net Wealth</h5>
+                            <div id="netWealth" class="fw-bold text-success">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Income</h5>
+                            <div id="totalIncome" class="fw-bold text-primary">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Expense</h5>
+                            <div id="totalExpense" class="fw-bold text-danger">$0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-transactions" class="tab-page d-none">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Transactions</h5>
+                    <p>Transaction management content here...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-analytics" class="tab-page d-none">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Analytics</h5>
+                    <p>Analytics content here...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-debt-manager" class="tab-page d-none">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Debt Manager</h5>
+                    <p>Debt management content here...</p>
                 </div>
             </div>
         </div>
@@ -219,7 +296,7 @@
     <!-- Bottom Navigation -->
     <nav id="fixedNavBar" class="navbar navbar-expand">
         <div class="container-fluid justify-content-around">
-            <button class="nav-btn active" data-tab="tab-dashboard">
+            <button class="nav-btn" data-tab="tab-dashboard">
                 <i class="fas fa-home"></i>
                 <small>Dashboard</small>
             </button>
@@ -227,7 +304,7 @@
                 <i class="fas fa-exchange-alt"></i>
                 <small>Transactions</small>
             </button>
-            <button class="nav-btn" data-tab="tab-financial-planner">
+            <button class="nav-btn active" data-tab="tab-financial-planner">
                 <i class="fas fa-chart-line"></i>
                 <small>Planner</small>
             </button>
@@ -246,6 +323,21 @@
     <button class="quick-add-fab" data-bs-toggle="modal" data-bs-target="#quickAddModal">
         <i class="fas fa-plus"></i>
     </button>
+
+    <!-- Quick Add Modal (minimal version) -->
+    <div class="modal fade quick-add-modal" id="quickAddModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Quick Add Transaction</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Quick add form content here...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
