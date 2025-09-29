@@ -12,7 +12,7 @@ let currentChartType = 'category';
 
 // Analytics Charts
 let overviewChart = null;
-let forecastChart = null;
+let cashFlowChart = null;
 let healthTrendChart = null;
 let categoryTrendChart = null;
 let comparisonChart = null;
@@ -28,7 +28,31 @@ let pendingSync = false;
 let lastBackupMonth = null;
 let lastSyncTime = null;
 
-// AI Analytics Engine
+// User expectations for better predictions
+let userExpectations = loadUserExpectations();
+
+function loadUserExpectations() {
+    try {
+        return JSON.parse(localStorage.getItem('userExpectations')) || {
+            expectedMonthlyIncome: 0,
+            expectedMonthlyExpenses: 0,
+            lastUpdated: new Date().toISOString()
+        };
+    } catch {
+        return {
+            expectedMonthlyIncome: 0,
+            expectedMonthlyExpenses: 0,
+            lastUpdated: new Date().toISOString()
+        };
+    }
+}
+
+function saveUserExpectations(expectations) {
+    userExpectations = expectations;
+    localStorage.setItem('userExpectations', JSON.stringify(expectations));
+}
+
+// AI Analytics Engine with Enhanced Features
 const AnalyticsEngine = {
     // Calculate financial health score (0-100)
     calculateHealthScore: function(transactions, monthlyBudgets) {
@@ -123,8 +147,8 @@ const AnalyticsEngine = {
         return 25;
     },
     
-    // Predict next month's spending
-    predictNextMonthSpending: function(transactions) {
+    // Enhanced prediction with user expectations
+    predictNextMonthSpending: function(transactions, userExpectations) {
         const now = new Date();
         const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
         
@@ -132,6 +156,20 @@ const AnalyticsEngine = {
             const txDate = new Date(tx.date);
             return txDate >= sixMonthsAgo;
         });
+        
+        // Use user expectations if provided
+        if (userExpectations.expectedMonthlyExpenses > 0) {
+            const expected = userExpectations.expectedMonthlyExpenses;
+            const historicalAvg = this.calculateAverageMonthlySpending(transactions);
+            const confidence = historicalAvg > 0 ? Math.min(0.9, Math.abs(expected - historicalAvg) / historicalAvg < 0.3 ? 0.8 : 0.6) : 0.7;
+            
+            return {
+                amount: Math.round(expected),
+                confidence: confidence,
+                trend: 0,
+                source: 'user_expectation'
+            };
+        }
         
         if (recentTransactions.length < 10) return null; // Insufficient data
         
@@ -159,15 +197,29 @@ const AnalyticsEngine = {
         return {
             amount: Math.round(prediction),
             confidence: confidence,
-            trend: trend
+            trend: trend,
+            source: 'historical_data'
         };
     },
     
-    // Generate AI insights
+    calculateAverageMonthlySpending: function(transactions) {
+        const monthlyExpenses = {};
+        transactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                const month = tx.date.substring(0, 7);
+                monthlyExpenses[month] = (monthlyExpenses[month] || 0) + tx.amount;
+            }
+        });
+        
+        const amounts = Object.values(monthlyExpenses);
+        return amounts.length > 0 ? amounts.reduce((a, b) => a + b, 0) / amounts.length : 0;
+    },
+    
+    // Generate enhanced AI insights with custom savings strategies
     generateInsights: function(transactions, monthlyBudgets) {
         const insights = [];
         const healthScore = this.calculateHealthScore(transactions, monthlyBudgets);
-        const prediction = this.predictNextMonthSpending(transactions);
+        const prediction = this.predictNextMonthSpending(transactions, userExpectations);
         
         // Health score insights
         if (healthScore >= 80) {
@@ -190,7 +242,7 @@ const AnalyticsEngine = {
             });
         }
         
-        // Savings rate insights
+        // Savings rate insights with custom strategies
         const savingsRate = this.calculateSavingsRate(transactions);
         if (savingsRate >= 0.2) {
             insights.push({
@@ -212,23 +264,17 @@ const AnalyticsEngine = {
             });
         }
         
+        // Custom savings strategies based on spending patterns
+        const savingsStrategies = this.generateSavingsStrategies(transactions);
+        insights.push(...savingsStrategies);
+        
         // Spending pattern insights
-        const categoryTrends = this.analyzeCategoryTrends(transactions);
-        categoryTrends.forEach(trend => {
-            if (trend.trend > 0.1) { // More than 10% increase
-                insights.push({
-                    type: 'warning',
-                    message: `${trend.category} spending is trending up significantly.`,
-                    icon: 'bi-graph-up-arrow'
-                });
-            } else if (trend.trend < -0.1) { // More than 10% decrease
-                insights.push({
-                    type: 'positive',
-                    message: `Great job reducing ${trend.category} spending!`,
-                    icon: 'bi-graph-down-arrow'
-                });
-            }
-        });
+        const spendingInsights = this.analyzeSpendingPatterns(transactions);
+        insights.push(...spendingInsights);
+        
+        // Debt optimization insights
+        const debtInsights = this.generateDebtInsights(transactions);
+        insights.push(...debtInsights);
         
         // Prediction insights
         if (prediction && prediction.confidence > 0.6) {
@@ -239,7 +285,116 @@ const AnalyticsEngine = {
             });
         }
         
-        return insights.slice(0, 5); // Return top 5 insights
+        return insights.slice(0, 6); // Return top 6 insights
+    },
+    
+    generateSavingsStrategies: function(transactions) {
+        const strategies = [];
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Analyze category spending for potential savings
+        const categorySpending = {};
+        transactions.forEach(tx => {
+            if (tx.type === 'expense' && tx.date.startsWith(currentMonth)) {
+                categorySpending[tx.category] = (categorySpending[tx.category] || 0) + tx.amount;
+            }
+        });
+        
+        // Find categories with highest spending
+        const topCategories = Object.entries(categorySpending)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 3);
+        
+        topCategories.forEach(([category, amount]) => {
+            const potentialSavings = Math.round(amount * 0.2); // 20% reduction
+            if (potentialSavings > 100) { // Only suggest if meaningful amount
+                strategies.push({
+                    type: 'info',
+                    message: `If you reduce ${category} spending by 20%, you could save ${potentialSavings.toLocaleString()} ${currency} monthly`,
+                    icon: 'bi-lightbulb'
+                });
+            }
+        });
+        
+        return strategies;
+    },
+    
+    analyzeSpendingPatterns: function(transactions) {
+        const insights = [];
+        const now = new Date();
+        
+        // Weekend vs weekday spending
+        const weekendSpending = { total: 0, count: 0 };
+        const weekdaySpending = { total: 0, count: 0 };
+        
+        transactions.forEach(tx => {
+            if (tx.type === 'expense') {
+                const date = new Date(tx.date);
+                const dayOfWeek = date.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                
+                if (isWeekend) {
+                    weekendSpending.total += tx.amount;
+                    weekendSpending.count++;
+                } else {
+                    weekdaySpending.total += tx.amount;
+                    weekdaySpending.count++;
+                }
+            }
+        });
+        
+        const weekendAvg = weekendSpending.count > 0 ? weekendSpending.total / weekendSpending.count : 0;
+        const weekdayAvg = weekdaySpending.count > 0 ? weekdaySpending.total / weekdaySpending.count : 0;
+        
+        if (weekendAvg > 0 && weekdayAvg > 0 && weekendAvg > weekdayAvg * 1.3) {
+            const percentage = Math.round((weekendAvg / weekdayAvg - 1) * 100);
+            insights.push({
+                type: 'warning',
+                message: `You spend ${percentage}% more on weekends than weekdays`,
+                icon: 'bi-calendar-week'
+            });
+        }
+        
+        return insights;
+    },
+    
+    generateDebtInsights: function(transactions) {
+        const insights = [];
+        // Simple debt detection (negative transactions or specific categories)
+        const debtPayments = transactions.filter(tx => 
+            tx.type === 'expense' && 
+            (tx.category.toLowerCase().includes('loan') || 
+             tx.category.toLowerCase().includes('debt') ||
+             tx.category.toLowerCase().includes('credit'))
+        );
+        
+        if (debtPayments.length > 0) {
+            const totalDebtPayments = debtPayments.reduce((sum, tx) => sum + tx.amount, 0);
+            const monthlyIncome = this.calculateCurrentMonthIncome(transactions);
+            
+            if (monthlyIncome > 0) {
+                const debtToIncomeRatio = totalDebtPayments / monthlyIncome;
+                if (debtToIncomeRatio > 0.2) {
+                    insights.push({
+                        type: 'warning',
+                        message: `Your debt payments are ${(debtToIncomeRatio * 100).toFixed(0)}% of your income. Consider debt consolidation.`,
+                        icon: 'bi-credit-card'
+                    });
+                }
+            }
+        }
+        
+        return insights;
+    },
+    
+    calculateCurrentMonthIncome: function(transactions) {
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        return transactions
+            .filter(tx => tx.type === 'income' && tx.date.startsWith(currentMonth))
+            .reduce((sum, tx) => sum + tx.amount, 0);
     },
     
     calculateSavingsRate: function(transactions) {
@@ -297,56 +452,128 @@ const AnalyticsEngine = {
         return trends.sort((a, b) => Math.abs(b.trend) - Math.abs(a.trend)); // Sort by magnitude of change
     },
     
-    // Generate spending forecast for next 6 months
-    generateForecast: function(transactions) {
+    // Enhanced forecasting with user expectations
+    generateCashFlowForecast: function(transactions, userExpectations, months = 12) {
         const now = new Date();
-        const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+        const forecast = [];
         
-        const historicalData = {};
-        for (let i = 0; i < 12; i++) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            historicalData[key] = 0;
+        const expectedIncome = userExpectations.expectedMonthlyIncome || this.calculateAverageMonthlyIncome(transactions);
+        const expectedExpenses = userExpectations.expectedMonthlyExpenses || this.calculateAverageMonthlySpending(transactions);
+        
+        let currentBalance = this.getCurrentNetWealth(transactions);
+        
+        for (let i = 0; i < months; i++) {
+            const forecastDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+            const monthKey = `${forecastDate.getFullYear()}-${String(forecastDate.getMonth() + 1).padStart(2, '0')}`;
+            
+            // Apply seasonal adjustments
+            const seasonalFactor = this.getSeasonalAdjustment(forecastDate.getMonth());
+            const adjustedIncome = expectedIncome * seasonalFactor.income;
+            const adjustedExpenses = expectedExpenses * seasonalFactor.expenses;
+            
+            const netCashFlow = adjustedIncome - adjustedExpenses;
+            currentBalance += netCashFlow;
+            
+            forecast.push({
+                month: monthKey,
+                monthName: forecastDate.toLocaleDateString('en', { month: 'long', year: 'numeric' }),
+                projectedIncome: Math.round(adjustedIncome),
+                projectedExpenses: Math.round(adjustedExpenses),
+                projectedNet: Math.round(netCashFlow),
+                projectedBalance: Math.round(currentBalance),
+                confidence: 0.7 // Base confidence
+            });
         }
         
+        return forecast;
+    },
+    
+    calculateAverageMonthlyIncome: function(transactions) {
+        const monthlyIncome = {};
         transactions.forEach(tx => {
-            if (tx.type === 'expense') {
+            if (tx.type === 'income') {
                 const month = tx.date.substring(0, 7);
-                if (historicalData[month] !== undefined) {
-                    historicalData[month] += tx.amount;
-                }
+                monthlyIncome[month] = (monthlyIncome[month] || 0) + tx.amount;
             }
         });
         
-        const amounts = Object.values(historicalData).reverse();
-        const forecast = [];
-        
-        // Simple moving average with trend
-        const window = 3;
-        let sum = amounts.slice(-window).reduce((a, b) => a + b, 0);
-        let lastValue = amounts[amounts.length - 1] || 0;
-        
-        for (let i = 0; i < 6; i++) {
-            const predicted = sum / window;
-            forecast.push(Math.round(predicted));
-            sum = sum - amounts[amounts.length - window + i] + predicted;
-        }
-        
-        return {
-            historical: amounts,
-            forecast: forecast,
-            confidence: Math.min(0.8, amounts.filter(a => a > 0).length / 6)
-        };
+        const amounts = Object.values(monthlyIncome);
+        return amounts.length > 0 ? amounts.reduce((a, b) => a + b, 0) / amounts.length : 0;
     },
     
-    // Generate heat map data
+    getCurrentNetWealth: function(transactions) {
+        const totalIncome = transactions.filter(tx => tx.type === 'income')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+        const totalExpenses = transactions.filter(tx => tx.type === 'expense')
+            .reduce((sum, tx) => sum + tx.amount, 0);
+        
+        return totalIncome - totalExpenses;
+    },
+    
+    getSeasonalAdjustment: function(month) {
+        // Simple seasonal adjustments
+        const adjustments = {
+            0: { income: 1.0, expenses: 1.1 }, // January - post-holiday spending
+            1: { income: 1.0, expenses: 0.9 }, // February
+            2: { income: 1.0, expenses: 1.0 }, // March
+            3: { income: 1.0, expenses: 1.0 }, // April
+            4: { income: 1.0, expenses: 1.0 }, // May
+            5: { income: 1.0, expenses: 1.0 }, // June
+            6: { income: 1.0, expenses: 1.0 }, // July
+            7: { income: 1.0, expenses: 1.0 }, // August
+            8: { income: 1.0, expenses: 1.0 }, // September
+            9: { income: 1.0, expenses: 1.0 }, // October
+            10: { income: 1.0, expenses: 1.2 }, // November - holiday shopping
+            11: { income: 1.1, expenses: 1.3 } // December - holidays and bonuses
+        };
+        
+        return adjustments[month] || { income: 1.0, expenses: 1.0 };
+    },
+    
+    // Generate investment suggestions
+    generateInvestmentSuggestions: function(transactions) {
+        const suggestions = [];
+        const savingsRate = this.calculateSavingsRate(transactions);
+        
+        if (savingsRate >= 0.2) {
+            suggestions.push({
+                type: 'positive',
+                message: 'With your high savings rate, consider investing in index funds for long-term growth',
+                icon: 'bi-graph-up-arrow'
+            });
+        } else if (savingsRate >= 0.1) {
+            suggestions.push({
+                type: 'info',
+                message: 'Consider building an emergency fund (3-6 months expenses) before investing',
+                icon: 'bi-shield-check'
+            });
+        } else if (savingsRate > 0) {
+            suggestions.push({
+                type: 'warning',
+                message: 'Focus on increasing your savings rate before considering investments',
+                icon: 'bi-piggy-bank'
+            });
+        }
+        
+        return suggestions;
+    },
+    
+    // Enhanced heat map with better visualization
     generateHeatMap: function(transactions, year, month) {
         const daysInMonth = new Date(year, month, 0).getDate();
         const heatMap = [];
         
+        // Get all expenses for the month
+        const monthExpenses = transactions.filter(tx => {
+            if (tx.type !== 'expense') return false;
+            const txDate = new Date(tx.date);
+            return txDate.getFullYear() === year && txDate.getMonth() + 1 === month;
+        });
+        
+        // Calculate daily totals
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dayTransactions = transactions.filter(tx => tx.date === dateStr && tx.type === 'expense');
+            const dayTransactions = monthExpenses.filter(tx => tx.date === dateStr);
             const total = dayTransactions.reduce((sum, tx) => sum + tx.amount, 0);
             
             heatMap.push({
@@ -617,8 +844,13 @@ function toggleRolloverSettings() {
     }
 }
 
-// Enhanced Toast System for important messages only
+// Enhanced Toast System for important messages only (without dark mode toasts)
 function showToast(message, type = 'info', duration = 4000) {
+    // Skip dark mode toasts
+    if (message.includes('Dark mode') || message.includes('Light mode')) {
+        return;
+    }
+    
     // Only show critical toasts, use status icons for sync messages
     if (type === 'info' && message.includes('sync') || message.includes('Sync')) {
         updateSyncStatus(type, message);
@@ -659,7 +891,7 @@ function showToast(message, type = 'info', duration = 4000) {
     bsToast.show();
 }
 
-// Sync Status Icon System
+// Sync Status Icon System with modern icons
 function updateSyncStatus(status, message = '') {
     const syncIcon = document.getElementById('syncStatusIcon');
     const syncTooltip = document.getElementById('syncStatusTooltip');
@@ -676,7 +908,7 @@ function updateSyncStatus(status, message = '') {
             break;
         case 'info':
         case 'syncing':
-            syncIcon.classList.add('bi-cloud-arrow-up', 'text-info', 'pulse');
+            syncIcon.classList.add('bi-arrow-repeat', 'text-warning', 'pulse');
             syncTooltip.textContent = message || 'Syncing...';
             break;
         case 'warning':
@@ -689,7 +921,7 @@ function updateSyncStatus(status, message = '') {
             syncTooltip.textContent = message || 'Sync failed';
             break;
         case 'offline':
-            syncIcon.classList.add('bi-cloud-slash', 'text-muted');
+            syncIcon.classList.add('bi-cloud', 'text-muted');
             syncTooltip.textContent = message || 'Offline';
             break;
         default:
@@ -887,6 +1119,11 @@ async function loadDataFromDrive() {
                 localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
             }
             
+            if (driveData.userExpectations) {
+                userExpectations = driveData.userExpectations;
+                localStorage.setItem('userExpectations', JSON.stringify(userExpectations));
+            }
+            
             // Update last backup month from loaded data
             if (driveData.lastBackupMonth) {
                 lastBackupMonth = driveData.lastBackupMonth;
@@ -1054,9 +1291,10 @@ async function syncDataToDrive() {
             categories,
             currency,
             monthlyBudgets,
+            userExpectations,
             lastSync: new Date().toISOString(),
             lastBackupMonth: currentMonth,
-            version: '1.2',
+            version: '1.3',
             app: 'Wealth Command'
         };
         
@@ -1201,26 +1439,150 @@ function startPeriodicSync() {
     }, 5 * 60 * 1000); // 5 minutes
 }
 
+// Quick Add Button Functionality
+document.getElementById('quickAddBtn').addEventListener('click', function() {
+    document.getElementById('openAddTransactionModal').click();
+});
+
+// Salary Calculator Functions
+function openSalaryCalculator() {
+    const modal = new bootstrap.Modal(document.getElementById('salaryCalculatorModal'));
+    
+    // Set current date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
+    
+    // Calculate initial salary
+    calculateSalary();
+    
+    modal.show();
+}
+
+function calculateSalary() {
+    const basicSalary = parseFloat(document.getElementById('basicSalary').value) || 0;
+    const workingHours = parseFloat(document.getElementById('workingHours').value) || 9;
+    const workingDaysSelect = document.getElementById('workingDays');
+    const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
+    const overtimeRateSelect = document.getElementById('overtimeRate');
+    const kpiBonus = parseFloat(document.getElementById('kpiBonus').value) || 0;
+    const otherAllowances = parseFloat(document.getElementById('otherAllowances').value) || 0;
+    const deductions = parseFloat(document.getElementById('deductions').value) || 0;
+    
+    // Calculate hourly rate based on working days
+    let workingDays;
+    if (workingDaysSelect.value === 'custom') {
+        workingDays = parseFloat(document.getElementById('customDays').value) || 22;
+    } else {
+        workingDays = parseInt(workingDaysSelect.value);
+    }
+    
+    const monthlyHours = workingDays * workingHours;
+    const hourlyRate = basicSalary / monthlyHours;
+    
+    // Calculate overtime
+    let overtimeRate;
+    if (overtimeRateSelect.value === 'custom') {
+        overtimeRate = parseFloat(document.getElementById('customRate').value) || 1.5;
+    } else {
+        overtimeRate = parseFloat(overtimeRateSelect.value);
+    }
+    
+    const overtimePay = overtimeHours * hourlyRate * overtimeRate;
+    
+    // Calculate total salary
+    const totalSalary = basicSalary + overtimePay + kpiBonus + otherAllowances - deductions;
+    
+    // Update UI
+    document.getElementById('basicSalaryResult').textContent = `${basicSalary.toLocaleString()} ${currency}`;
+    document.getElementById('overtimeResult').textContent = `${overtimePay.toLocaleString()} ${currency}`;
+    document.getElementById('kpiResult').textContent = `${kpiBonus.toLocaleString()} ${currency}`;
+    document.getElementById('allowancesResult').textContent = `${otherAllowances.toLocaleString()} ${currency}`;
+    document.getElementById('deductionsResult').textContent = `${deductions.toLocaleString()} ${currency}`;
+    document.getElementById('netSalaryResult').textContent = `${totalSalary.toLocaleString()} ${currency}`;
+    document.getElementById('totalSalary').textContent = `Total Salary: ${totalSalary.toLocaleString()} ${currency}`;
+}
+
+function addSalaryAsIncome() {
+    const totalSalary = parseFloat(document.getElementById('netSalaryResult').textContent.replace(/[^0-9.-]+/g,"")) || 0;
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (totalSalary > 0) {
+        // Add as income transaction
+        transactions.push({
+            date: today,
+            desc: 'Monthly Salary',
+            type: 'income',
+            category: 'Salary',
+            amount: totalSalary
+        });
+        
+        saveTransactions(transactions);
+        updateUI();
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('salaryCalculatorModal'));
+        if (modal) {
+            modal.hide();
+        }
+        
+        showToast('Salary added as income transaction', 'success');
+    }
+}
+
+// Event listeners for salary calculator
+document.getElementById('workingDays').addEventListener('change', function() {
+    const customContainer = document.getElementById('customDaysContainer');
+    if (this.value === 'custom') {
+        customContainer.classList.remove('d-none');
+    } else {
+        customContainer.classList.add('d-none');
+    }
+    calculateSalary();
+});
+
+document.getElementById('overtimeRate').addEventListener('change', function() {
+    const customContainer = document.getElementById('customRateContainer');
+    if (this.value === 'custom') {
+        customContainer.classList.remove('d-none');
+    } else {
+        customContainer.classList.add('d-none');
+    }
+    calculateSalary();
+});
+
+// Add event listeners for real-time salary calculation
+['basicSalary', 'workingHours', 'overtimeHours', 'kpiBonus', 'otherAllowances', 'deductions', 'customDays', 'customRate'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+        element.addEventListener('input', calculateSalary);
+    }
+});
+
 //Populate Chart Tab
 function populateChartFilters() {
     const chartMonth = document.getElementById('chartMonth');
     const chartYear = document.getElementById('chartYear');
+    const heatMapMonth = document.getElementById('heatMapMonth');
     
-    if (!chartMonth || !chartYear) return;
+    if (!chartMonth || !chartYear || !heatMapMonth) return;
     
+    // Clear existing options
     chartMonth.innerHTML = '<option value="all">All Months</option>';
     chartYear.innerHTML = '<option value="all">All Years</option>';
+    heatMapMonth.innerHTML = '';
     
     const monthNames = ["January", "February", "March", "April", "May", "June", 
                        "July", "August", "September", "October", "November", "December"];
     
+    // Populate month selects
     monthNames.forEach((monthName, index) => {
         const option = document.createElement('option');
         option.value = index + 1;
         option.textContent = monthName;
-        chartMonth.appendChild(option);
+        chartMonth.appendChild(option.cloneNode(true));
+        heatMapMonth.appendChild(option);
     });
     
+    // Populate year selects
     const years = Array.from(new Set(transactions.map(tx => {
         const year = new Date(tx.date).getFullYear();
         return isNaN(year) ? null : year;
@@ -1242,9 +1604,11 @@ function populateChartFilters() {
     const now = new Date();
     chartMonth.value = now.getMonth() + 1;
     chartYear.value = now.getFullYear();
+    heatMapMonth.value = now.getMonth() + 1;
     
     chartMonth.addEventListener('change', renderEnhancedAnalytics);
     chartYear.addEventListener('change', renderEnhancedAnalytics);
+    heatMapMonth.addEventListener('change', renderEnhancedAnalytics);
 }
 
 // Tab Persistence System
@@ -1303,6 +1667,7 @@ function showTab(tab) {
     
     console.log(`Switched to tab: ${tab}`);
 }
+
 // Handle browser back/forward buttons
 window.addEventListener('hashchange', () => {
     const hash = window.location.hash.replace('#', '');
@@ -2345,54 +2710,67 @@ function renderPieCharts() {
 }
 
 function renderPredictionsTab() {
-    renderForecastChart();
+    renderCashFlowChart();
+    renderYearlyProjections();
     renderRiskAlerts();
     renderMonthlyProjections();
 }
 
-function renderForecastChart() {
-    const ctx = document.getElementById('forecastChart');
+function renderCashFlowChart() {
+    const ctx = document.getElementById('cashFlowChart');
     if (!ctx) return;
     
     const canvasCtx = ctx.getContext('2d');
-    const placeholder = document.getElementById('forecastPlaceholder');
+    const placeholder = document.getElementById('cashFlowPlaceholder');
     
-    if (forecastChart) {
-        forecastChart.destroy();
+    if (cashFlowChart) {
+        cashFlowChart.destroy();
     }
     
-    const forecast = AnalyticsEngine.generateForecast(transactions);
+    const forecast = AnalyticsEngine.generateCashFlowForecast(transactions, userExpectations, 6);
     
-    if (forecast.confidence < 0.3) {
+    if (forecast.length === 0) {
         placeholder.classList.remove('d-none');
         return;
     }
     
     placeholder.classList.add('d-none');
     
-    const months = ['Current', 'Next', '+2', '+3', '+4', '+5'];
-    const historicalLabels = ['-5', '-4', '-3', '-2', '-1', 'Current'];
+    const labels = forecast.map(f => {
+        const date = new Date(f.month + '-01');
+        return date.toLocaleDateString('en', { month: 'short' });
+    });
     
-    forecastChart = new Chart(canvasCtx, {
-        type: 'line',
+    const incomeData = forecast.map(f => f.projectedIncome);
+    const expenseData = forecast.map(f => f.projectedExpenses);
+    const netData = forecast.map(f => f.projectedNet);
+    
+    cashFlowChart = new Chart(canvasCtx, {
+        type: 'bar',
         data: {
-            labels: [...historicalLabels, ...months.slice(1)],
+            labels: labels,
             datasets: [
                 {
-                    label: 'Historical',
-                    data: [...forecast.historical.slice(-6), ...Array(6).fill(null)],
-                    borderColor: '#6c757d',
-                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
-                    borderDash: [5, 5],
-                    fill: false
+                    label: 'Projected Income',
+                    data: incomeData,
+                    backgroundColor: '#198754',
+                    order: 3
                 },
                 {
-                    label: 'Forecast',
-                    data: [...Array(6).fill(null), ...forecast.forecast],
+                    label: 'Projected Expenses',
+                    data: expenseData,
+                    backgroundColor: '#dc3545',
+                    order: 2
+                },
+                {
+                    label: 'Net Cash Flow',
+                    data: netData,
+                    type: 'line',
                     borderColor: '#0d6efd',
                     backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
                     tension: 0.4,
-                    fill: true
+                    order: 1
                 }
             ]
         },
@@ -2402,7 +2780,7 @@ function renderForecastChart() {
             plugins: {
                 title: {
                     display: true,
-                    text: '6-Month Spending Forecast'
+                    text: '6-Month Cash Flow Forecast'
                 }
             },
             scales: {
@@ -2417,6 +2795,65 @@ function renderForecastChart() {
             }
         }
     });
+}
+
+function renderYearlyProjections() {
+    const container = document.getElementById('yearlyProjectionsBody');
+    if (!container) return;
+    
+    const forecast = AnalyticsEngine.generateCashFlowForecast(transactions, userExpectations, 12);
+    
+    container.innerHTML = '';
+    
+    if (forecast.length === 0) {
+        return;
+    }
+    
+    forecast.forEach(projection => {
+        const row = document.createElement('tr');
+        
+        // Determine cash flow status
+        let cashFlowStatus = '';
+        let statusClass = '';
+        if (projection.projectedNet > 0) {
+            cashFlowStatus = 'Positive';
+            statusClass = 'text-success';
+        } else if (projection.projectedNet < 0) {
+            cashFlowStatus = 'Negative';
+            statusClass = 'text-danger';
+        } else {
+            cashFlowStatus = 'Neutral';
+            statusClass = 'text-warning';
+        }
+        
+        row.innerHTML = `
+            <td>${projection.monthName}</td>
+            <td>${projection.projectedIncome.toLocaleString()} ${currency}</td>
+            <td>${projection.projectedExpenses.toLocaleString()} ${currency}</td>
+            <td class="fw-bold ${projection.projectedNet >= 0 ? 'text-success' : 'text-danger'}">
+                ${projection.projectedNet.toLocaleString()} ${currency}
+            </td>
+            <td class="${statusClass}">${cashFlowStatus}</td>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function updateYearlyProjections() {
+    const expectedIncome = parseFloat(document.getElementById('expectedIncome').value) || 0;
+    const expectedExpenses = parseFloat(document.getElementById('expectedExpenses').value) || 0;
+    
+    if (expectedIncome > 0 || expectedExpenses > 0) {
+        userExpectations.expectedMonthlyIncome = expectedIncome;
+        userExpectations.expectedMonthlyExpenses = expectedExpenses;
+        userExpectations.lastUpdated = new Date().toISOString();
+        
+        saveUserExpectations(userExpectations);
+        renderPredictionsTab();
+        showToast('Projections updated successfully', 'success');
+    } else {
+        showToast('Please enter expected income and/or expenses', 'warning');
+    }
 }
 
 function renderRiskAlerts() {
@@ -2460,11 +2897,11 @@ function renderMonthlyProjections() {
     
     if (!container) return;
     
-    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions);
+    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions, userExpectations);
     
     container.innerHTML = '';
     
-    if (!prediction || prediction.confidence < 0.5) {
+    if (!prediction) {
         placeholder.classList.remove('d-none');
         container.classList.add('d-none');
         return;
@@ -2475,19 +2912,27 @@ function renderMonthlyProjections() {
     
     const projectionElement = document.createElement('div');
     projectionElement.className = 'projection-item';
+    
+    let sourceText = '';
+    if (prediction.source === 'user_expectation') {
+        sourceText = 'Based on your expectations';
+    } else {
+        sourceText = 'Based on historical data';
+    }
+    
     projectionElement.innerHTML = `
         <div class="projection-header">
             <i class="bi bi-arrow-up-right"></i>
-            <span>Next Month Projection</span>
+            <span>Next Month Spending Projection</span>
         </div>
         <div class="projection-amount">${prediction.amount.toLocaleString()} ${currency}</div>
         <div class="projection-confidence">
-            <small class="text-muted">Confidence: ${Math.round(prediction.confidence * 100)}%</small>
+            <small class="text-muted">${sourceText} • Confidence: ${Math.round(prediction.confidence * 100)}%</small>
         </div>
         <div class="projection-trend">
             <small class="${prediction.trend > 0 ? 'text-danger' : 'text-success'}">
                 <i class="bi ${prediction.trend > 0 ? 'bi-arrow-up' : 'bi-arrow-down'}"></i>
-                ${Math.abs(prediction.trend * 100).toFixed(1)}% ${prediction.trend > 0 ? 'increase' : 'decrease'}
+                ${prediction.trend !== 0 ? Math.abs(prediction.trend * 100).toFixed(1) + '% ' + (prediction.trend > 0 ? 'increase' : 'decrease') : 'Stable'}
             </small>
         </div>
     `;
@@ -2578,14 +3023,15 @@ function renderHealthTrendChart() {
 function renderHeatMap() {
     const container = document.getElementById('heatMapContainer');
     const placeholder = document.getElementById('heatMapPlaceholder');
+    const heatMapMonth = document.getElementById('heatMapMonth');
     
-    if (!container) return;
+    if (!container || !heatMapMonth) return;
     
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
+    const selectedYear = now.getFullYear();
+    const selectedMonth = parseInt(heatMapMonth.value);
     
-    const heatMapData = AnalyticsEngine.generateHeatMap(transactions, currentYear, currentMonth);
+    const heatMapData = AnalyticsEngine.generateHeatMap(transactions, selectedYear, selectedMonth);
     
     container.innerHTML = '';
     
@@ -2605,15 +3051,32 @@ function renderHeatMap() {
         const intensity = maxAmount > 0 ? (day.amount / maxAmount) : 0;
         const colorIntensity = Math.floor(intensity * 100);
         
+        let tooltip = `${day.date}: No spending`;
+        if (day.amount > 0) {
+            tooltip = `${day.date}: ${day.amount.toLocaleString()} ${currency} (${day.transactions} transaction${day.transactions !== 1 ? 's' : ''})`;
+        }
+        
         return `
             <div class="heat-map-day" style="background-color: rgba(220, 53, 69, ${0.3 + intensity * 0.7})" 
-                 title="${day.date}: ${day.amount.toLocaleString()} ${currency}">
+                 title="${tooltip}" onclick="showDayTransactions('${day.date}')">
                 ${day.day}
             </div>
         `;
     }).join('');
     
     container.innerHTML = `<div class="heat-map-grid">${heatMapHTML}</div>`;
+}
+
+function showDayTransactions(date) {
+    const dayTransactions = transactions.filter(tx => tx.date === date && tx.type === 'expense');
+    
+    if (dayTransactions.length > 0) {
+        let message = `Transactions on ${date}:\n\n`;
+        dayTransactions.forEach(tx => {
+            message += `• ${tx.desc}: ${tx.amount.toLocaleString()} ${currency} (${tx.category})\n`;
+        });
+        alert(message);
+    }
 }
 
 function renderCategoryTrendChart() {
@@ -2906,7 +3369,8 @@ function showFullAIAnalysis() {
     const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
     const healthScore = AnalyticsEngine.calculateHealthScore(transactions, monthlyBudgets);
     const savingsRate = AnalyticsEngine.calculateSavingsRate(transactions);
-    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions);
+    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions, userExpectations);
+    const investmentSuggestions = AnalyticsEngine.generateInvestmentSuggestions(transactions);
     
     let html = `
         <div class="ai-analysis-header">
@@ -2939,7 +3403,10 @@ function showFullAIAnalysis() {
     if (insights.length === 0) {
         html += `<div class="text-center text-muted p-3">Add more transaction data for personalized recommendations</div>`;
     } else {
-        insights.forEach(insight => {
+        // Combine insights and investment suggestions
+        const allRecommendations = [...insights, ...investmentSuggestions].slice(0, 8);
+        
+        allRecommendations.forEach(insight => {
             html += `
                 <div class="ai-recommendation ai-${insight.type}">
                     <i class="bi ${insight.icon}"></i>
@@ -2960,7 +3427,7 @@ function showFullAIAnalysis() {
                     <div class="prediction-amount">${prediction.amount.toLocaleString()} ${currency}</div>
                     <div class="prediction-label">Expected next month spending</div>
                     <div class="prediction-note">
-                        <small class="text-muted">Based on ${Math.round(prediction.confidence * 100)}% confidence from your spending patterns</small>
+                        <small class="text-muted">Based on ${Math.round(prediction.confidence * 100)}% confidence from ${prediction.source === 'user_expectation' ? 'your expectations' : 'your spending patterns'}</small>
                     </div>
                 </div>
             </div>
@@ -3038,7 +3505,8 @@ document.getElementById('exportBtn').onclick = function() {
         transactions,
         categories,
         currency,
-        monthlyBudgets
+        monthlyBudgets,
+        userExpectations
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:"application/json"}));
     const a = document.createElement("a");
@@ -3065,11 +3533,13 @@ document.getElementById('importFile').onchange = function(e) {
             if (Array.isArray(data.categories)) categories = data.categories;
             if (typeof data.currency === "string") currency = data.currency;
             if (data.monthlyBudgets) monthlyBudgets = data.monthlyBudgets;
+            if (data.userExpectations) userExpectations = data.userExpectations;
             
             saveTransactions(transactions);
             saveCategories(categories);
             saveCurrency(currency);
             saveMonthlyBudgets(monthlyBudgets);
+            saveUserExpectations(userExpectations);
             
             renderCategoryList();
             populateSummaryFilters();
@@ -3150,17 +3620,15 @@ if (overviewChartType) {
     overviewChartType.addEventListener('change', renderOverviewChart);
 }
 
-// Enhanced Dark Mode Toggle
+// Enhanced Dark Mode Toggle (without toast)
 document.getElementById('darkModeToggle').addEventListener('click', function() {
     document.body.classList.toggle('dark-mode');
     this.checked = document.body.classList.contains('dark-mode');
     
     if (document.body.classList.contains('dark-mode')) {
         localStorage.setItem('theme', 'dark');
-        showToast('Dark mode enabled', 'info');
     } else {
         localStorage.setItem('theme', 'light');
-        showToast('Light mode enabled', 'info');
     }
 });
 
@@ -3181,7 +3649,7 @@ document.getElementById('darkModeToggle').addEventListener('click', function() {
     }
 })();
 
-// Service Worker Registration
+// Service Worker Registration for Offline PWA
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/Wealth-Command/service-worker.js')
@@ -3208,6 +3676,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         currency = loadCurrency() || "PKR";
         monthlyBudgets = loadMonthlyBudgets();
+        userExpectations = loadUserExpectations();
         
         calculateMonthlyRollover();
         
@@ -3242,6 +3711,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 calculateMonthlyRollover();
                 updateUI();
             });
+        }
+        
+        // Initialize user expectations in predictions tab
+        const expectedIncomeInput = document.getElementById('expectedIncome');
+        const expectedExpensesInput = document.getElementById('expectedExpenses');
+        
+        if (expectedIncomeInput && userExpectations.expectedMonthlyIncome > 0) {
+            expectedIncomeInput.value = userExpectations.expectedMonthlyIncome;
+        }
+        
+        if (expectedExpensesInput && userExpectations.expectedMonthlyExpenses > 0) {
+            expectedExpensesInput.value = userExpectations.expectedMonthlyExpenses;
         }
     }
 
