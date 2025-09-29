@@ -135,6 +135,119 @@
     </div>
   </div>
 
+  <!-- Salary Calculator Modal -->
+  <div class="modal fade" id="salaryCalculatorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-calculator"></i> Salary Calculator</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="salary-calculator-card">
+            <div class="salary-input-group">
+              <div>
+                <label class="form-label">Basic Monthly Salary</label>
+                <input type="number" class="form-control" id="basicSalary" placeholder="Enter basic salary" value="50000">
+              </div>
+              <div>
+                <label class="form-label">Working Hours Per Day</label>
+                <input type="number" class="form-control" id="workingHours" placeholder="e.g., 9" value="9">
+              </div>
+              <div>
+                <label class="form-label">Working Days Per Month</label>
+                <select class="form-select" id="workingDays">
+                  <option value="30">30 Days (198 hours)</option>
+                  <option value="31">31 Days (207 hours)</option>
+                  <option value="custom">Custom Days</option>
+                </select>
+              </div>
+              <div id="customDaysContainer" class="d-none">
+                <label class="form-label">Custom Working Days</label>
+                <input type="number" class="form-control" id="customDays" placeholder="Enter days">
+              </div>
+            </div>
+
+            <div class="salary-input-group">
+              <div>
+                <label class="form-label">Overtime Hours</label>
+                <input type="number" class="form-control" id="overtimeHours" placeholder="Overtime hours" value="0">
+              </div>
+              <div>
+                <label class="form-label">Overtime Rate Multiplier</label>
+                <select class="form-select" id="overtimeRate">
+                  <option value="1.5">1.5x (Normal)</option>
+                  <option value="2">2x (Holiday)</option>
+                  <option value="custom">Custom Rate</option>
+                </select>
+              </div>
+              <div id="customRateContainer" class="d-none">
+                <label class="form-label">Custom Overtime Rate</label>
+                <input type="number" class="form-control" id="customRate" placeholder="e.g., 1.75" step="0.01">
+              </div>
+            </div>
+
+            <div class="salary-input-group">
+              <div>
+                <label class="form-label">KPI Bonus</label>
+                <input type="number" class="form-control" id="kpiBonus" placeholder="KPI bonus amount" value="0">
+              </div>
+              <div>
+                <label class="form-label">Other Allowances</label>
+                <input type="number" class="form-control" id="otherAllowances" placeholder="Other allowances" value="0">
+              </div>
+              <div>
+                <label class="form-label">Deductions</label>
+                <input type="number" class="form-control" id="deductions" placeholder="Tax, insurance, etc." value="0">
+              </div>
+            </div>
+
+            <div class="salary-result-card">
+              <h4 id="totalSalary">Total Salary: 0 PKR</h4>
+              <div class="salary-breakdown">
+                <div class="salary-breakdown-item">
+                  <span>Basic Salary:</span>
+                  <span id="basicSalaryResult">0 PKR</span>
+                </div>
+                <div class="salary-breakdown-item">
+                  <span>Overtime:</span>
+                  <span id="overtimeResult">0 PKR</span>
+                </div>
+                <div class="salary-breakdown-item">
+                  <span>KPI Bonus:</span>
+                  <span id="kpiResult">0 PKR</span>
+                </div>
+                <div class="salary-breakdown-item">
+                  <span>Allowances:</span>
+                  <span id="allowancesResult">0 PKR</span>
+                </div>
+                <div class="salary-breakdown-item">
+                  <span>Deductions:</span>
+                  <span id="deductionsResult">0 PKR</span>
+                </div>
+                <div class="salary-breakdown-item">
+                  <span>Net Salary:</span>
+                  <span id="netSalaryResult">0 PKR</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <button class="btn btn-primary w-100" onclick="addSalaryAsIncome()">
+                <i class="bi bi-plus-circle"></i> Add as Income Transaction
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Add Button -->
+  <button class="quick-add-btn" id="quickAddBtn" title="Quick Add Transaction">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+
   <div class="main-content container py-3">
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
@@ -161,7 +274,7 @@
               <h5 class="card-title">
                 Net Wealth (<span id="currencyLabel">PKR</span>)
               </h5>
-              <!-- Sleek filter row -->
+              <!-- Fixed filter row with proper sizing -->
               <div class="row mb-2 justify-content-center align-items-center">
                 <div class="col-12 col-md-8 mx-auto">
                   <div class="input-group">
@@ -185,6 +298,9 @@
               </div>
               <div class="mt-2">
                 <button id="openAddTransactionModal" class="btn btn-primary btn-lg" style="font-size:0.99rem;padding:0.5rem 1rem;"><i class="bi bi-plus-lg"></i> Add Transaction</button>
+                <button class="btn btn-outline-primary btn-lg ms-2" onclick="openSalaryCalculator()" style="font-size:0.99rem;padding:0.5rem 1rem;">
+                  <i class="bi bi-calculator"></i> Salary Calc
+                </button>
               </div>
             </div>
           </div>
@@ -377,16 +493,54 @@
           <!-- Predictions Tab -->
           <div class="tab-pane fade" id="predictions" role="tabpanel">
             <div class="row g-3">
+              <div class="col-12">
+                <div class="yearly-projections-container">
+                  <h5><i class="bi bi-calendar-range"></i> Yearly Projections & Expectations</h5>
+                  <div class="projection-controls">
+                    <div class="projection-input-group">
+                      <div class="projection-input">
+                        <label class="form-label">Expected Monthly Income</label>
+                        <input type="number" class="form-control" id="expectedIncome" placeholder="Expected monthly income">
+                      </div>
+                      <div class="projection-input">
+                        <label class="form-label">Expected Monthly Expenses</label>
+                        <input type="number" class="form-control" id="expectedExpenses" placeholder="Expected monthly expenses">
+                      </div>
+                      <div>
+                        <button class="btn btn-primary" onclick="updateYearlyProjections()">
+                          <i class="bi bi-arrow-clockwise"></i> Update Projections
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="projection-table">
+                      <thead>
+                        <tr>
+                          <th>Month</th>
+                          <th>Projected Income</th>
+                          <th>Projected Expenses</th>
+                          <th>Projected Net</th>
+                          <th>Cash Flow Forecast</th>
+                        </tr>
+                      </thead>
+                      <tbody id="yearlyProjectionsBody">
+                        <!-- Yearly projections will be populated here -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
               <div class="col-12 col-lg-6">
                 <div class="chart-card">
                   <div class="chart-header">
-                    <i class="bi bi-magic"></i> Spending Forecast
+                    <i class="bi bi-magic"></i> Cash Flow Forecast
                   </div>
                   <div class="chart-body">
-                    <canvas id="forecastChart" height="300"></canvas>
-                    <div id="forecastPlaceholder" class="chart-placeholder">
+                    <canvas id="cashFlowChart" height="300"></canvas>
+                    <div id="cashFlowPlaceholder" class="chart-placeholder">
                       <i class="bi bi-graph-up" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Need more data for accurate predictions</p>
+                      <p class="mt-2">Configure expectations to see cash flow forecast</p>
                     </div>
                   </div>
                 </div>
@@ -416,7 +570,7 @@
                     </div>
                     <div id="noProjections" class="chart-placeholder">
                       <i class="bi bi-calculator" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Insufficient data for projections</p>
+                      <p class="mt-2">Configure expectations for projections</p>
                     </div>
                   </div>
                 </div>
@@ -445,10 +599,29 @@
                 <div class="chart-card">
                   <div class="chart-header">
                     <i class="bi bi-calendar-week"></i> Spending Heat Map
+                    <div class="chart-controls">
+                      <select id="heatMapMonth" class="form-select form-select-sm">
+                        <!-- Months will be populated dynamically -->
+                      </select>
+                    </div>
                   </div>
                   <div class="chart-body">
                     <div id="heatMapContainer" class="heat-map-container">
                       <!-- Heat map will be populated here -->
+                    </div>
+                    <div class="heat-map-legend">
+                      <div class="heat-map-legend-item">
+                        <div class="heat-map-legend-color" style="background-color: rgba(220, 53, 69, 0.3)"></div>
+                        <span>Low Spending</span>
+                      </div>
+                      <div class="heat-map-legend-item">
+                        <div class="heat-map-legend-color" style="background-color: rgba(220, 53, 69, 0.7)"></div>
+                        <span>Medium Spending</span>
+                      </div>
+                      <div class="heat-map-legend-item">
+                        <div class="heat-map-legend-color" style="background-color: rgba(220, 53, 69, 1)"></div>
+                        <span>High Spending</span>
+                      </div>
                     </div>
                     <div id="heatMapPlaceholder" class="chart-placeholder">
                       <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: 0.5;"></i>
