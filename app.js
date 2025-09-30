@@ -3570,7 +3570,14 @@ function renderTransactionCalculations(monthData) {
 function saveLoans(data) {
     loans = data;
     localStorage.setItem('loans', JSON.stringify(data));
-    autoSyncToDrive();
+    
+    // Force immediate sync instead of waiting for auto-sync
+    if (googleUser && isOnline) {
+        console.log('Loans changed, forcing immediate sync...');
+        autoSyncToDrive();
+    } else {
+        console.log('Loans saved locally, will sync when online');
+    }
 }
 
 function renderDebtManagement() {
