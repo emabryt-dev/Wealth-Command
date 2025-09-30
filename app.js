@@ -436,28 +436,41 @@ const PlannerEngine = {
     },
     
     shouldIncludeInMonth: function(transaction, targetDate) {
-        const targetMonth = targetDate.getMonth();
-        const targetYear = targetDate.getFullYear();
-        
-        const startDate = new Date(transaction.startDate);
-        if (startDate > targetDate) return false;
-        
-        if (transaction.endDate) {
-            const endDate = new Date(transaction.endDate);
-            if (endDate < targetDate) return false;
-        }
-        
-        if (transaction.frequency === 'one-time') {
-            return startDate.getMonth() === targetMonth && startDate.getFullYear() === targetYear;
-        } else if (transaction.frequency === 'monthly') {
-            return true;
-        } else if (transaction.frequency === 'quarterly') {
-            const monthsDiff = (targetYear - startDate.getFullYear()) * 12 + targetMonth - startDate.getMonth();
-            return monthsDiff % 3 === 0;
-        }
-        
+    const targetMonth = targetDate.getMonth();
+    const targetYear = targetDate.getFullYear();
+    
+    const startDate = new Date(transaction.startDate);
+    const startMonth = startDate.getMonth();
+    const startYear = startDate.getFullYear();
+    
+    // If transaction starts after target month, exclude
+    if (startYear > targetYear || (startYear === targetYear && startMonth > targetMonth)) {
         return false;
     }
+    
+    // Check end date if exists
+    if (transaction.endDate) {
+        const endDate = new Date(transaction.endDate);
+        const endMonth = endDate.getMonth();
+        const endYear = endDate.getFullYear();
+        
+        if (endYear < targetYear || (endYear === targetYear && endMonth < targetMonth)) {
+            return false;
+        }
+    }
+    
+    // Check frequency
+    if (transaction.frequency === 'one-time') {
+        return startMonth === targetMonth && startYear === targetYear;
+    } else if (transaction.frequency === 'monthly') {
+        return true; // Include every month
+    } else if (transaction.frequency === 'quarterly') {
+        const monthsDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
+        return monthsDiff % 3 === 0;
+    }
+    
+    return false;
+}
 };
 
 // Debt Management Engine
