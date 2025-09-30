@@ -861,68 +861,6 @@ body {
   font-size: 1.1rem;
 }
 
-/* Enhanced Toast/Sync Status */
-.toast-container {
-  position: fixed;
-  top: 80px;
-  right: 20px;
-  z-index: 1060;
-  max-width: 350px;
-}
-
-.toast {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  margin-bottom: 1rem;
-  transform: translateX(400px);
-  opacity: 0;
-  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.toast.show {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.toast.hide {
-  transform: translateX(400px);
-  opacity: 0;
-}
-
-.toast-success {
-  border-left: 4px solid #198754;
-}
-
-.toast-info {
-  border-left: 4px solid #0dcaf0;
-}
-
-.toast-warning {
-  border-left: 4px solid #ffc107;
-}
-
-.toast-danger {
-  border-left: 4px solid #dc3545;
-}
-
-.toast-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #198754, #20c997);
-  border-radius: 0 0 12px 12px;
-  animation: progress 3s linear;
-}
-
-@keyframes progress {
-  0% { width: 100%; }
-  100% { width: 0%; }
-}
-
 /* Category Type Badges */
 .category-type-badge {
   font-size: 0.7rem;
