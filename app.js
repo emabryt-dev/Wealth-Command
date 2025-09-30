@@ -3071,11 +3071,17 @@ function renderPlannerTimeline(months) {
     
     months.forEach(month => {
         const monthElement = document.createElement('div');
-        monthElement.className = 'planner-month-item';
+        monthElement.className = 'planner-month-item clickable';
+        monthElement.onclick = () => showMonthDetails(month);
+        
+        // Add visual indicator for positive/negative months
+        const balanceClass = month.balance >= 0 ? 'text-success' : 'text-danger';
+        const netClass = month.net >= 0 ? 'text-success' : 'text-danger';
+        
         monthElement.innerHTML = `
             <div class="planner-month-header">
                 <strong>${month.name}</strong>
-                <span class="planner-month-balance ${month.balance >= 0 ? 'text-success' : 'text-danger'}">
+                <span class="planner-month-balance ${balanceClass}">
                     ${month.balance.toLocaleString()} ${currency}
                 </span>
             </div>
@@ -3087,10 +3093,15 @@ function renderPlannerTimeline(months) {
                     <small class="text-danger">-${month.expenses.toLocaleString()} ${currency}</small>
                 </div>
                 <div class="planner-net">
-                    <small class="${month.net >= 0 ? 'text-success' : 'text-danger'}">
+                    <small class="${netClass}">
                         Net: ${month.net >= 0 ? '+' : ''}${month.net.toLocaleString()} ${currency}
                     </small>
                 </div>
+            </div>
+            <div class="text-center mt-2">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Click for details
+                </small>
             </div>
         `;
         container.appendChild(monthElement);
@@ -3335,6 +3346,218 @@ function loadLoans() {
         given: [],
         taken: []
     };
+}
+
+// Monthly Details Functions
+function showMonthDetails(monthData) {
+    const modal = new bootstrap.Modal(document.getElementById('monthDetailsModal'));
+    
+    // Update modal title
+    document.getElementById('monthDetailsModalLabel').innerHTML = 
+        `<i class="bi bi-calendar-month"></i> ${monthData.name} Details`;
+    
+    // Update summary
+    document.getElementById('monthDetailsIncome').textContent = 
+        monthData.income.toLocaleString() + ' ' + currency;
+    document.getElementById('monthDetailsExpenses').textContent = 
+        monthData.expenses.toLocaleString() + ' ' + currency;
+    document.getElementById('monthDetailsBalance').textContent = 
+        monthData.balance.toLocaleString() + ' ' + currency;
+    
+    // Calculate and display income breakdown
+    const incomeBreakdown = calculateMonthBreakdown(monthData, 'income');
+    renderMonthBreakdown('monthDetailsIncomeList', incomeBreakdown, 'income');
+    
+    // Calculate and display expense breakdown
+    const expenseBreakdown = calculateMonthBreakdown(monthData, 'expenses');
+    renderMonthBreakdown('monthDetailsExpensesList', expenseBreakdown, 'expenses');
+    
+    // Show transaction calculations
+    renderTransactionCalculations(monthData);
+    
+    modal.show();
+}
+
+function formatCategoryName(category) {
+    const nameMap = {
+        // Income categories
+        'paycheck': 'Salary',
+        'loan': 'Loan',
+        'sale': 'Asset Sale',
+        'committee': 'Committee',
+        
+        // Expense categories
+        'grocery': 'Grocery',
+        'bike_fuel': 'Bike & Fuel',
+        'expenses': 'General Expenses',
+        'loan_returned': 'Loan Repayment',
+        'committee': 'Committee'
+    };
+    
+    return nameMap[category] || category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function calculateMonthBreakdown(monthData, type) {
+    const breakdown = {};
+    const transactions = type === 'income' ? futureTransactions.income : futureTransactions.expenses;
+    
+    transactions.forEach(transaction => {
+        if (shouldIncludeTransactionInMonth(transaction, monthData.month)) {
+            const category = transaction.type;
+            if (!breakdown[category]) {
+                breakdown[category] = {
+                    amount: 0,
+                    transactions: []
+                };
+            }
+            breakdown[category].amount += transaction.amount;
+            breakdown[category].transactions.push(transaction);
+        }
+    });
+    
+    return breakdown;
+}
+
+function shouldIncludeTransactionInMonth(transaction, targetMonth) {
+    const [targetYear, targetMonthNum] = targetMonth.split('-').map(Number);
+    const startDate = new Date(transaction.startDate);
+    const startYear = startDate.getFullYear();
+    const startMonth = startDate.getMonth() + 1;
+    
+    // Check if transaction starts after target month
+    if (startYear > targetYear || (startYear === targetYear && startMonth > targetMonthNum)) {
+        return false;
+    }
+    
+    // Check end date if exists
+    if (transaction.endDate) {
+        const endDate = new Date(transaction.endDate);
+        const endYear = endDate.getFullYear();
+        const endMonth = endDate.getMonth() + 1;
+        
+        if (endYear < targetYear || (endYear === targetYear && endMonth < targetMonthNum)) {
+            return false;
+        }
+    }
+    
+    // Check frequency
+    if (transaction.frequency === 'one-time') {
+        return startYear === targetYear && startMonth === targetMonthNum;
+    } else if (transaction.frequency === 'monthly') {
+        return true;
+    } else if (transaction.frequency === 'quarterly') {
+        const monthsDiff = (targetYear - startYear) * 12 + (targetMonthNum - startMonth);
+        return monthsDiff % 3 === 0;
+    }
+    
+    return false;
+}
+
+function renderMonthBreakdown(containerId, breakdown, type) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    
+    if (Object.keys(breakdown).length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted p-3">
+                <i class="bi bi-${type === 'income' ? 'currency-dollar' : 'cart'} fs-4"></i>
+                <p class="mt-2">No ${type} for this month</p>
+            </div>
+        `;
+        return;
+    }
+    
+    Object.entries(breakdown).forEach(([category, data]) => {
+        const item = document.createElement('div');
+        item.className = type === 'income' ? 'month-details-income-item' : 'month-details-expense-item';
+        
+        const categoryName = getCategoryDisplayName(category, type);
+        
+        item.innerHTML = `
+            <div>
+                <div class="fw-bold">${categoryName}</div>
+                <small class="text-muted">${data.transactions.length} transaction(s)</small>
+            </div>
+            <div class="fw-bold ${type === 'income' ? 'text-success' : 'text-danger'}">
+                ${data.amount.toLocaleString()} ${currency}
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+function getCategoryDisplayName(categoryKey, type) {
+    const categoryNames = {
+        income: {
+            paycheck: 'Salary/Paycheck',
+            loan: 'Loan Income',
+            sale: 'Asset Sale',
+            committee: 'Committee Payout'
+        },
+        expenses: {
+            grocery: 'Grocery',
+            bike_fuel: 'Bike/Fuel',
+            expenses: 'General Expenses',
+            loan_returned: 'Loan Repayment',
+            committee: 'Committee'
+        }
+    };
+    
+    return categoryNames[type][categoryKey] || categoryKey;
+}
+
+function renderTransactionCalculations(monthData) {
+    const container = document.getElementById('monthDetailsTransactions');
+    container.innerHTML = '';
+    
+    // Show calculation breakdown
+    const calculationHTML = `
+        <div class="alert alert-info">
+            <h6><i class="bi bi-calculator"></i> Balance Calculation</h6>
+            <div class="small">
+                <div class="d-flex justify-content-between">
+                    <span>Starting Balance:</span>
+                    <span>${(monthData.balance - monthData.net).toLocaleString()} ${currency}</span>
+                </div>
+                <div class="d-flex justify-content-between text-success">
+                    <span>+ Total Income:</span>
+                    <span>+${monthData.income.toLocaleString()} ${currency}</span>
+                </div>
+                <div class="d-flex justify-content-between text-danger">
+                    <span>- Total Expenses:</span>
+                    <span>-${monthData.expenses.toLocaleString()} ${currency}</span>
+                </div>
+                <hr class="my-1">
+                <div class="d-flex justify-content-between fw-bold">
+                    <span>Ending Balance:</span>
+                    <span class="${monthData.balance >= 0 ? 'text-success' : 'text-danger'}">
+                        ${monthData.balance.toLocaleString()} ${currency}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="alert alert-light">
+            <h6><i class="bi bi-lightbulb"></i> Financial Health</h6>
+            <div class="small">
+                <div class="d-flex justify-content-between">
+                    <span>Savings Rate:</span>
+                    <span class="${monthData.income > 0 ? (monthData.net / monthData.income) >= 0.2 ? 'text-success' : 'text-warning' : 'text-danger'}">
+                        ${monthData.income > 0 ? ((monthData.net / monthData.income) * 100).toFixed(1) : '0'}%
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Net Cash Flow:</span>
+                    <span class="${monthData.net >= 0 ? 'text-success' : 'text-danger'}">
+                        ${monthData.net >= 0 ? '+' : ''}${monthData.net.toLocaleString()} ${currency}
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = calculationHTML;
 }
 
 function saveLoans(data) {
