@@ -2522,10 +2522,10 @@ function renderEnhancedComparison() {
     const comparison = AnalyticsEngine.comparePeriods(transactions, period1, period2, type);
     renderComparisonChart(comparison, period1, period2);
     renderChangeAnalysis(comparison, period1, period2);
-    updateComparisonSummary(comparison, period1, period2, type);
+    updateComparisonSummary(comparison, period1, period2);
 }
 
-function updateComparisonSummary(comparison, period1, period2, type) {
+function updateComparisonSummary(comparison, period1, period2) {
     const total1 = Object.values(comparison).reduce((sum, data) => sum + data.period1, 0);
     const total2 = Object.values(comparison).reduce((sum, data) => sum + data.period2, 0);
     
