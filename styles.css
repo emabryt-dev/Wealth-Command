@@ -1469,10 +1469,6 @@ body.dark-mode .repayment-item {
     align-items: stretch;
   }
   
-  .sync-status-container {
-    margin-right: 5px;
-  }
-  
   .planner-month-details {
     flex-direction: column;
     gap: 0.25rem;
