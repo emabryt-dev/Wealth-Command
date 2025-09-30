@@ -1587,16 +1587,6 @@ function calculateSalary() {
     const otherIncome = parseFloat(document.getElementById('otherIncome').value) || 0;
     const deductions = parseFloat(document.getElementById('deductions').value) || 0;
     
-    // Calculate standard monthly hours based on selected month
-    let standardHours;
-    switch(monthType) {
-        case '31': standardHours = 207; break; // 23 days * 9 hours
-        case '30': standardHours = 198; break; // 22 days * 9 hours
-        case '28': standardHours = 180; break; // 20 days * 9 hours
-        case '29': standardHours = 189; break; // 21 days * 9 hours
-        default: standardHours = 198;
-    }
-    
     // Auto-calculate overtime rate if not set (1x hourly rate)
     let calculatedOvertimeRate = overtimeRate;
     if (calculatedOvertimeRate === 0 && basicSalary > 0 && standardHours > 0) {
