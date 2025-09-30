@@ -3022,7 +3022,14 @@ function loadFutureTransactions() {
 function saveFutureTransactions(data) {
     futureTransactions = data;
     localStorage.setItem('futureTransactions', JSON.stringify(data));
-    autoSyncToDrive();
+    
+    // Force immediate sync instead of waiting for auto-sync
+    if (googleUser && isOnline) {
+        console.log('Future transactions changed, forcing immediate sync...');
+        autoSyncToDrive();
+    } else {
+        console.log('Future transactions saved locally, will sync when online');
+    }
 }
 
 function renderPlannerProjections() {
