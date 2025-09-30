@@ -71,43 +71,6 @@ body {
   color: var(--primary-color);
 }
 
-/* Sync Status Icon */
-.sync-status-container {
-  position: relative;
-  display: inline-block;
-  margin-right: 10px;
-}
-
-#syncStatusIcon {
-  font-size: 1.3rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.sync-status-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  font-size: 0.8rem;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-  z-index: 1060;
-  pointer-events: none;
-}
-
-.sync-status-container:hover .sync-status-tooltip {
-  opacity: 1;
-  visibility: visible;
-  bottom: 120%;
-}
-
 /* Pulse animation for syncing */
 .pulse {
   animation: pulse 1.5s infinite;
