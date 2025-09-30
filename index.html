@@ -311,6 +311,70 @@
   </div>
 
   <div class="main-content container py-3">
+
+    <!-- Monthly Details Modal -->
+<div class="modal fade" id="monthDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="monthDetailsModalLabel">
+          <i class="bi bi-calendar-month"></i> Month Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="month-details-summary">
+          <div class="row text-center">
+            <div class="col-4">
+              <div class="text-success">
+                <div class="fw-bold fs-4" id="monthDetailsIncome">0</div>
+                <small>Total Income</small>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="text-danger">
+                <div class="fw-bold fs-4" id="monthDetailsExpenses">0</div>
+                <small>Total Expenses</small>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="text-primary">
+                <div class="fw-bold fs-4" id="monthDetailsBalance">0</div>
+                <small>Ending Balance</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <h6><i class="bi bi-currency-dollar text-success"></i> Income Breakdown</h6>
+            <div id="monthDetailsIncomeList" class="month-details-breakdown">
+              <!-- Income items will be populated here -->
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6><i class="bi bi-cart text-danger"></i> Expense Breakdown</h6>
+            <div id="monthDetailsExpensesList" class="month-details-breakdown">
+              <!-- Expense items will be populated here -->
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <h6><i class="bi bi-info-circle text-info"></i> Transaction Details</h6>
+          <div id="monthDetailsTransactions" class="month-details-breakdown">
+            <!-- Individual transaction calculations will be shown here -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+    
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
       <div class="row g-4">
