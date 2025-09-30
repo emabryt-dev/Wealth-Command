@@ -135,6 +135,181 @@
     </div>
   </div>
 
+  <!-- Future Income Modal -->
+  <div class="modal fade" id="futureIncomeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="futureIncomeForm" autocomplete="off">
+          <div class="modal-header">
+            <h5 class="modal-title" id="futureIncomeModalLabel">Add Future Income</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="futureIncomeIndex" value="-1">
+            <div class="mb-3">
+              <label for="futureIncomeDescription" class="form-label">Description</label>
+              <input type="text" class="form-control" id="futureIncomeDescription" required>
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label for="futureIncomeType" class="form-label">Type</label>
+                <select class="form-select" id="futureIncomeType" required>
+                  <option value="paycheck">Paycheck</option>
+                  <option value="loan">Loan</option>
+                  <option value="sale">Asset Sale</option>
+                  <option value="committee">Committee Payout</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="futureIncomeAmount" class="form-label">Amount</label>
+                <input type="number" class="form-control" id="futureIncomeAmount" required step="0.01">
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-md-6">
+                <label for="futureIncomeFrequency" class="form-label">Frequency</label>
+                <select class="form-select" id="futureIncomeFrequency" required>
+                  <option value="one-time">One-time</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="futureIncomeStartDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="futureIncomeStartDate" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="futureIncomeEndDate" class="form-label">End Date (optional)</label>
+              <input type="date" class="form-control" id="futureIncomeEndDate">
+              <div class="form-text">Leave empty for ongoing income</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Save</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Future Expense Modal -->
+  <div class="modal fade" id="futureExpenseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="futureExpenseForm" autocomplete="off">
+          <div class="modal-header">
+            <h5 class="modal-title" id="futureExpenseModalLabel">Add Future Expense</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="futureExpenseIndex" value="-1">
+            <div class="mb-3">
+              <label for="futureExpenseDescription" class="form-label">Description</label>
+              <input type="text" class="form-control" id="futureExpenseDescription" required>
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label for="futureExpenseType" class="form-label">Type</label>
+                <select class="form-select" id="futureExpenseType" required>
+                  <option value="grocery">Grocery</option>
+                  <option value="bike_fuel">Bike/Fuel</option>
+                  <option value="expenses">General Expenses</option>
+                  <option value="loan_returned">Loan Repayment</option>
+                  <option value="committee">Committee</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="futureExpenseAmount" class="form-label">Amount</label>
+                <input type="number" class="form-control" id="futureExpenseAmount" required step="0.01">
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-md-6">
+                <label for="futureExpenseFrequency" class="form-label">Frequency</label>
+                <select class="form-select" id="futureExpenseFrequency" required>
+                  <option value="one-time">One-time</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="futureExpenseStartDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="futureExpenseStartDate" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="futureExpenseEndDate" class="form-label">End Date (optional)</label>
+              <input type="date" class="form-control" id="futureExpenseEndDate">
+              <div class="form-text">Leave empty for ongoing expenses</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Save</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loan Modal -->
+  <div class="modal fade" id="loanModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="loanForm" autocomplete="off">
+          <div class="modal-header">
+            <h5 class="modal-title" id="loanModalLabel">Add Loan</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="loanIndex" value="-1">
+            <input type="hidden" id="loanType" value="given">
+            <div class="mb-3">
+              <label for="loanDescription" class="form-label">Description (optional)</label>
+              <input type="text" class="form-control" id="loanDescription" placeholder="e.g., Car loan, Personal loan">
+            </div>
+            <div class="mb-3">
+              <label for="loanAmount" class="form-label">Amount</label>
+              <input type="number" class="form-control" id="loanAmount" required step="0.01">
+            </div>
+            <div class="mb-3" id="loanBorrowerLabel">
+              <label for="loanBorrower" class="form-label">Borrower Name</label>
+              <input type="text" class="form-control" id="loanBorrower">
+            </div>
+            <div class="mb-3" id="loanLenderLabel" style="display: none;">
+              <label for="loanLender" class="form-label">Lender Name</label>
+              <input type="text" class="form-control" id="loanLender">
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6" id="loanDateGivenLabel">
+                <label for="loanDateGiven" class="form-label">Date Given</label>
+                <input type="date" class="form-control" id="loanDateGiven">
+              </div>
+              <div class="col-md-6" id="loanDateTakenLabel" style="display: none;">
+                <label for="loanDateTaken" class="form-label">Date Taken</label>
+                <input type="date" class="form-control" id="loanDateTaken">
+              </div>
+              <div class="col-md-6" id="loanExpectedReturnLabel">
+                <label for="loanExpectedReturn" class="form-label">Expected Return Date</label>
+                <input type="date" class="form-control" id="loanExpectedReturn">
+              </div>
+              <div class="col-md-6" id="loanDueDateLabel" style="display: none;">
+                <label for="loanDueDate" class="form-label">Due Date</label>
+                <input type="date" class="form-control" id="loanDueDate">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Save</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="main-content container py-3">
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
@@ -253,8 +428,217 @@
       </div>
     </div>
 
+    <!-- Planner Tab -->
+    <div id="tab-planner" class="tab-page d-none">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <i class="bi bi-calendar-check"></i> Financial Planner
+        </div>
+        <div class="card-body">
+          <!-- Timeframe Selector -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="btn-group w-100" role="group">
+                <button type="button" class="btn btn-outline-primary planner-timeframe-btn active" data-timeframe="1year">
+                  1 Year
+                </button>
+                <button type="button" class="btn btn-outline-primary planner-timeframe-btn" data-timeframe="2years">
+                  2 Years
+                </button>
+                <button type="button" class="btn btn-outline-primary planner-timeframe-btn" data-timeframe="3years">
+                  3 Years
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Projection Summary -->
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div class="card text-center">
+                <div class="card-body">
+                  <div class="text-success">
+                    <i class="bi bi-arrow-up-circle fs-4"></i>
+                    <div class="fw-bold fs-5" id="plannerNetWealth">0</div>
+                    <small>Projected Net</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center">
+                <div class="card-body">
+                  <div class="text-success">
+                    <i class="bi bi-currency-dollar fs-4"></i>
+                    <div class="fw-bold fs-5" id="plannerTotalIncome">0</div>
+                    <small>Total Income</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center">
+                <div class="card-body">
+                  <div class="text-danger">
+                    <i class="bi bi-arrow-down-circle fs-4"></i>
+                    <div class="fw-bold fs-5" id="plannerTotalExpenses">0</div>
+                    <small>Total Expenses</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center">
+                <div class="card-body">
+                  <div class="text-primary">
+                    <i class="bi bi-piggy-bank fs-4"></i>
+                    <div class="fw-bold fs-5" id="plannerEndingBalance">0</div>
+                    <small>Ending Balance</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="row mb-4">
+            <div class="col-6">
+              <button class="btn btn-success w-100" onclick="openAddFutureIncome()">
+                <i class="bi bi-plus-circle"></i> Add Future Income
+              </button>
+            </div>
+            <div class="col-6">
+              <button class="btn btn-danger w-100" onclick="openAddFutureExpense()">
+                <i class="bi bi-plus-circle"></i> Add Future Expense
+              </button>
+            </div>
+          </div>
+
+          <!-- Monthly Projection Timeline -->
+          <div class="mb-4">
+            <h6><i class="bi bi-graph-up"></i> Monthly Projections</h6>
+            <div id="plannerTimeline" class="planner-timeline">
+              <!-- Monthly projections will be populated here -->
+            </div>
+          </div>
+
+          <!-- Future Income List -->
+          <div class="mb-4">
+            <h6><i class="bi bi-currency-dollar text-success"></i> Future Income</h6>
+            <div id="futureIncomeList" class="planner-list">
+              <!-- Future income items will be populated here -->
+            </div>
+          </div>
+
+          <!-- Future Expenses List -->
+          <div class="mb-4">
+            <h6><i class="bi bi-cart text-danger"></i> Future Expenses</h6>
+            <div id="futureExpensesList" class="planner-list">
+              <!-- Future expense items will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debt Management Tab -->
+    <div id="tab-debt" class="tab-page d-none">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <i class="bi bi-cash-coin"></i> Debt Management
+        </div>
+        <div class="card-body">
+          <!-- Debt Summary -->
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div class="card text-center">
+                <div class="card-body">
+                  <div class="text-success">
+                    <i class="bi bi-arrow-up-right fs-4"></i>
+                    <div class="fw-bold fs-5" id="totalLoansGiven">0</div>
+                    <small>Loans Given</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center">
+                <div class="card-body">
+                  <div class="text-danger">
+                    <i class="bi bi-arrow-down-left fs-4"></i>
+                    <div class="fw-bold fs-5" id="totalLoansTaken">0</div>
+                    <small>Loans Taken</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center">
+                <div class="card-body">
+                  <div class="text-primary">
+                    <i class="bi bi-scale fs-4"></i>
+                    <div class="fw-bold fs-5" id="netDebtPosition">0</div>
+                    <small>Net Position</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center">
+                <div class="card-body">
+                  <div class="text-warning">
+                    <i class="bi bi-clock fs-4"></i>
+                    <div class="fw-bold fs-5" id="upcomingCount">0</div>
+                    <small>Upcoming</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="row mb-4">
+            <div class="col-6">
+              <button class="btn btn-success w-100" onclick="openAddLoan('given')">
+                <i class="bi bi-arrow-up-right"></i> Add Loan Given
+              </button>
+            </div>
+            <div class="col-6">
+              <button class="btn btn-danger w-100" onclick="openAddLoan('taken')">
+                <i class="bi bi-arrow-down-left"></i> Add Loan Taken
+              </button>
+            </div>
+          </div>
+
+          <!-- Upcoming Repayments -->
+          <div class="mb-4">
+            <h6><i class="bi bi-clock text-warning"></i> Upcoming Repayments</h6>
+            <div id="upcomingRepayments" class="debt-list">
+              <!-- Upcoming repayments will be populated here -->
+            </div>
+          </div>
+
+          <!-- Loans Given -->
+          <div class="mb-4">
+            <h6><i class="bi bi-arrow-up-right text-success"></i> Loans Given</h6>
+            <div id="loansGivenList" class="debt-list">
+              <!-- Loans given will be populated here -->
+            </div>
+          </div>
+
+          <!-- Loans Taken -->
+          <div class="mb-4">
+            <h6><i class="bi bi-arrow-down-left text-danger"></i> Loans Taken</h6>
+            <div id="loansTakenList" class="debt-list">
+              <!-- Loans taken will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Enhanced Analytics Tab -->
-    <div id="tab-charts" class="tab-page d-none">
+    <div id="tab-analytics" class="tab-page d-none">
       <div class="analytics-container">
         <!-- AI Insights Header -->
         <div class="ai-insights-header">
@@ -306,9 +690,6 @@
           <div class="nav nav-pills nav-fill" id="analyticsTabs" role="tablist">
             <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button">
               <i class="bi bi-speedometer2"></i> Overview
-            </button>
-            <button class="nav-link" id="predictions-tab" data-bs-toggle="pill" data-bs-target="#predictions" type="button">
-              <i class="bi bi-graph-up-arrow"></i> Predictions
             </button>
             <button class="nav-link" id="trends-tab" data-bs-toggle="pill" data-bs-target="#trends" type="button">
               <i class="bi bi-bar-chart"></i> Trends
@@ -370,29 +751,7 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Predictions Tab -->
-          <div class="tab-pane fade" id="predictions" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-magic"></i> Spending Forecast
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="forecastChart" height="300"></canvas>
-                    <div id="forecastPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-graph-up" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Need more data for accurate predictions</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
+                <div class="chart-card mt-3">
                   <div class="chart-header">
                     <i class="bi bi-exclamation-triangle"></i> Risk Alerts
                   </div>
@@ -401,22 +760,8 @@
                       <!-- Risk alerts will be populated here -->
                     </div>
                     <div id="noRiskAlerts" class="chart-placeholder">
-                      <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.5;"></i>
+                      <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.5;"></i>
                       <p class="mt-2">No spending risks detected</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="chart-card mt-3">
-                  <div class="chart-header">
-                    <i class="bi bi-calendar-heart"></i> Monthly Projections
-                  </div>
-                  <div class="chart-body">
-                    <div id="monthlyProjections" class="projections-container">
-                      <!-- Monthly projections will be populated here -->
-                    </div>
-                    <div id="noProjections" class="chart-placeholder">
-                      <i class="bi bi-calculator" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Insufficient data for projections</p>
                     </div>
                   </div>
                 </div>
@@ -702,7 +1047,15 @@
           <i class="bi bi-list-ul"></i>
           <small>Transactions</small>
         </button>
-        <button class="nav-btn" data-tab="charts">
+        <button class="nav-btn" data-tab="planner">
+          <i class="bi bi-calendar-check"></i>
+          <small>Planner</small>
+        </button>
+        <button class="nav-btn" data-tab="debt">
+          <i class="bi bi-cash-coin"></i>
+          <small>Debt</small>
+        </button>
+        <button class="nav-btn" data-tab="analytics">
           <i class="bi bi-bar-chart"></i>
           <small>Analytics</small>
         </button>
