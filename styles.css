@@ -1458,10 +1458,6 @@ body.dark-mode .repayment-item {
     max-height: 350px;
   }
   
-  .sync-status-tooltip {
-    display: none;
-  }
-  
   .heat-map-grid {
     grid-template-columns: repeat(4, 1fr);
   }
