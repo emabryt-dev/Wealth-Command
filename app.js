@@ -1604,7 +1604,6 @@ function calculateSalary() {
         document.getElementById('overtimeRate').value = calculatedOvertimeRate.toFixed(2);
     }
     
-    const hourlyRate = basicSalary / standardHours;
     const overtimePay = overtimeHours * calculatedOvertimeRate;
     const totalIncome = basicSalary + overtimePay + kpiBonus + otherIncome;
     const netSalary = totalIncome - deductions;
