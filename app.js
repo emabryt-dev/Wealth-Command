@@ -2512,7 +2512,9 @@ function renderEnhancedComparison() {
     const comparison = AnalyticsEngine.comparePeriods(transactions, period1, period2, type);
     renderComparisonChart(comparison, period1, period2);
     renderChangeAnalysis(comparison, period1, period2);
-    updateComparisonSummary(comparison, period1, period2);
+    
+    // Pass the type parameter to updateComparisonSummary
+    updateComparisonSummary(comparison, period1, period2, type);
 }
 
 function updateComparisonSummary(comparison, period1, period2) {
