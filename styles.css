@@ -1473,10 +1473,6 @@ body.dark-mode .repayment-item {
     margin-right: 5px;
   }
   
-  #syncStatusIcon {
-    font-size: 1.1rem;
-  }
-  
   .planner-month-details {
     flex-direction: column;
     gap: 0.25rem;
