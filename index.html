@@ -205,7 +205,7 @@
     </div>
   </div>
 
-  <div class="main-content container py-3">
+  <div class="main-content container py-3" style="padding-bottom: 100px !important;">
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
       <div class="row g-4">
@@ -261,7 +261,7 @@
         </div>
 
         <!-- Improved Income and Expense Breakdown Cards -->
-        <div class="breakdown-container">
+        <div class="breakdown-container" style="margin-bottom: 80px;">
           <div class="col-12 col-md-6">
             <div class="breakdown-card income-card" onclick="showCategoryTransactions('income', 'all')">
               <div class="card-header-enhanced">
@@ -341,12 +341,20 @@
               <input type="number" class="form-control" id="workHoursPerDay" value="9" step="0.5">
             </div>
             <div class="input-group">
-              <span class="input-group-text">Month Type</span>
+              <span class="input-group-text">Month</span>
               <select class="form-select" id="monthType">
-                <option value="30">30 Days (198 hours)</option>
-                <option value="31">31 Days (207 hours)</option>
-                <option value="28">28 Days (186 hours)</option>
-                <option value="29">29 Days (193.5 hours)</option>
+                <option value="31">January (207 hours)</option>
+                <option value="28">February (180 hours)</option>
+                <option value="31">March (207 hours)</option>
+                <option value="30">April (198 hours)</option>
+                <option value="31">May (207 hours)</option>
+                <option value="30">June (198 hours)</option>
+                <option value="31">July (207 hours)</option>
+                <option value="31">August (207 hours)</option>
+                <option value="30">September (198 hours)</option>
+                <option value="31">October (207 hours)</option>
+                <option value="30">November (198 hours)</option>
+                <option value="31">December (207 hours)</option>
               </select>
             </div>
             <div class="input-group">
@@ -377,6 +385,39 @@
               <button class="btn btn-success btn-sm" onclick="addSalaryToForecast()">
                 <i class="bi bi-calendar-plus"></i> Add to Cash Flow Forecast
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Other Income Sources -->
+        <div class="other-income-card">
+          <div class="other-income-header">
+            <i class="bi bi-cash-stack"></i> Other Income Sources
+          </div>
+          <div class="p-3">
+            <div class="row g-2 mb-3">
+              <div class="col-md-5">
+                <input type="text" class="form-control" id="otherIncomeDesc" placeholder="Income description">
+              </div>
+              <div class="col-md-3">
+                <input type="number" class="form-control" id="otherIncomeAmount" placeholder="Amount" step="0.01">
+              </div>
+              <div class="col-md-3">
+                <input type="date" class="form-control" id="otherIncomeDate">
+              </div>
+              <div class="col-md-1">
+                <button class="btn btn-primary w-100" onclick="addOtherIncome()">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="other-income-list">
+              <div id="otherIncomeList">
+                <!-- Other income sources will be populated here -->
+              </div>
+              <div id="noOtherIncome" class="text-center text-muted p-3">
+                No other income sources added yet.
+              </div>
             </div>
           </div>
         </div>
@@ -628,9 +669,6 @@
             <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button">
               <i class="bi bi-speedometer2"></i> Overview
             </button>
-            <button class="nav-link" id="predictions-tab" data-bs-toggle="pill" data-bs-target="#predictions" type="button">
-              <i class="bi bi-graph-up-arrow"></i> Predictions
-            </button>
             <button class="nav-link" id="trends-tab" data-bs-toggle="pill" data-bs-target="#trends" type="button">
               <i class="bi bi-bar-chart"></i> Trends
             </button>
@@ -688,56 +726,6 @@
                     <div id="expensePiePlaceholder" class="chart-placeholder">
                       <i class="bi bi-cart" style="font-size: 2rem; opacity: 0.5;"></i>
                       <p class="mt-2">No expense data available</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Predictions Tab -->
-          <div class="tab-pane fade" id="predictions" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-magic"></i> Spending Forecast
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="forecastChart" height="300"></canvas>
-                    <div id="forecastPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-graph-up" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Need more data for accurate predictions</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-exclamation-triangle"></i> Risk Alerts
-                  </div>
-                  <div class="chart-body">
-                    <div id="riskAlerts" class="risk-alerts-container">
-                      <!-- Risk alerts will be populated here -->
-                    </div>
-                    <div id="noRiskAlerts" class="chart-placeholder">
-                      <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">No spending risks detected</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="chart-card mt-3">
-                  <div class="chart-header">
-                    <i class="bi bi-calendar-heart"></i> Monthly Projections
-                  </div>
-                  <div class="chart-body">
-                    <div id="monthlyProjections" class="projections-container">
-                      <!-- Monthly projections will be populated here -->
-                    </div>
-                    <div id="noProjections" class="chart-placeholder">
-                      <i class="bi bi-calculator" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Insufficient data for projections</p>
                     </div>
                   </div>
                 </div>
