@@ -12,7 +12,6 @@ let currentChartType = 'category';
 
 // Analytics Charts
 let overviewChart = null;
-let forecastChart = null;
 let healthTrendChart = null;
 let categoryTrendChart = null;
 let comparisonChart = null;
@@ -23,6 +22,7 @@ let plannedExpenses = loadPlannedExpenses();
 let debts = loadDebts();
 let salaryConfigurations = loadSalaryConfigurations();
 let forecastScenarios = loadForecastScenarios();
+let otherIncomeSources = loadOtherIncomeSources();
 
 // Enhanced Google Drive Sync with Two-Tier Backup System
 const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
@@ -130,51 +130,10 @@ const AnalyticsEngine = {
         return 25;
     },
     
-    // Predict next month's spending
-    predictNextMonthSpending: function(transactions) {
-        const now = new Date();
-        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        
-        const recentTransactions = transactions.filter(tx => {
-            const txDate = new Date(tx.date);
-            return txDate >= sixMonthsAgo;
-        });
-        
-        if (recentTransactions.length < 10) return null; // Insufficient data
-        
-        const monthlyExpenses = {};
-        recentTransactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                const month = tx.date.substring(0, 7);
-                monthlyExpenses[month] = (monthlyExpenses[month] || 0) + tx.amount;
-            }
-        });
-        
-        const amounts = Object.values(monthlyExpenses);
-        const avgExpense = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-        
-        // Simple trend calculation
-        let trend = 0;
-        if (amounts.length >= 2) {
-            const lastTwo = amounts.slice(-2);
-            trend = (lastTwo[1] - lastTwo[0]) / lastTwo[0];
-        }
-        
-        const prediction = avgExpense * (1 + trend * 0.5); // Conservative trend application
-        const confidence = Math.min(0.9, amounts.length / 10); // More data = more confidence
-        
-        return {
-            amount: Math.round(prediction),
-            confidence: confidence,
-            trend: trend
-        };
-    },
-    
     // Generate AI insights
     generateInsights: function(transactions, monthlyBudgets) {
         const insights = [];
         const healthScore = this.calculateHealthScore(transactions, monthlyBudgets);
-        const prediction = this.predictNextMonthSpending(transactions);
         
         // Health score insights
         if (healthScore >= 80) {
@@ -237,15 +196,6 @@ const AnalyticsEngine = {
             }
         });
         
-        // Prediction insights
-        if (prediction && prediction.confidence > 0.6) {
-            insights.push({
-                type: 'info',
-                message: `Next month's predicted spending: ${prediction.amount.toLocaleString()} ${currency}`,
-                icon: 'bi-magic'
-            });
-        }
-        
         return insights.slice(0, 5); // Return top 5 insights
     },
     
@@ -302,48 +252,6 @@ const AnalyticsEngine = {
         });
         
         return trends.sort((a, b) => Math.abs(b.trend) - Math.abs(a.trend)); // Sort by magnitude of change
-    },
-    
-    // Generate spending forecast for next 6 months
-    generateForecast: function(transactions) {
-        const now = new Date();
-        const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, 1);
-        
-        const historicalData = {};
-        for (let i = 0; i < 12; i++) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            historicalData[key] = 0;
-        }
-        
-        transactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                const month = tx.date.substring(0, 7);
-                if (historicalData[month] !== undefined) {
-                    historicalData[month] += tx.amount;
-                }
-            }
-        });
-        
-        const amounts = Object.values(historicalData).reverse();
-        const forecast = [];
-        
-        // Simple moving average with trend
-        const window = 3;
-        let sum = amounts.slice(-window).reduce((a, b) => a + b, 0);
-        let lastValue = amounts[amounts.length - 1] || 0;
-        
-        for (let i = 0; i < 6; i++) {
-            const predicted = sum / window;
-            forecast.push(Math.round(predicted));
-            sum = sum - amounts[amounts.length - window + i] + predicted;
-        }
-        
-        return {
-            historical: amounts,
-            forecast: forecast,
-            confidence: Math.min(0.8, amounts.filter(a => a > 0).length / 6)
-        };
     },
     
     // Generate heat map data
@@ -585,7 +493,7 @@ const AnalyticsEngine = {
 
 // Cash Flow Engine
 const CashFlowEngine = {
-    generateForecast: function(transactions, plannedExpenses, salaryConfigs, months = 6, startingBalance = 0) {
+    generateForecast: function(transactions, plannedExpenses, salaryConfigs, otherIncome, months = 6, startingBalance = 0) {
         const forecast = {
             months: [],
             startingBalance: startingBalance,
@@ -603,7 +511,8 @@ const CashFlowEngine = {
             // Calculate projected income
             const salaryIncome = this.calculateSalaryIncome(salaryConfigs, monthKey);
             const recurringIncome = this.calculateRecurringIncome(transactions, monthKey);
-            const totalIncome = salaryIncome + recurringIncome;
+            const otherIncomeAmount = this.calculateOtherIncome(otherIncome, monthKey);
+            const totalIncome = salaryIncome + recurringIncome + otherIncomeAmount;
             
             // Calculate projected expenses
             const plannedExpensesAmount = this.calculatePlannedExpenses(plannedExpenses, monthKey);
@@ -621,6 +530,7 @@ const CashFlowEngine = {
                 endingBalance: endingBalance,
                 salaryIncome: salaryIncome,
                 recurringIncome: recurringIncome,
+                otherIncome: otherIncomeAmount,
                 plannedExpenses: plannedExpensesAmount,
                 recurringExpenses: recurringExpenses
             });
@@ -647,6 +557,12 @@ const CashFlowEngine = {
             
         return historicalIncomes.length > 0 ? 
             historicalIncomes.reduce((a, b) => a + b, 0) / historicalIncomes.length : 0;
+    },
+    
+    calculateOtherIncome: function(otherIncome, monthKey) {
+        return otherIncome
+            .filter(income => income.date.startsWith(monthKey))
+            .reduce((sum, income) => sum + income.amount, 0);
     },
     
     calculatePlannedExpenses: function(plannedExpenses, monthKey) {
@@ -1259,6 +1175,11 @@ async function loadDataFromDrive() {
                 localStorage.setItem('forecastScenarios', JSON.stringify(forecastScenarios));
             }
             
+            if (driveData.otherIncomeSources) {
+                otherIncomeSources = driveData.otherIncomeSources;
+                localStorage.setItem('otherIncomeSources', JSON.stringify(otherIncomeSources));
+            }
+            
             // Update last backup month from loaded data
             if (driveData.lastBackupMonth) {
                 lastBackupMonth = driveData.lastBackupMonth;
@@ -1274,6 +1195,7 @@ async function loadDataFromDrive() {
             renderCategoryList();
             renderPlannedExpenses();
             renderDebts();
+            renderOtherIncome();
             
             showSyncStatus('success', 'Data loaded from Google Drive!');
             console.log('Data loaded from Drive:', {
@@ -1282,7 +1204,8 @@ async function loadDataFromDrive() {
                 currency: currency,
                 monthlyBudgets: Object.keys(monthlyBudgets).length,
                 plannedExpenses: plannedExpenses.length,
-                debts: debts.length
+                debts: debts.length,
+                otherIncomeSources: otherIncomeSources.length
             });
             
             return true;
@@ -1434,9 +1357,10 @@ async function syncDataToDrive() {
             debts,
             salaryConfigurations,
             forecastScenarios,
+            otherIncomeSources,
             lastSync: new Date().toISOString(),
             lastBackupMonth: currentMonth,
-            version: '1.3',
+            version: '1.4',
             app: 'Wealth Command'
         };
         
@@ -1663,18 +1587,25 @@ function calculateSalary() {
     const otherIncome = parseFloat(document.getElementById('otherIncome').value) || 0;
     const deductions = parseFloat(document.getElementById('deductions').value) || 0;
     
-    // Calculate standard monthly hours
+    // Calculate standard monthly hours based on selected month
     let standardHours;
     switch(monthType) {
-        case '30': standardHours = 198; break; // 22 days * 9 hours
         case '31': standardHours = 207; break; // 23 days * 9 hours
-        case '28': standardHours = 186; break; // 20.67 days * 9 hours
-        case '29': standardHours = 193.5; break; // 21.5 days * 9 hours
+        case '30': standardHours = 198; break; // 22 days * 9 hours
+        case '28': standardHours = 180; break; // 20 days * 9 hours
+        case '29': standardHours = 189; break; // 21 days * 9 hours
         default: standardHours = 198;
     }
     
+    // Auto-calculate overtime rate if not set (1x hourly rate)
+    let calculatedOvertimeRate = overtimeRate;
+    if (calculatedOvertimeRate === 0 && basicSalary > 0 && standardHours > 0) {
+        calculatedOvertimeRate = basicSalary / standardHours;
+        document.getElementById('overtimeRate').value = calculatedOvertimeRate.toFixed(2);
+    }
+    
     const hourlyRate = basicSalary / standardHours;
-    const overtimePay = overtimeHours * overtimeRate;
+    const overtimePay = overtimeHours * calculatedOvertimeRate;
     const totalIncome = basicSalary + overtimePay + kpiBonus + otherIncome;
     const netSalary = totalIncome - deductions;
     
@@ -1705,6 +1636,74 @@ function addSalaryToForecast() {
     } else {
         showToast('Please enter valid salary information', 'warning');
     }
+}
+
+// Financial Planner - Other Income Sources
+function addOtherIncome() {
+    const desc = document.getElementById('otherIncomeDesc').value.trim();
+    const amount = parseFloat(document.getElementById('otherIncomeAmount').value);
+    const date = document.getElementById('otherIncomeDate').value;
+    
+    if (!desc || isNaN(amount) || !date) {
+        showToast('Please fill out all fields', 'warning');
+        return;
+    }
+    
+    otherIncomeSources.push({
+        id: Date.now(),
+        description: desc,
+        amount: amount,
+        date: date,
+        type: 'other'
+    });
+    
+    saveOtherIncomeSources(otherIncomeSources);
+    renderOtherIncome();
+    
+    document.getElementById('otherIncomeDesc').value = '';
+    document.getElementById('otherIncomeAmount').value = '';
+    document.getElementById('otherIncomeDate').value = '';
+    
+    showToast('Other income source added', 'success');
+}
+
+function renderOtherIncome() {
+    const container = document.getElementById('otherIncomeList');
+    const placeholder = document.getElementById('noOtherIncome');
+    
+    container.innerHTML = '';
+    
+    if (otherIncomeSources.length === 0) {
+        placeholder.classList.remove('d-none');
+        return;
+    }
+    
+    placeholder.classList.add('d-none');
+    
+    otherIncomeSources.forEach((income, index) => {
+        const incomeElement = document.createElement('div');
+        incomeElement.className = 'income-item';
+        incomeElement.innerHTML = `
+            <div class="income-details">
+                <div class="fw-bold">${income.description}</div>
+                <div class="income-date">${income.date}</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="income-amount">${income.amount.toLocaleString()} ${currency}</span>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeOtherIncome(${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(incomeElement);
+    });
+}
+
+function removeOtherIncome(index) {
+    otherIncomeSources.splice(index, 1);
+    saveOtherIncomeSources(otherIncomeSources);
+    renderOtherIncome();
+    showToast('Other income source removed', 'success');
 }
 
 // Financial Planner - Expense Planner
@@ -1785,7 +1784,8 @@ function generateForecast() {
     const forecast = CashFlowEngine.generateForecast(
         transactions, 
         plannedExpenses, 
-        salaryConfigurations, 
+        salaryConfigurations,
+        otherIncomeSources,
         period, 
         startingBalance
     );
@@ -2719,6 +2719,19 @@ function saveForecastScenarios(scenarios) {
     autoSyncToDrive();
 }
 
+function loadOtherIncomeSources() {
+    try {
+        return JSON.parse(localStorage.getItem('otherIncomeSources')) || [];
+    } catch {
+        return [];
+    }
+}
+
+function saveOtherIncomeSources(sources) {
+    localStorage.setItem('otherIncomeSources', JSON.stringify(sources));
+    autoSyncToDrive();
+}
+
 // ===== EXISTING FUNCTIONALITY (Preserved) =====
 
 // Tab Persistence System
@@ -2779,6 +2792,7 @@ function showTab(tab) {
         // Initialize financial planner tab
         calculateSalary();
         renderPlannedExpenses();
+        renderOtherIncome();
     }
     
     if (tab === "debt-manager") {
@@ -3480,7 +3494,6 @@ function updateUI() {
 // Enhanced Analytics Functions
 function renderEnhancedAnalytics() {
     updateAnalyticsOverview();
-    renderPredictionsTab();
     renderTrendsTab();
     renderComparisonTab();
     updateAIInsights();
@@ -3850,157 +3863,6 @@ function renderPieCharts() {
     }
 }
 
-function renderPredictionsTab() {
-    renderForecastChart();
-    renderRiskAlerts();
-    renderMonthlyProjections();
-}
-
-function renderForecastChart() {
-    const ctx = document.getElementById('forecastChart');
-    if (!ctx) return;
-    
-    const canvasCtx = ctx.getContext('2d');
-    const placeholder = document.getElementById('forecastPlaceholder');
-    
-    if (forecastChart) {
-        forecastChart.destroy();
-    }
-    
-    const forecast = AnalyticsEngine.generateForecast(transactions);
-    
-    if (forecast.confidence < 0.3) {
-        placeholder.classList.remove('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    
-    const months = ['Current', 'Next', '+2', '+3', '+4', '+5'];
-    const historicalLabels = ['-5', '-4', '-3', '-2', '-1', 'Current'];
-    
-    forecastChart = new Chart(canvasCtx, {
-        type: 'line',
-        data: {
-            labels: [...historicalLabels, ...months.slice(1)],
-            datasets: [
-                {
-                    label: 'Historical',
-                    data: [...forecast.historical.slice(-6), ...Array(6).fill(null)],
-                    borderColor: '#6c757d',
-                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
-                    borderDash: [5, 5],
-                    fill: false
-                },
-                {
-                    label: 'Forecast',
-                    data: [...Array(6).fill(null), ...forecast.forecast],
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: '6-Month Spending Forecast'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString() + ' ' + currency;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-function renderRiskAlerts() {
-    const container = document.getElementById('riskAlerts');
-    const placeholder = document.getElementById('noRiskAlerts');
-    
-    if (!container) return;
-    
-    const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
-    const riskAlerts = insights.filter(insight => insight.type === 'warning');
-    
-    container.innerHTML = '';
-    
-    if (riskAlerts.length === 0) {
-        placeholder.classList.remove('d-none');
-        container.classList.add('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    container.classList.remove('d-none');
-    
-    riskAlerts.forEach(alert => {
-        const alertElement = document.createElement('div');
-        alertElement.className = `risk-alert risk-${alert.type}`;
-        alertElement.innerHTML = `
-            <div class="risk-alert-icon">
-                <i class="bi ${alert.icon}"></i>
-            </div>
-            <div class="risk-alert-content">
-                <div class="risk-alert-message">${alert.message}</div>
-            </div>
-        `;
-        container.appendChild(alertElement);
-    });
-}
-
-function renderMonthlyProjections() {
-    const container = document.getElementById('monthlyProjections');
-    const placeholder = document.getElementById('noProjections');
-    
-    if (!container) return;
-    
-    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions);
-    
-    container.innerHTML = '';
-    
-    if (!prediction || prediction.confidence < 0.5) {
-        placeholder.classList.remove('d-none');
-        container.classList.add('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    container.classList.remove('d-none');
-    
-    const projectionElement = document.createElement('div');
-    projectionElement.className = 'projection-item';
-    projectionElement.innerHTML = `
-        <div class="projection-header">
-            <i class="bi bi-arrow-up-right"></i>
-            <span>Next Month Projection</span>
-        </div>
-        <div class="projection-amount">${prediction.amount.toLocaleString()} ${currency}</div>
-        <div class="projection-confidence">
-            <small class="text-muted">Confidence: ${Math.round(prediction.confidence * 100)}%</small>
-        </div>
-        <div class="projection-trend">
-            <small class="${prediction.trend > 0 ? 'text-danger' : 'text-success'}">
-                <i class="bi ${prediction.trend > 0 ? 'bi-arrow-up' : 'bi-arrow-down'}"></i>
-                ${Math.abs(prediction.trend * 100).toFixed(1)}% ${prediction.trend > 0 ? 'increase' : 'decrease'}
-            </small>
-        </div>
-    `;
-    
-    container.appendChild(projectionElement);
-}
-
 function renderTrendsTab() {
     renderHealthTrendChart();
     renderHeatMap();
@@ -4343,7 +4205,6 @@ function showFullAIAnalysis() {
     const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
     const healthScore = AnalyticsEngine.calculateHealthScore(transactions, monthlyBudgets);
     const savingsRate = AnalyticsEngine.calculateSavingsRate(transactions);
-    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions);
     
     let html = `
         <div class="ai-analysis-header">
@@ -4362,8 +4223,8 @@ function showFullAIAnalysis() {
                 </div>
                 <div class="col-4">
                     <div class="ai-metric">
-                        <div class="ai-metric-value">${prediction ? Math.round(prediction.confidence * 100) : '--'}%</div>
-                        <div class="ai-metric-label">Prediction Confidence</div>
+                        <div class="ai-metric-value">${insights.length}</div>
+                        <div class="ai-metric-label">Insights</div>
                     </div>
                 </div>
             </div>
@@ -4387,22 +4248,6 @@ function showFullAIAnalysis() {
     }
     
     html += `</div>`;
-    
-    // Add prediction if available
-    if (prediction && prediction.confidence > 0.6) {
-        html += `
-            <div class="ai-prediction mt-3">
-                <h6><i class="bi bi-magic"></i> Spending Forecast</h6>
-                <div class="prediction-card">
-                    <div class="prediction-amount">${prediction.amount.toLocaleString()} ${currency}</div>
-                    <div class="prediction-label">Expected next month spending</div>
-                    <div class="prediction-note">
-                        <small class="text-muted">Based on ${Math.round(prediction.confidence * 100)}% confidence from your spending patterns</small>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
     
     container.innerHTML = html;
     modal.show();
@@ -4475,7 +4320,8 @@ document.getElementById('exportBtn').onclick = function() {
         plannedExpenses,
         debts,
         salaryConfigurations,
-        forecastScenarios
+        forecastScenarios,
+        otherIncomeSources
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:"application/json"}));
     const a = document.createElement("a");
@@ -4506,6 +4352,7 @@ document.getElementById('importFile').onchange = function(e) {
             if (Array.isArray(data.debts)) debts = data.debts;
             if (Array.isArray(data.salaryConfigurations)) salaryConfigurations = data.salaryConfigurations;
             if (Array.isArray(data.forecastScenarios)) forecastScenarios = data.forecastScenarios;
+            if (Array.isArray(data.otherIncomeSources)) otherIncomeSources = data.otherIncomeSources;
             
             saveTransactions(transactions);
             saveCategories(categories);
@@ -4515,12 +4362,14 @@ document.getElementById('importFile').onchange = function(e) {
             saveDebts(debts);
             saveSalaryConfigurations(salaryConfigurations);
             saveForecastScenarios(forecastScenarios);
+            saveOtherIncomeSources(otherIncomeSources);
             
             renderCategoryList();
             populateSummaryFilters();
             updateUI();
             renderPlannedExpenses();
             renderDebts();
+            renderOtherIncome();
             showToast("Import successful!", "success");
         } catch {
             showToast("Import failed: Invalid file.", "danger");
@@ -4657,6 +4506,7 @@ document.addEventListener('DOMContentLoaded', function() {
         debts = loadDebts();
         salaryConfigurations = loadSalaryConfigurations();
         forecastScenarios = loadForecastScenarios();
+        otherIncomeSources = loadOtherIncomeSources();
         
         calculateMonthlyRollover();
         
@@ -4665,6 +4515,7 @@ document.addEventListener('DOMContentLoaded', function() {
         renderCategoryList();
         renderPlannedExpenses();
         renderDebts();
+        renderOtherIncome();
         
         const autoRolloverToggle = document.getElementById('autoRolloverToggle');
         const allowNegativeToggle = document.getElementById('allowNegativeRollover');
