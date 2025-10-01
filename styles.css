@@ -2,7 +2,7 @@ body {
   background-color: #f8f9fa;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 0.97rem;
-  padding-bottom: 250px;
+  padding-bottom: 90px;
 }
 
 .navbar {
@@ -160,8 +160,8 @@ body {
 
 /* FIXED: Improved Main Content Layout */
 .main-content {
-  min-height: calc(100vh - 140px);
-  padding-bottom: 250px;
+  min-height: 100vh;
+  padding-bottom: 0px;
   display: flex;
   flex-direction: column;
 }
@@ -170,7 +170,8 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 200px);
+  min-height: auto;
+  padding-bottom: 80px;
 }
 
 /* FIXED: Improved Card Layout - Flexible heights */
@@ -178,10 +179,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   flex: 1;
-  min-height: 320px;
-  max-height: 500px;
+  min-height: auto;
+  max-height: none;
 }
 
 .breakdown-card {
