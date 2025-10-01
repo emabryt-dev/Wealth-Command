@@ -2,7 +2,7 @@ body {
   background-color: #f8f9fa;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 0.97rem;
-  padding-bottom: 180px;
+  padding-bottom: 250px;
 }
 
 .navbar {
@@ -162,7 +162,7 @@ body {
 /* FIXED: Improved Main Content Layout */
 .main-content {
   min-height: calc(100vh - 140px);
-  padding-bottom: 180px;
+  padding-bottom: 250px;
   display: flex;
   flex-direction: column;
 }
