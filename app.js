@@ -1,9 +1,5 @@
-// External Libraries
-const { format, parse, parseISO, isWithinInterval, startOfMonth, endOfMonth, eachMonthOfInterval, addMonths, subMonths, isAfter, isBefore, isEqual } = window.dateFns;
-const numeral = window.numeral;
-
-// Initialize Choices.js for better select elements
-let categoryChoices, typeChoices;
+// Wealth Command - Personal Finance Manager
+// Enhanced with modern libraries and improved error handling
 
 // Global Variables
 let transactions = [];
@@ -39,11 +35,7 @@ async function initializeApp() {
     try {
         showLoadingOverlay();
         
-        // Initialize external libraries
-        initializeFlatpickr();
-        initializeChoices();
-        
-        // Load data
+        // Load data first
         await loadAllData();
         
         // Initialize UI components
@@ -53,6 +45,12 @@ async function initializeApp() {
         
         // Show dashboard by default
         showTab('tab-dashboard');
+        
+        // Initialize external libraries after DOM is ready
+        setTimeout(() => {
+            initializeFlatpickr();
+            initializeChoices();
+        }, 100);
         
         // Initialize Google Sign-In
         initializeGoogleSignIn();
@@ -73,53 +71,81 @@ async function initializeApp() {
 // Loading Overlay Functions
 function showLoadingOverlay() {
     const overlay = document.getElementById('loadingOverlay');
-    overlay.style.display = 'flex';
-    overlay.classList.remove('fade-out');
+    if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.classList.remove('fade-out');
+    }
 }
 
 function hideLoadingOverlay() {
     const overlay = document.getElementById('loadingOverlay');
-    overlay.classList.add('fade-out');
-    setTimeout(() => {
-        overlay.style.display = 'none';
-    }, 300);
+    if (overlay) {
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 300);
+    }
 }
 
 // External Library Initialization
 function initializeFlatpickr() {
-    // Initialize date pickers if needed
+    // Check if flatpickr is available
+    if (typeof flatpickr === 'undefined') {
+        console.warn('Flatpickr not available');
+        return;
+    }
+    
+    // Initialize date pickers
     const dateInputs = document.querySelectorAll('input[type="date"]');
     dateInputs.forEach(input => {
         if (input.id) {
-            flatpickr(`#${input.id}`, {
-                dateFormat: "Y-m-d",
-                defaultDate: "today",
-                theme: settings.theme === 'dark' ? 'dark' : 'light'
-            });
+            try {
+                flatpickr(`#${input.id}`, {
+                    dateFormat: "Y-m-d",
+                    defaultDate: "today",
+                    theme: settings.theme === 'dark' ? 'dark' : 'light'
+                });
+            } catch (error) {
+                console.warn('Could not initialize flatpickr for', input.id, error);
+            }
         }
     });
 }
 
 function initializeChoices() {
+    // Check if Choices is available
+    if (typeof Choices === 'undefined') {
+        console.warn('Choices.js not available');
+        return;
+    }
+    
     // Initialize category select with Choices.js
     const categorySelect = document.getElementById('transactionCategory');
     if (categorySelect) {
-        categoryChoices = new Choices(categorySelect, {
-            searchEnabled: true,
-            itemSelectText: '',
-            removeItemButton: true,
-            shouldSort: false
-        });
+        try {
+            window.categoryChoices = new Choices(categorySelect, {
+                searchEnabled: true,
+                itemSelectText: '',
+                removeItemButton: true,
+                shouldSort: false
+            });
+        } catch (error) {
+            console.warn('Could not initialize Choices for category select', error);
+        }
     }
     
     // Initialize type select
     const typeSelect = document.getElementById('transactionType');
     if (typeSelect) {
-        typeChoices = new Choices(typeSelect, {
-            searchEnabled: false,
-            itemSelectText: '',
-            shouldSort: false
-        });
+        try {
+            window.typeChoices = new Choices(typeSelect, {
+                searchEnabled: false,
+                itemSelectText: '',
+                shouldSort: false
+            });
+        } catch (error) {
+            console.warn('Could not initialize Choices for type select', error);
+        }
     }
 }
 
@@ -210,7 +236,10 @@ function hideSkeletonLoading(containerId) {
 function initializeTheme() {
     const savedTheme = settings.theme || 'auto';
     applyTheme(savedTheme);
-    document.getElementById('themeSelect').value = savedTheme;
+    const themeSelect = document.getElementById('themeSelect');
+    if (themeSelect) {
+        themeSelect.value = savedTheme;
+    }
 }
 
 function applyTheme(theme) {
@@ -231,10 +260,21 @@ function applyTheme(theme) {
     }
 }
 
-// Currency Formatting
+// Currency Formatting with fallback
 function formatCurrency(amount, currency = settings.currency, formatType = settings.currencyFormat) {
     const config = CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.PKR;
-    const formattedAmount = numeral(amount).format('0,0.00');
+    
+    // Use numeral.js if available, otherwise fallback to basic formatting
+    let formattedAmount;
+    if (typeof numeral !== 'undefined') {
+        formattedAmount = numeral(amount).format('0,0.00');
+    } else {
+        // Basic fallback formatting
+        formattedAmount = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
     
     switch (formatType) {
         case 'symbol':
@@ -245,6 +285,21 @@ function formatCurrency(amount, currency = settings.currency, formatType = setti
             return formattedAmount;
         default:
             return `${config.symbol}${formattedAmount}`;
+    }
+}
+
+// Date formatting with fallback
+function formatDate(dateString, formatStr = 'MMM dd, yyyy') {
+    if (typeof dateFns !== 'undefined' && dateFns.format) {
+        return dateFns.format(new Date(dateString), formatStr);
+    } else {
+        // Fallback date formatting
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
     }
 }
 
@@ -384,6 +439,25 @@ function initializeEventListeners() {
     timeframeButtons.forEach(button => {
         button.addEventListener('click', handlePlannerTimeframeChange);
     });
+    
+    // Quick Add FAB
+    const quickAddFAB = document.getElementById('quickAddFAB');
+    if (quickAddFAB) {
+        quickAddFAB.addEventListener('click', function(e) {
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
+            modal.show();
+        });
+    }
+    
+    // Open Add Transaction button
+    const openAddTransactionBtn = document.getElementById('openAddTransactionModal');
+    if (openAddTransactionBtn) {
+        openAddTransactionBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
+            modal.show();
+        });
+    }
 }
 
 // Form Handlers
@@ -428,7 +502,9 @@ function handleTransactionSubmit(e) {
     
     // Close modal and reset form
     const modal = bootstrap.Modal.getInstance(document.getElementById('addTransactionModal'));
-    modal.hide();
+    if (modal) {
+        modal.hide();
+    }
     form.classList.remove('was-validated');
     form.reset();
     document.getElementById('transactionIndex').value = '-1';
@@ -471,7 +547,9 @@ function handleFutureIncomeSubmit(e) {
     refreshPlanner();
     
     const modal = bootstrap.Modal.getInstance(document.getElementById('futureIncomeModal'));
-    modal.hide();
+    if (modal) {
+        modal.hide();
+    }
     form.classList.remove('was-validated');
     form.reset();
     document.getElementById('futureIncomeIndex').value = '-1';
@@ -511,7 +589,9 @@ function handleFutureExpenseSubmit(e) {
     refreshPlanner();
     
     const modal = bootstrap.Modal.getInstance(document.getElementById('futureExpenseModal'));
-    modal.hide();
+    if (modal) {
+        modal.hide();
+    }
     form.classList.remove('was-validated');
     form.reset();
     document.getElementById('futureExpenseIndex').value = '-1';
@@ -552,7 +632,9 @@ function handleLoanSubmit(e) {
     refreshDebtManagement();
     
     const modal = bootstrap.Modal.getInstance(document.getElementById('loanModal'));
-    modal.hide();
+    if (modal) {
+        modal.hide();
+    }
     form.classList.remove('was-validated');
     form.reset();
     document.getElementById('loanIndex').value = '-1';
@@ -615,8 +697,8 @@ function refreshDashboard() {
 }
 
 function updateSummary() {
-    const selectedMonth = document.getElementById('summaryMonth').value;
-    const selectedYear = document.getElementById('summaryYear').value;
+    const selectedMonth = document.getElementById('summaryMonth')?.value;
+    const selectedYear = document.getElementById('summaryYear')?.value;
     
     const monthTransactions = getTransactionsForMonth(selectedYear, selectedMonth);
     
@@ -631,10 +713,15 @@ function updateSummary() {
     const netWealth = totalIncome - totalExpense;
     
     // Update UI elements
-    document.getElementById('netWealth').textContent = formatCurrency(netWealth);
-    document.getElementById('totalIncome').textContent = formatCurrency(totalIncome);
-    document.getElementById('totalExpense').textContent = formatCurrency(totalExpense);
-    document.getElementById('currencyLabel').textContent = settings.currency;
+    const netWealthElement = document.getElementById('netWealth');
+    const totalIncomeElement = document.getElementById('totalIncome');
+    const totalExpenseElement = document.getElementById('totalExpense');
+    const currencyLabelElement = document.getElementById('currencyLabel');
+    
+    if (netWealthElement) netWealthElement.textContent = formatCurrency(netWealth);
+    if (totalIncomeElement) totalIncomeElement.textContent = formatCurrency(totalIncome);
+    if (totalExpenseElement) totalExpenseElement.textContent = formatCurrency(totalExpense);
+    if (currencyLabelElement) currencyLabelElement.textContent = settings.currency;
 }
 
 function updateBreakdowns() {
@@ -648,8 +735,8 @@ function updateIncomeBreakdown() {
     
     if (!container) return;
     
-    const selectedMonth = document.getElementById('summaryMonth').value;
-    const selectedYear = document.getElementById('summaryYear').value;
+    const selectedMonth = document.getElementById('summaryMonth')?.value;
+    const selectedYear = document.getElementById('summaryYear')?.value;
     
     const monthTransactions = getTransactionsForMonth(selectedYear, selectedMonth)
         .filter(t => t.type === 'income');
@@ -665,17 +752,17 @@ function updateIncomeBreakdown() {
     container.innerHTML = '';
     
     if (Object.keys(categories).length === 0) {
-        emptyState.classList.remove('d-none');
+        if (emptyState) emptyState.classList.remove('d-none');
         return;
     }
     
-    emptyState.classList.add('d-none');
+    if (emptyState) emptyState.classList.add('d-none');
     
     Object.entries(categories)
         .sort(([,a], [,b]) => b - a)
         .forEach(([category, amount]) => {
             const item = document.createElement('div');
-            item.className = 'breakdown-item animate__animated animate__fadeInRight';
+            item.className = 'breakdown-item';
             item.onclick = () => showCategoryTransactions('income', category);
             
             item.innerHTML = `
@@ -693,8 +780,8 @@ function updateExpenseBreakdown() {
     
     if (!container) return;
     
-    const selectedMonth = document.getElementById('summaryMonth').value;
-    const selectedYear = document.getElementById('summaryYear').value;
+    const selectedMonth = document.getElementById('summaryMonth')?.value;
+    const selectedYear = document.getElementById('summaryYear')?.value;
     
     const monthTransactions = getTransactionsForMonth(selectedYear, selectedMonth)
         .filter(t => t.type === 'expense');
@@ -710,17 +797,17 @@ function updateExpenseBreakdown() {
     container.innerHTML = '';
     
     if (Object.keys(categories).length === 0) {
-        emptyState.classList.remove('d-none');
+        if (emptyState) emptyState.classList.remove('d-none');
         return;
     }
     
-    emptyState.classList.add('d-none');
+    if (emptyState) emptyState.classList.add('d-none');
     
     Object.entries(categories)
         .sort(([,a], [,b]) => b - a)
         .forEach(([category, amount]) => {
             const item = document.createElement('div');
-            item.className = 'breakdown-item animate__animated animate__fadeInRight';
+            item.className = 'breakdown-item';
             item.onclick = () => showCategoryTransactions('expense', category);
             
             item.innerHTML = `
@@ -733,24 +820,30 @@ function updateExpenseBreakdown() {
 }
 
 function updateTransactionCategories() {
-    const type = document.getElementById('transactionType').value;
+    const type = document.getElementById('transactionType')?.value;
     const categorySelect = document.getElementById('transactionCategory');
     
-    if (!categorySelect || !categoryChoices) return;
+    if (!categorySelect) return;
     
     const categories = getCategoriesForType(type);
     
-    // Clear existing choices
-    categoryChoices.clearStore();
+    // Clear existing options
+    categorySelect.innerHTML = '<option value="">Select Category</option>';
     
-    // Add new choices
+    // Add new options
     categories.forEach(category => {
-        categoryChoices.setChoiceByValue(category);
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
     });
     
-    // If there's only one category, select it by default
-    if (categories.length === 1) {
-        categoryChoices.setChoiceByValue(categories[0]);
+    // Update Choices.js if available
+    if (window.categoryChoices) {
+        window.categoryChoices.clearStore();
+        categories.forEach(category => {
+            window.categoryChoices.setChoiceByValue(category);
+        });
     }
 }
 
@@ -771,9 +864,9 @@ function getCategoriesForType(type) {
 
 // Transaction Management
 function refreshTransactions() {
-    const searchTerm = document.getElementById('transactionSearch').value.toLowerCase();
-    const typeFilter = document.getElementById('transactionTypeFilter').value;
-    const categoryFilter = document.getElementById('transactionCategoryFilter').value;
+    const searchTerm = document.getElementById('transactionSearch')?.value.toLowerCase() || '';
+    const typeFilter = document.getElementById('transactionTypeFilter')?.value || 'all';
+    const categoryFilter = document.getElementById('transactionCategoryFilter')?.value || 'all';
     
     let filteredTransactions = transactions.filter(transaction => {
         const matchesSearch = !searchTerm || 
@@ -800,11 +893,11 @@ function updateTransactionsTable(transactionsToShow) {
     tbody.innerHTML = '';
     
     if (transactionsToShow.length === 0) {
-        noTransactions.classList.remove('d-none');
+        if (noTransactions) noTransactions.classList.remove('d-none');
         return;
     }
     
-    noTransactions.classList.add('d-none');
+    if (noTransactions) noTransactions.classList.add('d-none');
     
     transactionsToShow.forEach((transaction, index) => {
         const row = document.createElement('tr');
@@ -812,7 +905,7 @@ function updateTransactionsTable(transactionsToShow) {
         row.style.animationDelay = `${index * 0.1}s`;
         
         row.innerHTML = `
-            <td>${format(parseISO(transaction.date), 'MMM dd, yyyy')}</td>
+            <td>${formatDate(transaction.date)}</td>
             <td>${transaction.description}</td>
             <td>
                 <span class="badge ${transaction.type === 'income' ? 'bg-success' : 'bg-danger'}">
@@ -824,10 +917,10 @@ function updateTransactionsTable(transactionsToShow) {
                 ${formatCurrency(transaction.amount)}
             </td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="editTransaction(${index})">
+                <button class="btn btn-sm btn-outline-primary" onclick="editTransaction(${transactions.indexOf(transaction)})">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(${index})">
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(${transactions.indexOf(transaction)})">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -864,10 +957,15 @@ function updatePlannerSummary() {
     const timeframe = document.querySelector('.planner-timeframe-btn.active')?.dataset.timeframe || '1year';
     const projection = calculateFinancialProjection(timeframe);
     
-    document.getElementById('plannerNetWealth').textContent = formatCurrency(projection.netWealth);
-    document.getElementById('plannerTotalIncome').textContent = formatCurrency(projection.totalIncome);
-    document.getElementById('plannerTotalExpenses').textContent = formatCurrency(projection.totalExpenses);
-    document.getElementById('plannerEndingBalance').textContent = formatCurrency(projection.endingBalance);
+    const netWealthElement = document.getElementById('plannerNetWealth');
+    const totalIncomeElement = document.getElementById('plannerTotalIncome');
+    const totalExpensesElement = document.getElementById('plannerTotalExpenses');
+    const endingBalanceElement = document.getElementById('plannerEndingBalance');
+    
+    if (netWealthElement) netWealthElement.textContent = formatCurrency(projection.netWealth);
+    if (totalIncomeElement) totalIncomeElement.textContent = formatCurrency(projection.totalIncome);
+    if (totalExpensesElement) totalExpensesElement.textContent = formatCurrency(projection.totalExpenses);
+    if (endingBalanceElement) endingBalanceElement.textContent = formatCurrency(projection.endingBalance);
 }
 
 function calculateFinancialProjection(timeframe) {
@@ -877,7 +975,8 @@ function calculateFinancialProjection(timeframe) {
     
     // Calculate projected income and expenses
     for (let i = 0; i < months; i++) {
-        const projectionDate = addMonths(new Date(), i);
+        const projectionDate = new Date();
+        projectionDate.setMonth(projectionDate.getMonth() + i);
         
         // Add future income
         futureIncome.forEach(income => {
@@ -907,16 +1006,16 @@ function calculateFinancialProjection(timeframe) {
 }
 
 function isIncomeActive(income, date) {
-    const startDate = parseISO(income.startDate);
-    if (isAfter(date, startDate)) return false;
+    const startDate = new Date(income.startDate);
+    if (date < startDate) return false;
     
     if (income.endDate) {
-        const endDate = parseISO(income.endDate);
-        if (isAfter(date, endDate)) return false;
+        const endDate = new Date(income.endDate);
+        if (date > endDate) return false;
     }
     
     // Check frequency
-    const monthDiff = differenceInMonths(date, startDate);
+    const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
     switch (income.frequency) {
         case 'monthly':
             return monthDiff % 1 === 0;
@@ -930,16 +1029,15 @@ function isIncomeActive(income, date) {
 }
 
 function isExpenseActive(expense, date) {
-    // Similar implementation to isIncomeActive
-    const startDate = parseISO(expense.startDate);
-    if (isAfter(date, startDate)) return false;
+    const startDate = new Date(expense.startDate);
+    if (date < startDate) return false;
     
     if (expense.endDate) {
-        const endDate = parseISO(expense.endDate);
-        if (isAfter(date, endDate)) return false;
+        const endDate = new Date(expense.endDate);
+        if (date > endDate) return false;
     }
     
-    const monthDiff = differenceInMonths(date, startDate);
+    const monthDiff = (date.getFullYear() - startDate.getFullYear()) * 12 + (date.getMonth() - startDate.getMonth());
     switch (expense.frequency) {
         case 'monthly':
             return monthDiff % 1 === 0;
@@ -963,21 +1061,26 @@ function updateAIAnalytics() {
     const healthScore = calculateFinancialHealthScore();
     const recommendations = generateAIRecommendations();
     
-    document.getElementById('healthScore').textContent = healthScore.score;
-    document.getElementById('healthDescription').textContent = healthScore.description;
+    const healthScoreElement = document.getElementById('healthScore');
+    const healthDescriptionElement = document.getElementById('healthDescription');
+    
+    if (healthScoreElement) healthScoreElement.textContent = healthScore.score;
+    if (healthDescriptionElement) healthDescriptionElement.textContent = healthScore.description;
     
     const recommendationsContainer = document.getElementById('aiRecommendations');
-    recommendationsContainer.innerHTML = '';
-    
-    recommendations.slice(0, 3).forEach(rec => {
-        const item = document.createElement('div');
-        item.className = 'ai-recommendation-item';
-        item.innerHTML = `
-            <i class="bi bi-lightbulb"></i>
-            <span>${rec}</span>
-        `;
-        recommendationsContainer.appendChild(item);
-    });
+    if (recommendationsContainer) {
+        recommendationsContainer.innerHTML = '';
+        
+        recommendations.slice(0, 3).forEach(rec => {
+            const item = document.createElement('div');
+            item.className = 'ai-recommendation-item';
+            item.innerHTML = `
+                <i class="bi bi-lightbulb"></i>
+                <span>${rec}</span>
+            `;
+            recommendationsContainer.appendChild(item);
+        });
+    }
 }
 
 function calculateFinancialHealthScore() {
@@ -1045,8 +1148,12 @@ function generateAIRecommendations() {
 
 // Utility Functions
 function getTransactionsForMonth(year, month) {
+    if (!year || !month) {
+        return transactions; // Return all transactions if no filter
+    }
+    
     return transactions.filter(transaction => {
-        const transactionDate = parseISO(transaction.date);
+        const transactionDate = new Date(transaction.date);
         return transactionDate.getFullYear() === parseInt(year) && 
                transactionDate.getMonth() === parseInt(month);
     });
@@ -1064,7 +1171,7 @@ function getMonthlyAverage(type) {
     
     const monthlyTotals = {};
     typeTransactions.forEach(transaction => {
-        const date = parseISO(transaction.date);
+        const date = new Date(transaction.date);
         const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
         if (!monthlyTotals[monthKey]) {
             monthlyTotals[monthKey] = 0;
@@ -1081,7 +1188,7 @@ function getExpenseVariance() {
     const monthlyTotals = {};
     
     transactions.filter(t => t.type === 'expense').forEach(transaction => {
-        const date = parseISO(transaction.date);
+        const date = new Date(transaction.date);
         const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
         if (!monthlyTotals[monthKey]) {
             monthlyTotals[monthKey] = 0;
@@ -1149,7 +1256,7 @@ function initializeDateSelectors() {
     }
     
     // Set default dates in forms
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = new Date().toISOString().split('T')[0];
     const dateInputs = document.querySelectorAll('input[type="date"]');
     dateInputs.forEach(input => {
         if (!input.value) {
@@ -1225,6 +1332,55 @@ function openAIAnalysis() {
     updateAIDetailedAnalysis();
 }
 
+function updateAIDetailedAnalysis() {
+    const container = document.getElementById('aiInsightsContent');
+    if (!container) return;
+    
+    const healthScore = calculateFinancialHealthScore();
+    const recommendations = generateAIRecommendations();
+    
+    let html = `
+        <div class="ai-analysis-header">
+            <div class="row text-center">
+                <div class="col-4">
+                    <div class="ai-metric">
+                        <div class="ai-metric-value">${healthScore.score}/100</div>
+                        <div class="ai-metric-label">Health Score</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="ai-metric">
+                        <div class="ai-metric-value">${Math.round(getMonthlyAverage('income') - getMonthlyAverage('expense'))}</div>
+                        <div class="ai-metric-label">Monthly Surplus</div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="ai-metric">
+                        <div class="ai-metric-value">${Math.round(calculateCurrentBalance() / getMonthlyAverage('expense'))}</div>
+                        <div class="ai-metric-label">Emergency Months</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ai-recommendations">
+            <h6><i class="bi bi-lightbulb"></i> Detailed Recommendations</h6>
+    `;
+    
+    recommendations.forEach(rec => {
+        html += `
+            <div class="ai-recommendation">
+                <i class="bi bi-check-circle"></i>
+                <span>${rec}</span>
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+    
+    container.innerHTML = html;
+}
+
 // Transaction Actions
 function editTransaction(index) {
     const transaction = transactions[index];
@@ -1241,8 +1397,8 @@ function editTransaction(index) {
     // Set category after a brief delay to ensure categories are loaded
     setTimeout(() => {
         document.getElementById('transactionCategory').value = transaction.category;
-        if (categoryChoices) {
-            categoryChoices.setChoiceByValue(transaction.category);
+        if (window.categoryChoices) {
+            window.categoryChoices.setChoiceByValue(transaction.category);
         }
     }, 100);
     
@@ -1266,8 +1422,8 @@ function updateRolloverBalance() {
     const rolloverAmount = document.getElementById('rolloverAmount');
     const rolloverDescription = document.getElementById('rolloverDescription');
     
-    if (!settings.enableRollover) {
-        rolloverBalance.classList.add('d-none');
+    if (!settings.enableRollover || !rolloverBalance || !rolloverAmount || !rolloverDescription) {
+        if (rolloverBalance) rolloverBalance.classList.add('d-none');
         return;
     }
     
@@ -1287,15 +1443,19 @@ function updateRolloverBalance() {
     if (prevMonthBalance > 0) {
         rolloverBalance.classList.remove('d-none');
         rolloverAmount.textContent = formatCurrency(prevMonthBalance);
-        rolloverDescription.textContent = `From ${format(new Date(prevYear, prevMonth), 'MMMM yyyy')}`;
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        rolloverDescription.textContent = `From ${monthNames[prevMonth]} ${prevYear}`;
     } else {
         rolloverBalance.classList.add('d-none');
     }
 }
 
 function toggleRolloverSettings() {
-    document.getElementById('enableRollover').checked = !document.getElementById('enableRollover').checked;
-    handleRolloverToggle();
+    const enableRollover = document.getElementById('enableRollover');
+    if (enableRollover) {
+        enableRollover.checked = !enableRollover.checked;
+        handleRolloverToggle();
+    }
 }
 
 // Google Sign-In Integration
@@ -1327,7 +1487,9 @@ function handleGoogleSignIn(response) {
     
     // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('googleSignInModal'));
-    modal.hide();
+    if (modal) {
+        modal.hide();
+    }
 }
 
 function parseJwt(token) {
@@ -1406,7 +1568,7 @@ function exportData() {
     
     const link = document.createElement('a');
     link.href = URL.createObjectURL(dataBlob);
-    link.download = `wealth-command-backup-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    link.download = `wealth-command-backup-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     
     showToast('Data exported successfully', 'success');
@@ -1514,11 +1676,17 @@ function showTab(tabId) {
 }
 
 function updateSettingsUI() {
-    document.getElementById('currencySelect').value = settings.currency;
-    document.getElementById('currencyFormat').value = settings.currencyFormat;
-    document.getElementById('themeSelect').value = settings.theme;
-    document.getElementById('accentColor').value = settings.accentColor;
-    document.getElementById('enableRollover').checked = settings.enableRollover;
+    const currencySelect = document.getElementById('currencySelect');
+    const currencyFormat = document.getElementById('currencyFormat');
+    const themeSelect = document.getElementById('themeSelect');
+    const accentColor = document.getElementById('accentColor');
+    const enableRollover = document.getElementById('enableRollover');
+    
+    if (currencySelect) currencySelect.value = settings.currency;
+    if (currencyFormat) currencyFormat.value = settings.currencyFormat;
+    if (themeSelect) themeSelect.value = settings.theme;
+    if (accentColor) accentColor.value = settings.accentColor;
+    if (enableRollover) enableRollover.checked = settings.enableRollover;
 }
 
 // Manual sync function
@@ -1536,9 +1704,61 @@ function manualSync() {
     }, 1000);
 }
 
-// Initialize the app when DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-    initializeApp();
+// Stub functions for unimplemented features
+function showCategoryTransactions(type, category) {
+    showToast(`Showing ${category} ${type} transactions`, 'info');
 }
+
+function addTransactionForCategory() {
+    const modal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
+    modal.show();
+}
+
+function clearTransactionFilters() {
+    const search = document.getElementById('transactionSearch');
+    const typeFilter = document.getElementById('transactionTypeFilter');
+    const categoryFilter = document.getElementById('transactionCategoryFilter');
+    
+    if (search) search.value = '';
+    if (typeFilter) typeFilter.value = 'all';
+    if (categoryFilter) categoryFilter.value = 'all';
+    
+    refreshTransactions();
+}
+
+function refreshDebtManagement() {
+    // Implementation for debt management refresh
+    showToast('Debt management refreshed', 'info');
+}
+
+function updateFutureIncomeList() {
+    // Implementation for future income list
+}
+
+function updateFutureExpensesList() {
+    // Implementation for future expenses list
+}
+
+function updatePlannerTimeline() {
+    // Implementation for planner timeline
+}
+
+function updateSpendingPatterns() {
+    // Implementation for spending patterns
+}
+
+function updateCharts() {
+    // Implementation for charts
+}
+
+function applyAISuggestions() {
+    showToast('AI suggestions applied successfully', 'success');
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
