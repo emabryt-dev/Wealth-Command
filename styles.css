@@ -2,7 +2,7 @@ body {
   background-color: #f8f9fa;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 0.97rem;
-  padding-bottom: 180px;
+  padding-bottom: 250px;
 }
 
 .navbar {
@@ -83,8 +83,8 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
-  width: 9%; /* Changed from max-width: 500px */
-  left: 2%; /* Changed from left: 50% */
+  width: 95%; /* Changed from max-width: 500px */
+  left: 2.5%; /* Changed from left: 50% */
   border-radius: 20px 20px 0 0;
   transform: none; /* Remove the transform */
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
@@ -161,7 +161,7 @@ body {
 /* FIXED: Improved Main Content Layout */
 .main-content {
   min-height: calc(100vh - 140px);
-  padding-bottom: 180px;
+  padding-bottom: 250px;
   display: flex;
   flex-direction: column;
 }
