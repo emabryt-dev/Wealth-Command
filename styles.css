@@ -161,7 +161,7 @@ body {
 /* FIXED: Improved Main Content Layout */
 .main-content {
   min-height: 100vh;
-  padding-bottom: 0px;
+  padding-bottom: 100px;
   display: flex;
   flex-direction: column;
 }
