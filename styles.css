@@ -85,19 +85,13 @@ body {
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   width: 95%; /* Changed from max-width: 500px */
   left: 2.5%; /* Changed from left: 50% */
-  border-radius: 20px 20px 0 0;
+  border-radius: 20px 20px 20px 20px;
   transform: none; /* Remove the transform */
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
   height: 70px;
   position: fixed;
-  bottom: 0;
+  bottom: 5px;
   z-index: 1030;
-}
-
-.navbar-spacer {
-  height: 80px;
-  width: 100%;
-  flex-shrink: 0;
 }
 
 .nav-btn {
