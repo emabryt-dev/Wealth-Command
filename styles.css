@@ -161,7 +161,7 @@ body {
 /* FIXED: Improved Main Content Layout */
 .main-content {
   min-height: 100vh;
-  padding-bottom: 100px;
+  padding-bottom: 0px;
   display: flex;
   flex-direction: column;
 }
@@ -1455,7 +1455,7 @@ body.dark-mode .repayment-item {
   
   .breakdown-container {
     min-height: 200px;
-    max-height: 350px;
+    max-height: 400px;
   }
   
   .heat-map-grid {
