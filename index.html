@@ -1,1135 +1,1629 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Wealth Command</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Google Sign-In Meta -->
-  <meta name="google-signin-client_id" content="86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com">
-  <!-- Bootstrap 5 CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="manifest" href="manifest.json">
-  <!-- Google Identity Services -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-</head>
-<body>
-  <!-- Top Navbar with Profile Picture -->
-  <nav class="navbar navbar-dark bg-primary">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
-      <a class="navbar-brand" href="#">Wealth Command</a>
-      <div class="d-flex align-items-center gap-2">
-        </div>
-        
-        <!-- Profile Picture -->
-        <div class="dropdown">
-          <button class="btn p-0 border-0" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-            <div id="profilePicture" class="profile-pic-container">
-              <i class="bi bi-person-circle profile-icon"></i>
-            </div>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-            <li id="signedInUser" class="dropdown-item-text d-none">
-              <small class="text-muted">Signed in as:</small>
-              <div id="userEmail" class="fw-bold"></div>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li id="signInOption">
-              <a class="dropdown-item" href="#" onclick="showGoogleSignIn()">
-                <i class="bi bi-google me-2"></i>Sign in with Google
-              </a>
-            </li>
-            <li id="signOutOption" class="d-none">
-              <a class="dropdown-item" href="#" onclick="googleSignOut()">
-                <i class="bi bi-box-arrow-right me-2"></i>Sign out
-              </a>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-              <a class="dropdown-item" href="#" onclick="manualSync()">
-                <i class="bi bi-cloud-arrow-up me-2"></i>Sync Now
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </nav>
+// UI Management and DOM Manipulation
 
-  <!-- Toast Container for Important Messages -->
-  <div class="toast-container" id="toastContainer"></div>
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+});
 
-  <!-- Google Sign-In Modal -->
-  <div class="modal fade" id="googleSignInModal" tabindex="-1" aria-labelledby="googleSignInModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="googleSignInModalLabel">Sign In</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body text-center">
-          <p>Sign in to sync your data across devices</p>
-          <div id="googleSignInButton" class="d-inline-block"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Category Transactions Modal -->
-  <div class="modal fade category-transactions-modal" id="categoryTransactionsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="categoryTransactionsTitle">
-            <i class="bi bi-list-ul"></i> Category Transactions
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <span id="categoryTransactionsInfo" class="text-muted"></span>
-            <span id="categoryTotalAmount" class="fw-bold fs-5"></span>
-          </div>
-          <div class="category-transactions-list" id="categoryTransactionsList">
-            <!-- Transactions will be populated here -->
-          </div>
-          <div id="noCategoryTransactions" class="text-center text-muted p-3 d-none">
-            No transactions found for this category in the selected period.
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" onclick="addTransactionForCategory()">
-            <i class="bi bi-plus-circle"></i> Add Transaction
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- AI Insights Modal -->
-  <div class="modal fade" id="aiInsightsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-robot"></i> AI Insights & Recommendations</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div id="aiInsightsContent">
-            <!-- AI insights will be populated here -->
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" onclick="applyAISuggestions()">
-            <i class="bi bi-check-circle"></i> Apply Suggestions
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Future Income Modal -->
-  <div class="modal fade" id="futureIncomeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form id="futureIncomeForm" autocomplete="off">
-          <div class="modal-header">
-            <h5 class="modal-title" id="futureIncomeModalLabel">Add Future Income</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="futureIncomeIndex" value="-1">
-            <div class="mb-3">
-              <label for="futureIncomeDescription" class="form-label">Description</label>
-              <input type="text" class="form-control" id="futureIncomeDescription" required>
-            </div>
-            <div class="row g-2">
-              <div class="col-md-6">
-                <label for="futureIncomeType" class="form-label">Type</label>
-                <select class="form-select" id="futureIncomeType" required>
-                  <option value="paycheck">Paycheck</option>
-                  <option value="loan">Loan</option>
-                  <option value="sale">Asset Sale</option>
-                  <option value="committee">Committee Payout</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="futureIncomeAmount" class="form-label">Amount</label>
-                <input type="number" class="form-control" id="futureIncomeAmount" required step="0.01">
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-md-6">
-                <label for="futureIncomeFrequency" class="form-label">Frequency</label>
-                <select class="form-select" id="futureIncomeFrequency" required>
-                  <option value="one-time">One-time</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="futureIncomeStartDate" class="form-label">Start Date</label>
-                <input type="date" class="form-control" id="futureIncomeStartDate" required>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label for="futureIncomeEndDate" class="form-label">End Date (optional)</label>
-              <input type="date" class="form-control" id="futureIncomeEndDate">
-              <div class="form-text">Leave empty for ongoing income</div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Save</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Future Expense Modal -->
-  <div class="modal fade" id="futureExpenseModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form id="futureExpenseForm" autocomplete="off">
-          <div class="modal-header">
-            <h5 class="modal-title" id="futureExpenseModalLabel">Add Future Expense</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="futureExpenseIndex" value="-1">
-            <div class="mb-3">
-              <label for="futureExpenseDescription" class="form-label">Description</label>
-              <input type="text" class="form-control" id="futureExpenseDescription" required>
-            </div>
-            <div class="row g-2">
-              <div class="col-md-6">
-                <label for="futureExpenseType" class="form-label">Type</label>
-                <select class="form-select" id="futureExpenseType" required>
-                  <option value="grocery">Grocery</option>
-                  <option value="bike_fuel">Bike/Fuel</option>
-                  <option value="expenses">General Expenses</option>
-                  <option value="loan_returned">Loan Repayment</option>
-                  <option value="committee">Committee</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="futureExpenseAmount" class="form-label">Amount</label>
-                <input type="number" class="form-control" id="futureExpenseAmount" required step="0.01">
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-md-6">
-                <label for="futureExpenseFrequency" class="form-label">Frequency</label>
-                <select class="form-select" id="futureExpenseFrequency" required>
-                  <option value="one-time">One-time</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarterly">Quarterly</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label for="futureExpenseStartDate" class="form-label">Start Date</label>
-                <input type="date" class="form-control" id="futureExpenseStartDate" required>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label for="futureExpenseEndDate" class="form-label">End Date (optional)</label>
-              <input type="date" class="form-control" id="futureExpenseEndDate">
-              <div class="form-text">Leave empty for ongoing expenses</div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Save</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loan Modal -->
-  <div class="modal fade" id="loanModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form id="loanForm" autocomplete="off">
-          <div class="modal-header">
-            <h5 class="modal-title" id="loanModalLabel">Add Loan</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="loanIndex" value="-1">
-            <input type="hidden" id="loanType" value="given">
-            <div class="mb-3">
-              <label for="loanDescription" class="form-label">Description (optional)</label>
-              <input type="text" class="form-control" id="loanDescription" placeholder="e.g., Car loan, Personal loan">
-            </div>
-            <div class="mb-3">
-              <label for="loanAmount" class="form-label">Amount</label>
-              <input type="number" class="form-control" id="loanAmount" required step="0.01">
-            </div>
-            <div class="mb-3" id="loanBorrowerLabel">
-              <label for="loanBorrower" class="form-label">Borrower Name</label>
-              <input type="text" class="form-control" id="loanBorrower">
-            </div>
-            <div class="mb-3" id="loanLenderLabel" style="display: none;">
-              <label for="loanLender" class="form-label">Lender Name</label>
-              <input type="text" class="form-control" id="loanLender">
-            </div>
-            <div class="row g-2">
-              <div class="col-md-6" id="loanDateGivenLabel">
-                <label for="loanDateGiven" class="form-label">Date Given</label>
-                <input type="date" class="form-control" id="loanDateGiven">
-              </div>
-              <div class="col-md-6" id="loanDateTakenLabel" style="display: none;">
-                <label for="loanDateTaken" class="form-label">Date Taken</label>
-                <input type="date" class="form-control" id="loanDateTaken">
-              </div>
-              <div class="col-md-6" id="loanExpectedReturnLabel">
-                <label for="loanExpectedReturn" class="form-label">Expected Return Date</label>
-                <input type="date" class="form-control" id="loanExpectedReturn">
-              </div>
-              <div class="col-md-6" id="loanDueDateLabel" style="display: none;">
-                <label for="loanDueDate" class="form-label">Due Date</label>
-                <input type="date" class="form-control" id="loanDueDate">
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success">Save</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <div class="main-content container py-3">
-
-    <!-- Monthly Details Modal -->
-<div class="modal fade" id="monthDetailsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="monthDetailsModalLabel">
-          <i class="bi bi-calendar-month"></i> Month Details
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="month-details-summary">
-          <div class="row text-center">
-            <div class="col-4">
-              <div class="text-success">
-                <div class="fw-bold fs-4" id="monthDetailsIncome">0</div>
-                <small>Total Income</small>
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="text-danger">
-                <div class="fw-bold fs-4" id="monthDetailsExpenses">0</div>
-                <small>Total Expenses</small>
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="text-primary">
-                <div class="fw-bold fs-4" id="monthDetailsBalance">0</div>
-                <small>Ending Balance</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-6">
-            <h6><i class="bi bi-currency-dollar text-success"></i> Income Breakdown</h6>
-            <div id="monthDetailsIncomeList" class="month-details-breakdown">
-              <!-- Income items will be populated here -->
-            </div>
-          </div>
-          <div class="col-md-6">
-            <h6><i class="bi bi-cart text-danger"></i> Expense Breakdown</h6>
-            <div id="monthDetailsExpensesList" class="month-details-breakdown">
-              <!-- Expense items will be populated here -->
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-3">
-          <h6><i class="bi bi-info-circle text-info"></i> Transaction Details</h6>
-          <div id="monthDetailsTransactions" class="month-details-breakdown">
-            <!-- Individual transaction calculations will be shown here -->
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+function initializeApp() {
+    // Set current date in date inputs
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('transactionDate').value = today;
+    document.getElementById('futureTransactionStartDate').value = today;
+    document.getElementById('loanDate').value = today;
     
-    <!-- Dashboard Tab -->
-    <div id="tab-dashboard" class="tab-page">
-      <div class="row g-4">
-        <div class="col-12">
-          <!-- Rollover Balance Display -->
-          <div id="rolloverBalance" class="rollover-balance d-none">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <small class="text-muted">Starting Balance</small>
-                <div class="rollover-amount" id="rolloverAmount">0</div>
-                <small id="rolloverDescription" class="text-muted"></small>
-              </div>
-              <div>
-                <button class="btn btn-sm btn-outline-secondary" onclick="toggleRolloverSettings()">
-                  <i class="bi bi-gear"></i>
+    // Set current month in month filter
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    document.getElementById('monthFilter').value = currentMonth;
+    
+    // Set current year and month in summary filters
+    const currentYear = new Date().getFullYear();
+    const currentMonthNum = new Date().getMonth() + 1;
+    document.getElementById('summaryMonth').value = String(currentMonthNum).padStart(2, '0');
+    document.getElementById('summaryYear').value = currentYear;
+    
+    // Initialize categories in dropdowns
+    updateCategoryDropdowns();
+    
+    // Load initial data
+    updateUI();
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    console.log('Wealth Command initialized successfully');
+}
+
+// Update all UI components
+function updateUI() {
+    updateTransactionsList();
+    updateSummaryCards();
+    updateCharts();
+    updateCategoryDropdowns();
+    updateRolloverDisplay();
+    updateAnalytics();
+    updatePlanner();
+    updateDebtManagement();
+    updateSettings();
+}
+
+// Update transactions list
+function updateTransactionsList() {
+    const tableBody = document.getElementById('transactionsTable');
+    const typeFilter = document.getElementById('transactionTypeFilter').value;
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const monthFilter = document.getElementById('monthFilter').value;
+    const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+    
+    let filteredTransactions = transactions;
+    
+    // Apply filters
+    if (typeFilter !== 'all') {
+        filteredTransactions = filteredTransactions.filter(tx => tx.type === typeFilter);
+    }
+    
+    if (categoryFilter !== 'all') {
+        filteredTransactions = filteredTransactions.filter(tx => tx.category === categoryFilter);
+    }
+    
+    if (monthFilter) {
+        filteredTransactions = filteredTransactions.filter(tx => {
+            const txMonth = tx.date.substring(0, 7);
+            return txMonth === monthFilter;
+        });
+    }
+    
+    if (searchFilter) {
+        filteredTransactions = filteredTransactions.filter(tx => 
+            tx.description.toLowerCase().includes(searchFilter)
+        );
+    }
+    
+    // Sort by date (newest first)
+    filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Update table
+    tableBody.innerHTML = '';
+    
+    if (filteredTransactions.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+                    No transactions found
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    filteredTransactions.forEach(transaction => {
+        const category = categories.find(cat => cat.id === transaction.category);
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+            <td>${format(parseISO(transaction.date), 'MMM dd, yyyy')}</td>
+            <td>${transaction.description}</td>
+            <td>
+                <span class="category-badge" style="background-color: ${category?.color || '#6c757d'}; color: white;">
+                    ${category?.name || 'Uncategorized'}
+                </span>
+            </td>
+            <td>
+                <span class="badge ${transaction.type === 'income' ? 'bg-success' : 'bg-danger'}">
+                    ${transaction.type === 'income' ? 'Income' : 'Expense'}
+                </span>
+            </td>
+            <td class="${transaction.type === 'income' ? 'text-success' : 'text-danger'}">
+                ${transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()} ${currency}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction('${transaction.id}')">
+                    <i class="bi bi-trash"></i>
                 </button>
-              </div>
-            </div>
-          </div>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Update recent transactions
+    updateRecentTransactions();
+}
 
-          <div class="card shadow-sm mb-3">
-            <div class="card-body text-center">
-              <h5 class="card-title">
-                Net Wealth (<span id="currencyLabel">PKR</span>)
-              </h5>
-              <!-- Sleek filter row -->
-              <div class="row mb-2 justify-content-center align-items-center">
-                <div class="col-12 col-md-8 mx-auto">
-                  <div class="input-group">
-                    <span class="input-group-text bg-light"><i class="bi bi-calendar"></i></span>
-                    <select id="summaryMonth" class="form-select"></select>
-                    <select id="summaryYear" class="form-select"></select>
-                  </div>
-                </div>
-              </div>
-              <p class="fw-bold mb-2" id="netWealth" style="font-size:1.3rem;">0</p>
-              <hr style="margin:0.5rem 0;">
-              <div class="row mb-2">
-                <div class="col-6 text-success">
-                  <strong>Total Income:</strong>
-                  <div id="totalIncome" style="font-size:1.08rem;"></div>
-                </div>
-                <div class="col-6 text-danger">
-                  <strong>Total Expense:</strong>
-                  <div id="totalExpense" style="font-size:1.08rem;"></div>
-                </div>
-              </div>
-              <div class="mt-2">
-                <button id="openAddTransactionModal" class="btn btn-primary btn-lg" style="font-size:0.99rem;padding:0.5rem 1rem;"><i class="bi bi-plus-lg"></i> Add Transaction</button>
-              </div>
+// Update recent transactions in dashboard
+function updateRecentTransactions() {
+    const container = document.getElementById('recentTransactions');
+    const recent = transactions
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 10);
+    
+    container.innerHTML = '';
+    
+    if (recent.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+                No transactions yet
             </div>
-          </div>
-        </div>
+        `;
+        return;
+    }
+    
+    recent.forEach(transaction => {
+        const category = categories.find(cat => cat.id === transaction.category);
+        const item = document.createElement('div');
+        item.className = `transaction-item ${transaction.type === 'income' ? 'transaction-income' : 'transaction-expense'}`;
+        
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${transaction.description}</div>
+                    <div class="small text-muted">
+                        <span class="category-badge" style="background-color: ${category?.color || '#6c757d'}; color: white;">
+                            ${category?.name || 'Uncategorized'}
+                        </span>
+                        • ${format(parseISO(transaction.date), 'MMM dd')}
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold ${transaction.type === 'income' ? 'text-success' : 'text-danger'}">
+                        ${transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()} ${currency}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
 
-        <!-- Improved Income and Expense Breakdown Cards -->
-        <div class="breakdown-container">
-          <div class="col-12 col-md-6">
-            <div class="breakdown-card income-card" onclick="showCategoryTransactions('income', 'all')">
-              <div class="card-header-enhanced">
-                <i class="bi bi-arrow-down-circle"></i> Income Breakdown
-              </div>
-              <div class="breakdown-list income-breakdown">
-                <div id="incomeBreakdown">
-                  <!-- Income categories will appear here -->
-                </div>
-                <div id="noIncomeCategories" class="text-center text-muted p-2">No income categories</div>
-              </div>
-            </div>
-          </div>
+// Update summary cards
+function updateSummaryCards() {
+    const monthSel = document.getElementById('summaryMonth');
+    const yearSel = document.getElementById('summaryYear');
+    
+    let filteredTransactions = transactions;
+    
+    if (monthSel.value !== 'all' && yearSel.value !== 'all') {
+        const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
+        filteredTransactions = transactions.filter(tx => getMonthKeyFromDate(tx.date) === monthKey);
+    } else if (yearSel.value !== 'all') {
+        filteredTransactions = transactions.filter(tx => tx.date.startsWith(yearSel.value));
+    }
+    
+    const totalIncome = filteredTransactions
+        .filter(tx => tx.type === 'income')
+        .reduce((sum, tx) => sum + tx.amount, 0);
+    
+    const totalExpenses = filteredTransactions
+        .filter(tx => tx.type === 'expense')
+        .reduce((sum, tx) => sum + tx.amount, 0);
+    
+    const netBalance = totalIncome - totalExpenses;
+    
+    document.getElementById('totalIncome').textContent = totalIncome.toLocaleString();
+    document.getElementById('totalExpenses').textContent = totalExpenses.toLocaleString();
+    document.getElementById('netBalance').textContent = netBalance.toLocaleString();
+}
 
-          <div class="col-12 col-md-6">
-            <div class="breakdown-card expense-card" onclick="showCategoryTransactions('expense', 'all')">
-              <div class="card-header-enhanced">
-                <i class="bi bi-arrow-up-circle"></i> Expense Breakdown
-              </div>
-              <div class="breakdown-list expense-breakdown">
-                <div id="expenseBreakdown">
-                  <!-- Expense categories will appear here -->
-                </div>
-                <div id="noExpenseCategories" class="text-center text-muted p-2">No expense categories</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+// Update charts
+function updateCharts() {
+    updateMainChart();
+    updatePieCharts();
+}
 
-    <!-- Transactions Tab -->
-    <div id="tab-transactions" class="tab-page d-none">
-      <!-- Improved Transactions Table with Click-to-Edit -->
-      <div class="card shadow-sm mb-4">
-        <div class="card-header">
-          <span><i class="bi bi-list-ul"></i> Transactions</span>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-container">
-            <div class="table-responsive-container">
-              <table class="table table-striped table-hover mb-0" id="transactionsTable">
-                <thead class="table-light">
-                  <tr>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Type</th>
-                    <th>Category</th>
-                    <th>Amount</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody id="transactionsBody"></tbody>
-              </table>
-            </div>
-            <div id="noTransactions" class="text-center text-muted p-3">No transactions yet.</div>
-          </div>
-        </div>
-      </div>
-    </div>
+// Update main chart
+function updateMainChart() {
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    const monthSel = document.getElementById('summaryMonth');
+    const yearSel = document.getElementById('summaryYear');
+    
+    let labels = [];
+    let incomeData = [];
+    let expenseData = [];
+    
+    if (monthSel.value !== 'all' && yearSel.value !== 'all') {
+        // Daily data for selected month
+        const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
+        const daysInMonth = new Date(parseInt(yearSel.value), parseInt(monthSel.value), 0).getDate();
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${monthKey}-${String(day).padStart(2, '0')}`;
+            const dayTransactions = transactions.filter(tx => tx.date === dateStr);
+            
+            const dayIncome = dayTransactions.filter(tx => tx.type === 'income')
+                .reduce((sum, tx) => sum + tx.amount, 0);
+            const dayExpense = dayTransactions.filter(tx => tx.type === 'expense')
+                .reduce((sum, tx) => sum + tx.amount, 0);
+            
+            labels.push(`${day}`);
+            incomeData.push(dayIncome);
+            expenseData.push(dayExpense);
+        }
+    } else {
+        // Monthly data
+        const months = {};
+        transactions.forEach(tx => {
+            const month = getMonthKeyFromDate(tx.date);
+            if (!months[month]) {
+                months[month] = { income: 0, expenses: 0 };
+            }
+            
+            if (tx.type === 'income') {
+                months[month].income += tx.amount;
+            } else {
+                months[month].expenses += tx.amount;
+            }
+        });
+        
+        const sortedMonths = Object.keys(months).sort();
+        labels = sortedMonths.map(month => format(parseISO(month + '-01'), 'MMM yyyy'));
+        incomeData = sortedMonths.map(month => months[month].income);
+        expenseData = sortedMonths.map(month => months[month].expenses);
+    }
+    
+    if (mainChart) {
+        mainChart.destroy();
+    }
+    
+    mainChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: incomeData,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Expenses',
+                    data: expenseData,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Income vs Expenses Over Time'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ' + currency;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
 
-    <!-- Planner Tab -->
-    <div id="tab-planner" class="tab-page d-none">
-      <div class="card shadow-sm mb-4">
-        <div class="card-header">
-          <i class="bi bi-calendar-check"></i> Financial Planner
-        </div>
-        <div class="card-body">
-          <!-- Timeframe Selector -->
-          <div class="row mb-4">
-            <div class="col-12">
-              <div class="btn-group w-100" role="group">
-                <button type="button" class="btn btn-outline-primary planner-timeframe-btn active" data-timeframe="1year">
-                  1 Year
-                </button>
-                <button type="button" class="btn btn-outline-primary planner-timeframe-btn" data-timeframe="2years">
-                  2 Years
-                </button>
-                <button type="button" class="btn btn-outline-primary planner-timeframe-btn" data-timeframe="3years">
-                  3 Years
-                </button>
-              </div>
-            </div>
-          </div>
+// Update pie charts
+function updatePieCharts() {
+    updateIncomePieChart();
+    updateExpensePieChart();
+}
 
-          <!-- Projection Summary -->
-          <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <div class="text-success">
-                    <i class="bi bi-arrow-up-circle fs-4"></i>
-                    <div class="fw-bold fs-5" id="plannerNetWealth">0</div>
-                    <small>Projected Net</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <div class="text-success">
-                    <i class="bi bi-currency-dollar fs-4"></i>
-                    <div class="fw-bold fs-5" id="plannerTotalIncome">0</div>
-                    <small>Total Income</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <div class="text-danger">
-                    <i class="bi bi-arrow-down-circle fs-4"></i>
-                    <div class="fw-bold fs-5" id="plannerTotalExpenses">0</div>
-                    <small>Total Expenses</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <div class="text-primary">
-                    <i class="bi bi-piggy-bank fs-4"></i>
-                    <div class="fw-bold fs-5" id="plannerEndingBalance">0</div>
-                    <small>Ending Balance</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+function updateIncomePieChart() {
+    const ctx = document.getElementById('incomePieChart').getContext('2d');
+    const monthSel = document.getElementById('summaryMonth');
+    const yearSel = document.getElementById('summaryYear');
+    
+    let filteredTransactions = transactions.filter(tx => tx.type === 'income');
+    
+    if (monthSel.value !== 'all' && yearSel.value !== 'all') {
+        const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
+        filteredTransactions = filteredTransactions.filter(tx => getMonthKeyFromDate(tx.date) === monthKey);
+    }
+    
+    const categoryData = {};
+    filteredTransactions.forEach(tx => {
+        categoryData[tx.category] = (categoryData[tx.category] || 0) + tx.amount;
+    });
+    
+    const categoryLabels = [];
+    const categoryAmounts = [];
+    const categoryColors = [];
+    
+    Object.keys(categoryData).forEach(categoryId => {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (category) {
+            categoryLabels.push(category.name);
+            categoryAmounts.push(categoryData[categoryId]);
+            categoryColors.push(category.color);
+        }
+    });
+    
+    if (incomePieChart) {
+        incomePieChart.destroy();
+    }
+    
+    if (categoryAmounts.length === 0) {
+        incomePieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#6c757d']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: 'No Income Data'
+                    }
+                }
+            }
+        });
+        return;
+    }
+    
+    incomePieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                data: categoryAmounts,
+                backgroundColor: categoryColors
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Income Distribution'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value.toLocaleString()} ${currency} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
 
-          <!-- Action Buttons -->
-          <div class="row mb-4">
-            <div class="col-6">
-              <button class="btn btn-success w-100" onclick="openAddFutureIncome()">
-                <i class="bi bi-plus-circle"></i> Add Future Income
-              </button>
-            </div>
-            <div class="col-6">
-              <button class="btn btn-danger w-100" onclick="openAddFutureExpense()">
-                <i class="bi bi-plus-circle"></i> Add Future Expense
-              </button>
-            </div>
-          </div>
+function updateExpensePieChart() {
+    const ctx = document.getElementById('expensePieChart').getContext('2d');
+    const monthSel = document.getElementById('summaryMonth');
+    const yearSel = document.getElementById('summaryYear');
+    
+    let filteredTransactions = transactions.filter(tx => tx.type === 'expense');
+    
+    if (monthSel.value !== 'all' && yearSel.value !== 'all') {
+        const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
+        filteredTransactions = filteredTransactions.filter(tx => getMonthKeyFromDate(tx.date) === monthKey);
+    }
+    
+    const categoryData = {};
+    filteredTransactions.forEach(tx => {
+        categoryData[tx.category] = (categoryData[tx.category] || 0) + tx.amount;
+    });
+    
+    const categoryLabels = [];
+    const categoryAmounts = [];
+    const categoryColors = [];
+    
+    Object.keys(categoryData).forEach(categoryId => {
+        const category = categories.find(cat => cat.id === categoryId);
+        if (category) {
+            categoryLabels.push(category.name);
+            categoryAmounts.push(categoryData[categoryId]);
+            categoryColors.push(category.color);
+        }
+    });
+    
+    if (expensePieChart) {
+        expensePieChart.destroy();
+    }
+    
+    if (categoryAmounts.length === 0) {
+        expensePieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#6c757d']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: 'No Expense Data'
+                    }
+                }
+            }
+        });
+        return;
+    }
+    
+    expensePieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                data: categoryAmounts,
+                backgroundColor: categoryColors
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Expense Distribution'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value.toLocaleString()} ${currency} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
 
-          <!-- Monthly Projection Timeline -->
-          <div class="mb-4">
-            <h6><i class="bi bi-graph-up"></i> Monthly Projections</h6>
-            <div id="plannerTimeline" class="planner-timeline">
-              <!-- Monthly projections will be populated here -->
-            </div>
-          </div>
+// Update category dropdowns
+function updateCategoryDropdowns() {
+    const dropdowns = [
+        'transactionCategory',
+        'futureTransactionCategory',
+        'categoryFilter'
+    ];
+    
+    dropdowns.forEach(dropdownId => {
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
+        
+        const currentValue = dropdown.value;
+        dropdown.innerHTML = '<option value="all">All Categories</option>';
+        
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            dropdown.appendChild(option);
+        });
+        
+        // Restore previous value if it still exists
+        if (categories.some(cat => cat.id === currentValue)) {
+            dropdown.value = currentValue;
+        }
+    });
+    
+    // Update transaction category dropdown (no "all" option)
+    const transactionCategory = document.getElementById('transactionCategory');
+    if (transactionCategory) {
+        const currentValue = transactionCategory.value;
+        transactionCategory.innerHTML = '';
+        
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            transactionCategory.appendChild(option);
+        });
+        
+        if (categories.some(cat => cat.id === currentValue)) {
+            transactionCategory.value = currentValue;
+        }
+    }
+    
+    // Update future transaction category dropdown
+    const futureTransactionCategory = document.getElementById('futureTransactionCategory');
+    if (futureTransactionCategory) {
+        const currentValue = futureTransactionCategory.value;
+        futureTransactionCategory.innerHTML = '';
+        
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            futureTransactionCategory.appendChild(option);
+        });
+        
+        if (categories.some(cat => cat.id === currentValue)) {
+            futureTransactionCategory.value = currentValue;
+        }
+    }
+}
 
-          <!-- Future Income List -->
-          <div class="mb-4">
-            <h6><i class="bi bi-currency-dollar text-success"></i> Future Income</h6>
-            <div id="futureIncomeList" class="planner-list">
-              <!-- Future income items will be populated here -->
-            </div>
-          </div>
+// Add transaction
+function addTransaction() {
+    const type = document.getElementById('transactionType').value;
+    const amount = parseFloat(document.getElementById('transactionAmount').value);
+    const description = document.getElementById('transactionDescription').value;
+    const category = document.getElementById('transactionCategory').value;
+    const date = document.getElementById('transactionDate').value;
+    
+    if (!amount || !description || !category || !date) {
+        showToast('Please fill in all fields', 'warning');
+        return;
+    }
+    
+    const transaction = {
+        id: generateId(),
+        type: type,
+        amount: amount,
+        description: description,
+        category: category,
+        date: date
+    };
+    
+    transactions.push(transaction);
+    saveTransactions();
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addTransactionModal'));
+    modal.hide();
+    
+    // Reset form
+    document.getElementById('transactionForm').reset();
+    
+    // Update UI
+    updateUI();
+    calculateMonthlyRollover();
+    
+    showToast('Transaction added successfully', 'success');
+}
 
-          <!-- Future Expenses List -->
-          <div class="mb-4">
-            <h6><i class="bi bi-cart text-danger"></i> Future Expenses</h6>
-            <div id="futureExpensesList" class="planner-list">
-              <!-- Future expense items will be populated here -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+// Add category
+function addCategory() {
+    const name = document.getElementById('categoryName').value;
+    const type = document.getElementById('categoryType').value;
+    const color = document.getElementById('categoryColor').value;
+    
+    if (!name) {
+        showToast('Please enter a category name', 'warning');
+        return;
+    }
+    
+    const category = {
+        id: generateId(),
+        name: name,
+        type: type,
+        color: color
+    };
+    
+    categories.push(category);
+    saveCategories();
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
+    modal.hide();
+    
+    // Reset form
+    document.getElementById('categoryForm').reset();
+    
+    // Update UI
+    updateCategoryDropdowns();
+    updateUI();
+    
+    showToast('Category added successfully', 'success');
+}
 
-    <!-- Debt Management Tab -->
-    <div id="tab-debt" class="tab-page d-none">
-      <div class="card shadow-sm mb-4">
-        <div class="card-header">
-          <i class="bi bi-cash-coin"></i> Debt Management
-        </div>
-        <div class="card-body">
-          <!-- Debt Summary -->
-          <div class="row g-3 mb-4">
-            <div class="col-6 col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <div class="text-success">
-                    <i class="bi bi-arrow-up-right fs-4"></i>
-                    <div class="fw-bold fs-5" id="totalLoansGiven">0</div>
-                    <small>Loans Given</small>
-                  </div>
+// Add future transaction
+function addFutureTransaction() {
+    const type = document.getElementById('futureTransactionType').value;
+    const amount = parseFloat(document.getElementById('futureTransactionAmount').value);
+    const description = document.getElementById('futureTransactionDescription').value;
+    const category = document.getElementById('futureTransactionCategory').value;
+    const startDate = document.getElementById('futureTransactionStartDate').value;
+    const frequency = document.getElementById('futureTransactionFrequency').value;
+    const endDate = document.getElementById('futureTransactionEndDate').value || null;
+    
+    if (!amount || !description || !category || !startDate) {
+        showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    const futureTransaction = {
+        id: generateId(),
+        type: type,
+        amount: amount,
+        description: description,
+        category: category,
+        startDate: startDate,
+        frequency: frequency,
+        endDate: endDate
+    };
+    
+    if (type === 'income') {
+        futureTransactions.income.push(futureTransaction);
+    } else {
+        futureTransactions.expenses.push(futureTransaction);
+    }
+    
+    saveFutureTransactions();
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addFutureTransactionModal'));
+    modal.hide();
+    
+    // Reset form
+    document.getElementById('futureTransactionForm').reset();
+    
+    // Update UI
+    updatePlanner();
+    
+    showToast('Future transaction added successfully', 'success');
+}
+
+// Add loan
+function addLoan() {
+    const loanType = document.getElementById('loanType').value;
+    const amount = parseFloat(document.getElementById('loanAmount').value);
+    const person = document.getElementById('loanPerson').value;
+    const description = document.getElementById('loanDescription').value;
+    const date = document.getElementById('loanDate').value;
+    const dueDate = document.getElementById('loanDueDate').value;
+    const interest = parseFloat(document.getElementById('loanInterest').value) || 0;
+    
+    if (!amount || !person || !date || !dueDate) {
+        showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+    
+    const loan = {
+        id: generateId(),
+        amount: amount,
+        person: person,
+        description: description,
+        date: date,
+        dueDate: dueDate,
+        interest: interest,
+        status: 'pending',
+        payments: []
+    };
+    
+    if (loanType === 'given') {
+        loans.given.push(loan);
+    } else {
+        loans.taken.push(loan);
+    }
+    
+    saveLoans();
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addLoanModal'));
+    modal.hide();
+    
+    // Reset form
+    document.getElementById('loanForm').reset();
+    
+    // Update UI
+    updateDebtManagement();
+    
+    showToast('Loan added successfully', 'success');
+}
+
+// Delete transaction
+function deleteTransaction(id) {
+    if (!confirm('Are you sure you want to delete this transaction?')) {
+        return;
+    }
+    
+    transactions = transactions.filter(tx => tx.id !== id);
+    saveTransactions();
+    updateUI();
+    calculateMonthlyRollover();
+    
+    showToast('Transaction deleted successfully', 'success');
+}
+
+// Save functions
+function saveTransactions() {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    autoSyncToDrive();
+}
+
+function saveCategories() {
+    localStorage.setItem('categories', JSON.stringify(categories));
+    autoSyncToDrive();
+}
+
+function saveFutureTransactions() {
+    localStorage.setItem('futureTransactions', JSON.stringify(futureTransactions));
+    autoSyncToDrive();
+}
+
+function saveLoans() {
+    localStorage.setItem('loans', JSON.stringify(loans));
+    autoSyncToDrive();
+}
+
+// Utility functions
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// Analytics functions
+function updateAnalytics() {
+    updateHealthScore();
+    updateAIInsights();
+    updateCategoryTrendChart();
+    updateHeatMap();
+    updateComparisonChart();
+}
+
+function updateHealthScore() {
+    const healthScore = AnalyticsEngine.calculateHealthScore(transactions, monthlyBudgets);
+    const healthScoreElement = document.getElementById('healthScore');
+    const healthScoreBar = document.getElementById('healthScoreBar');
+    const healthScoreText = document.getElementById('healthScoreText');
+    
+    healthScoreElement.textContent = healthScore;
+    healthScoreBar.style.width = `${healthScore}%`;
+    
+    // Update bar color based on score
+    if (healthScore >= 80) {
+        healthScoreBar.className = 'progress-bar bg-success';
+        healthScoreText.textContent = 'Excellent financial health! Keep up the good work.';
+    } else if (healthScore >= 60) {
+        healthScoreBar.className = 'progress-bar bg-info';
+        healthScoreText.textContent = 'Good financial health. There\'s room for improvement.';
+    } else if (healthScore >= 40) {
+        healthScoreBar.className = 'progress-bar bg-warning';
+        healthScoreText.textContent = 'Fair financial health. Consider reviewing your spending habits.';
+    } else {
+        healthScoreBar.className = 'progress-bar bg-danger';
+        healthScoreText.textContent = 'Poor financial health. Immediate attention recommended.';
+    }
+    
+    // Update health trend chart
+    updateHealthTrendChart();
+}
+
+function updateHealthTrendChart() {
+    const ctx = document.getElementById('healthTrendChart').getContext('2d');
+    
+    // Calculate health scores for last 6 months
+    const now = new Date();
+    const months = [];
+    const scores = [];
+    
+    for (let i = 5; i >= 0; i--) {
+        const date = subMonths(now, i);
+        const monthKey = format(date, 'yyyy-MM');
+        const monthName = format(date, 'MMM yyyy');
+        
+        // Filter transactions for this month
+        const monthTransactions = transactions.filter(tx => 
+            getMonthKeyFromDate(tx.date) === monthKey
+        );
+        
+        const score = AnalyticsEngine.calculateHealthScore(monthTransactions, monthlyBudgets);
+        months.push(monthName);
+        scores.push(score);
+    }
+    
+    if (healthTrendChart) {
+        healthTrendChart.destroy();
+    }
+    
+    healthTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Financial Health Score',
+                data: scores,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' pts';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateAIInsights() {
+    const insightsContainer = document.getElementById('aiInsights');
+    const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
+    
+    insightsContainer.innerHTML = '';
+    
+    if (insights.length === 0) {
+        insightsContainer.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-info-circle fs-1 d-block mb-2"></i>
+                Add more transactions to get insights
+            </div>
+        `;
+        return;
+    }
+    
+    insights.forEach(insight => {
+        const insightElement = document.createElement('div');
+        insightElement.className = `insight-card insight-${insight.type} mb-3`;
+        
+        insightElement.innerHTML = `
+            <div class="d-flex align-items-start">
+                <i class="bi ${insight.icon} me-2"></i>
+                <div class="flex-grow-1">
+                    ${insight.message}
                 </div>
-              </div>
             </div>
-            <div class="col-6 col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <div class="text-danger">
-                    <i class="bi bi-arrow-down-left fs-4"></i>
-                    <div class="fw-bold fs-5" id="totalLoansTaken">0</div>
-                    <small>Loans Taken</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <div class="text-primary">
-                    <i class="bi bi-scale fs-4"></i>
-                    <div class="fw-bold fs-5" id="netDebtPosition">0</div>
-                    <small>Net Position</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-md-3">
-              <div class="card text-center">
-                <div class="card-body">
-                  <div class="text-warning">
-                    <i class="bi bi-clock fs-4"></i>
-                    <div class="fw-bold fs-5" id="upcomingCount">0</div>
-                    <small>Upcoming</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        `;
+        
+        insightsContainer.appendChild(insightElement);
+    });
+}
 
-          <!-- Action Buttons -->
-          <div class="row mb-4">
-            <div class="col-6">
-              <button class="btn btn-success w-100" onclick="openAddLoan('given')">
-                <i class="bi bi-arrow-up-right"></i> Add Loan Given
-              </button>
-            </div>
-            <div class="col-6">
-              <button class="btn btn-danger w-100" onclick="openAddLoan('taken')">
-                <i class="bi bi-arrow-down-left"></i> Add Loan Taken
-              </button>
-            </div>
-          </div>
+function updateCategoryTrendChart() {
+    const ctx = document.getElementById('categoryTrendChart').getContext('2d');
+    const trends = AnalyticsEngine.analyzeCategoryTrends(transactions);
+    
+    const labels = trends.map(trend => trend.category);
+    const data = trends.map(trend => trend.trend * 100); // Convert to percentage
+    
+    if (categoryTrendChart) {
+        categoryTrendChart.destroy();
+    }
+    
+    categoryTrendChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Monthly Change (%)',
+                data: data,
+                backgroundColor: data.map(value => 
+                    value > 0 ? 'rgba(220, 53, 69, 0.8)' : 'rgba(40, 167, 69, 0.8)'
+                )
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Category Spending Trends (vs Last Month)'
+                }
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
 
-          <!-- Upcoming Repayments -->
-          <div class="mb-4">
-            <h6><i class="bi bi-clock text-warning"></i> Upcoming Repayments</h6>
-            <div id="upcomingRepayments" class="debt-list">
-              <!-- Upcoming repayments will be populated here -->
-            </div>
-          </div>
+function updateHeatMap() {
+    const heatMapContainer = document.getElementById('heatMap');
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    
+    const heatMap = AnalyticsEngine.generateHeatMap(transactions, year, month);
+    
+    heatMapContainer.innerHTML = '';
+    
+    heatMap.forEach(day => {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'heatmap-day';
+        
+        let intensityClass = 'heatmap-empty';
+        if (day.amount > 0) {
+            if (day.amount < 100) intensityClass = 'heatmap-low';
+            else if (day.amount < 500) intensityClass = 'heatmap-medium';
+            else if (day.amount < 1000) intensityClass = 'heatmap-high';
+            else intensityClass = 'heatmap-very-high';
+        }
+        
+        dayElement.className += ' ' + intensityClass;
+        dayElement.title = `${format(parseISO(day.date), 'MMM dd')}: ${day.amount.toLocaleString()} ${currency}`;
+        dayElement.textContent = day.day;
+        
+        dayElement.addEventListener('click', () => {
+            showDayTransactions(day.date);
+        });
+        
+        heatMapContainer.appendChild(dayElement);
+    });
+}
 
-          <!-- Loans Given -->
-          <div class="mb-4">
-            <h6><i class="bi bi-arrow-up-right text-success"></i> Loans Given</h6>
-            <div id="loansGivenList" class="debt-list">
-              <!-- Loans given will be populated here -->
-            </div>
-          </div>
+function showDayTransactions(date) {
+    const dayTransactions = transactions.filter(tx => tx.date === date && tx.type === 'expense');
+    
+    if (dayTransactions.length === 0) {
+        showToast('No transactions found for this day', 'info');
+        return;
+    }
+    
+    let message = `Transactions for ${format(parseISO(date), 'MMM dd, yyyy')}:\n\n`;
+    dayTransactions.forEach(tx => {
+        const category = categories.find(cat => cat.id === tx.category);
+        message += `• ${tx.description}: ${tx.amount.toLocaleString()} ${currency} (${category?.name || 'Uncategorized'})\n`;
+    });
+    
+    alert(message);
+}
 
-          <!-- Loans Taken -->
-          <div class="mb-4">
-            <h6><i class="bi bi-arrow-down-left text-danger"></i> Loans Taken</h6>
-            <div id="loansTakenList" class="debt-list">
-              <!-- Loans taken will be populated here -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+function updateComparisonChart() {
+    // This would be implemented to compare two periods
+    // For now, we'll just initialize an empty chart
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    
+    if (comparisonChart) {
+        comparisonChart.destroy();
+    }
+    
+    comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Select periods to compare'],
+            datasets: []
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
 
-    <!-- Enhanced Analytics Tab -->
-    <div id="tab-analytics" class="tab-page d-none">
-      <div class="analytics-container">
-        <!-- AI Insights Header -->
-        <div class="ai-insights-header">
-          <div class="row g-3">
-            <div class="col-12 col-md-4">
-              <div class="health-score-card">
-                <div class="health-score-header">
-                  <i class="bi bi-heart-pulse"></i> Financial Health
-                </div>
-                <div class="health-score-value" id="healthScoreValue">--</div>
-                <div class="health-score-label" id="healthScoreLabel">Calculating...</div>
-                <div class="health-score-trend" id="healthScoreTrend"></div>
-              </div>
-            </div>
-            <div class="col-12 col-md-4">
-              <div class="savings-rate-card">
-                <div class="savings-rate-header">
-                  <i class="bi bi-piggy-bank"></i> Savings Rate
-                </div>
-                <div class="savings-rate-value" id="savingsRateValue">--</div>
-                <div class="savings-rate-label" id="savingsRateLabel">This Month</div>
-                <div class="savings-rate-progress">
-                  <div class="progress">
-                    <div id="savingsRateProgress" class="progress-bar" role="progressbar"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-12 col-md-4">
-              <div class="ai-recommendations-card">
-                <div class="ai-recommendations-header">
-                  <i class="bi bi-robot"></i> AI Insights
-                </div>
-                <div id="aiQuickInsights" class="ai-quick-insights">
-                  <div class="text-center text-muted">
-                    <small>Analyzing your spending patterns...</small>
-                  </div>
-                </div>
-                <button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="showFullAIAnalysis()">
-                  <i class="bi bi-graph-up"></i> View Full Analysis
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+// Planner functions
+function updatePlanner() {
+    const timeframe = document.getElementById('plannerTimeframe').value;
+    const currentBalance = getCurrentBalance();
+    
+    const projections = PlannerEngine.calculateProjections(futureTransactions, timeframe, currentBalance);
+    
+    updateProjectionSummary(projections.summary);
+    updateProjectionChart(projections);
+    updatePlannedTransactions();
+}
 
-        <!-- Analytics Navigation -->
-        <div class="analytics-nav">
-          <div class="nav nav-pills nav-fill" id="analyticsTabs" role="tablist">
-            <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button">
-              <i class="bi bi-speedometer2"></i> Overview
+function getCurrentBalance() {
+    const totalIncome = transactions.filter(tx => tx.type === 'income')
+        .reduce((sum, tx) => sum + tx.amount, 0);
+    const totalExpenses = transactions.filter(tx => tx.type === 'expense')
+        .reduce((sum, tx) => sum + tx.amount, 0);
+    
+    return totalIncome - totalExpenses;
+}
+
+function updateProjectionSummary(summary) {
+    document.getElementById('projectedIncome').textContent = summary.totalIncome.toLocaleString();
+    document.getElementById('projectedExpenses').textContent = summary.totalExpenses.toLocaleString();
+    document.getElementById('netWealthChange').textContent = summary.netWealth.toLocaleString();
+    document.getElementById('endingBalance').textContent = summary.endingBalance.toLocaleString();
+    
+    // Color code net wealth change
+    const netWealthElement = document.getElementById('netWealthChange');
+    if (summary.netWealth > 0) {
+        netWealthElement.className = 'text-success';
+    } else if (summary.netWealth < 0) {
+        netWealthElement.className = 'text-danger';
+    } else {
+        netWealthElement.className = 'text-muted';
+    }
+}
+
+function updateProjectionChart(projections) {
+    const ctx = document.getElementById('projectionChart').getContext('2d');
+    
+    const labels = projections.months.map(month => month.name);
+    const balanceData = projections.months.map(month => month.balance);
+    const incomeData = projections.months.map(month => month.income);
+    const expenseData = projections.months.map(month => month.expenses);
+    
+    if (window.projectionChart) {
+        window.projectionChart.destroy();
+    }
+    
+    window.projectionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Projected Balance',
+                    data: balanceData,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Monthly Income',
+                    data: incomeData,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: false,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Monthly Expenses',
+                    data: expenseData,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4,
+                    fill: false,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Balance'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ' + currency;
+                        }
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Income/Expenses'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' ' + currency;
+                        }
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updatePlannedTransactions() {
+    updatePlannedIncome();
+    updatePlannedExpenses();
+}
+
+function updatePlannedIncome() {
+    const container = document.getElementById('plannedIncomeList');
+    container.innerHTML = '';
+    
+    if (futureTransactions.income.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-arrow-down-circle fs-1 d-block mb-2"></i>
+                No planned income
+            </div>
+        `;
+        return;
+    }
+    
+    futureTransactions.income.forEach(income => {
+        const category = categories.find(cat => cat.id === income.category);
+        const item = document.createElement('div');
+        item.className = 'transaction-item transaction-income mb-2';
+        
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${income.description}</div>
+                    <div class="small text-muted">
+                        ${category?.name || 'Uncategorized'} • 
+                        ${format(parseISO(income.startDate), 'MMM dd, yyyy')} • 
+                        ${income.frequency}
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold text-success">+${income.amount.toLocaleString()} ${currency}</div>
+                    <button class="btn btn-sm btn-outline-danger mt-1" onclick="deleteFutureTransaction('income', '${income.id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+function updatePlannedExpenses() {
+    const container = document.getElementById('plannedExpensesList');
+    container.innerHTML = '';
+    
+    if (futureTransactions.expenses.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-arrow-up-circle fs-1 d-block mb-2"></i>
+                No planned expenses
+            </div>
+        `;
+        return;
+    }
+    
+    futureTransactions.expenses.forEach(expense => {
+        const category = categories.find(cat => cat.id === expense.category);
+        const item = document.createElement('div');
+        item.className = 'transaction-item transaction-expense mb-2';
+        
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${expense.description}</div>
+                    <div class="small text-muted">
+                        ${category?.name || 'Uncategorized'} • 
+                        ${format(parseISO(expense.startDate), 'MMM dd, yyyy')} • 
+                        ${expense.frequency}
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold text-danger">-${expense.amount.toLocaleString()} ${currency}</div>
+                    <button class="btn btn-sm btn-outline-danger mt-1" onclick="deleteFutureTransaction('expenses', '${expense.id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+function deleteFutureTransaction(type, id) {
+    if (!confirm('Are you sure you want to delete this planned transaction?')) {
+        return;
+    }
+    
+    futureTransactions[type] = futureTransactions[type].filter(tx => tx.id !== id);
+    saveFutureTransactions();
+    updatePlanner();
+    
+    showToast('Planned transaction deleted successfully', 'success');
+}
+
+// Debt Management functions
+function updateDebtManagement() {
+    const summary = DebtEngine.calculateDebtSummary(loans);
+    
+    document.getElementById('totalGiven').textContent = summary.totalGiven.toLocaleString();
+    document.getElementById('totalTaken').textContent = summary.totalTaken.toLocaleString();
+    document.getElementById('netPosition').textContent = summary.netPosition.toLocaleString();
+    
+    // Color code net position
+    const netPositionElement = document.getElementById('netPosition');
+    if (summary.netPosition > 0) {
+        netPositionElement.className = 'text-success';
+    } else if (summary.netPosition < 0) {
+        netPositionElement.className = 'text-danger';
+    } else {
+        netPositionElement.className = 'text-muted';
+    }
+    
+    updateLoansGiven();
+    updateLoansTaken();
+    updateUpcomingRepayments(summary.upcomingRepayments);
+}
+
+function updateLoansGiven() {
+    const container = document.getElementById('loansGivenList');
+    container.innerHTML = '';
+    
+    if (loans.given.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-arrow-up-right fs-1 d-block mb-2"></i>
+                No loans given
+            </div>
+        `;
+        return;
+    }
+    
+    loans.given.forEach(loan => {
+        const status = DebtEngine.getLoanStatus(loan);
+        const paidAmount = DebtEngine.getPaidAmount(loan);
+        const remainingAmount = loan.amount - paidAmount;
+        
+        const item = document.createElement('div');
+        item.className = 'transaction-item mb-3';
+        
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${loan.person}</div>
+                    <div class="small text-muted">
+                        ${loan.description || 'No description'} • 
+                        Due: ${format(parseISO(loan.dueDate), 'MMM dd, yyyy')}
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" style="width: ${(paidAmount / loan.amount) * 100}%"></div>
+                    </div>
+                    <div class="small">
+                        ${paidAmount.toLocaleString()} ${currency} of ${loan.amount.toLocaleString()} ${currency} paid
+                        <span class="loan-status-${status} float-end">
+                            ${status.replace('_', ' ').toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+                <div class="text-end ms-3">
+                    <button class="btn btn-sm btn-outline-success" onclick="addLoanPayment('given', '${loan.id}')">
+                        <i class="bi bi-plus-circle"></i> Payment
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+function updateLoansTaken() {
+    const container = document.getElementById('loansTakenList');
+    container.innerHTML = '';
+    
+    if (loans.taken.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-arrow-down-left fs-1 d-block mb-2"></i>
+                No loans taken
+            </div>
+        `;
+        return;
+    }
+    
+    loans.taken.forEach(loan => {
+        const status = DebtEngine.getLoanStatus(loan);
+        const paidAmount = DebtEngine.getPaidAmount(loan);
+        const remainingAmount = loan.amount - paidAmount;
+        
+        const item = document.createElement('div');
+        item.className = 'transaction-item mb-3';
+        
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${loan.person}</div>
+                    <div class="small text-muted">
+                        ${loan.description || 'No description'} • 
+                        Due: ${format(parseISO(loan.dueDate), 'MMM dd, yyyy')}
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar" style="width: ${(paidAmount / loan.amount) * 100}%"></div>
+                    </div>
+                    <div class="small">
+                        ${paidAmount.toLocaleString()} ${currency} of ${loan.amount.toLocaleString()} ${currency} paid
+                        <span class="loan-status-${status} float-end">
+                            ${status.replace('_', ' ').toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+                <div class="text-end ms-3">
+                    <button class="btn btn-sm btn-outline-success" onclick="addLoanPayment('taken', '${loan.id}')">
+                        <i class="bi bi-plus-circle"></i> Payment
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+function updateUpcomingRepayments(upcomingRepayments) {
+    const container = document.getElementById('upcomingRepayments');
+    container.innerHTML = '';
+    
+    if (upcomingRepayments.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-calendar-check fs-1 d-block mb-2"></i>
+                No upcoming repayments
+            </div>
+        `;
+        return;
+    }
+    
+    upcomingRepayments.forEach(loan => {
+        const status = DebtEngine.getLoanStatus(loan);
+        const paidAmount = DebtEngine.getPaidAmount(loan);
+        const remainingAmount = loan.amount - paidAmount;
+        const isGiven = loans.given.some(l => l.id === loan.id);
+        
+        const item = document.createElement('div');
+        item.className = 'transaction-item mb-2';
+        
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${loan.person}</div>
+                    <div class="small text-muted">
+                        ${isGiven ? 'You lent' : 'You borrowed'} • 
+                        Due: ${format(parseISO(loan.expectedReturn || loan.dueDate), 'MMM dd, yyyy')}
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold ${isGiven ? 'text-info' : 'text-warning'}">
+                        ${remainingAmount.toLocaleString()} ${currency}
+                    </div>
+                    <span class="loan-status-${status} small">
+                        ${status.replace('_', ' ').toUpperCase()}
+                    </span>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
+
+function addLoanPayment(loanType, loanId) {
+    const loanArray = loanType === 'given' ? loans.given : loans.taken;
+    const loan = loanArray.find(l => l.id === loanId);
+    
+    if (!loan) return;
+    
+    const remainingAmount = loan.amount - DebtEngine.getPaidAmount(loan);
+    const amount = prompt(`Enter payment amount (remaining: ${remainingAmount.toLocaleString()} ${currency}):`, remainingAmount);
+    
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        return;
+    }
+    
+    const paymentAmount = parseFloat(amount);
+    
+    if (paymentAmount > remainingAmount) {
+        showToast('Payment amount cannot exceed remaining amount', 'warning');
+        return;
+    }
+    
+    DebtEngine.addPayment(loan, paymentAmount);
+    saveLoans();
+    updateDebtManagement();
+    
+    showToast('Payment recorded successfully', 'success');
+}
+
+// Settings functions
+function updateSettings() {
+    updateCurrencySettings();
+    updateCategoriesList();
+}
+
+function updateCurrencySettings() {
+    const currencySelect = document.getElementById('currencySelect');
+    if (currencySelect) {
+        currencySelect.value = currency;
+    }
+}
+
+function updateCategoriesList() {
+    const container = document.getElementById('categoriesList');
+    container.innerHTML = '';
+    
+    categories.forEach(category => {
+        const item = document.createElement('div');
+        item.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded';
+        
+        item.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="color-indicator me-2" style="width: 16px; height: 16px; background-color: ${category.color}; border-radius: 3px;"></div>
+                <div>
+                    <div class="fw-bold">${category.name}</div>
+                    <div class="small text-muted">
+                        <span class="badge ${category.type === 'income' ? 'bg-success' : 'bg-danger'}">
+                            ${category.type}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory('${category.id}')">
+                <i class="bi bi-trash"></i>
             </button>
-            <button class="nav-link" id="trends-tab" data-bs-toggle="pill" data-bs-target="#trends" type="button">
-              <i class="bi bi-bar-chart"></i> Trends
-            </button>
-            <button class="nav-link" id="comparison-tab" data-bs-toggle="pill" data-bs-target="#comparison" type="button">
-              <i class="bi bi-calendar-range"></i> Comparison
-            </button>
-          </div>
-        </div>
+        `;
+        
+        container.appendChild(item);
+    });
+}
 
-        <!-- Analytics Content -->
-        <div class="tab-content" id="analyticsTabContent">
-          <!-- Overview Tab -->
-          <div class="tab-pane fade show active" id="overview" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12 col-lg-8">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-graph-up"></i> Spending Overview
-                    <div class="chart-controls">
-                      <select id="overviewChartType" class="form-select form-select-sm">
-                        <option value="category">By Category</option>
-                        <option value="monthly">Monthly Trend</option>
-                        <option value="yearly">Yearly Comparison</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="overviewChart" height="300"></canvas>
-                    <div id="overviewChartPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Select a chart type to view data visualization</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-4">
-                <div class="distribution-card income">
-                  <div class="card-header">
-                    <i class="bi bi-pie-chart"></i> Income Distribution
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="incomePieChart" height="250"></canvas>
-                    <div id="incomePiePlaceholder" class="chart-placeholder">
-                      <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">No income data available</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="distribution-card expense mt-3">
-                  <div class="card-header">
-                    <i class="bi bi-pie-chart"></i> Expense Distribution
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="expensePieChart" height="250"></canvas>
-                    <div id="expensePiePlaceholder" class="chart-placeholder">
-                      <i class="bi bi-cart" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">No expense data available</p>
-                    </div>
-                  </div>
-                </div>
-                <div class="chart-card mt-3">
-                  <div class="chart-header">
-                    <i class="bi bi-exclamation-triangle"></i> Risk Alerts
-                  </div>
-                  <div class="chart-body">
-                    <div id="riskAlerts" class="risk-alerts-container">
-                      <!-- Risk alerts will be populated here -->
-                    </div>
-                    <div id="noRiskAlerts" class="chart-placeholder">
-                      <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">No spending risks detected</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+function updateCurrency() {
+    const newCurrency = document.getElementById('currencySelect').value;
+    currency = newCurrency;
+    localStorage.setItem('currency', currency);
+    updateUI();
+    showToast(`Currency updated to ${currency}`, 'success');
+}
 
-          <!-- Trends Tab -->
-          <div class="tab-pane fade" id="trends" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-heart-pulse"></i> Financial Health Trend
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="healthTrendChart" height="200"></canvas>
-                    <div id="healthTrendPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-heart-pulse" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Tracking your financial health over time...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-calendar-week"></i> Spending Heat Map
-                  </div>
-                  <div class="chart-body">
-                    <div id="heatMapContainer" class="heat-map-container">
-                      <!-- Heat map will be populated here -->
-                    </div>
-                    <div id="heatMapPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Heat map requires transaction data</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-arrow-up-right"></i> Category Trends
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="categoryTrendChart" height="300"></canvas>
-                    <div id="categoryTrendPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-tag" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Analyzing category spending trends...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+function deleteCategory(id) {
+    if (!confirm('Are you sure you want to delete this category? Transactions using this category will become uncategorized.')) {
+        return;
+    }
+    
+    categories = categories.filter(cat => cat.id !== id);
+    saveCategories();
+    updateCategoryDropdowns();
+    updateSettings();
+    updateUI();
+    
+    showToast('Category deleted successfully', 'success');
+}
 
-          <!-- Comparison Tab -->
-          <div class="tab-pane fade" id="comparison" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="comparison-controls">
-                  <div class="row g-2">
-                    <div class="col-md-4">
-                      <select id="comparisonType" class="form-select">
-                        <option value="month">Month vs Month</option>
-                        <option value="year">Year vs Year</option>
-                        <option value="average">vs 3-Month Average</option>
-                      </select>
-                    </div>
-                    <div class="col-md-4">
-                      <select id="comparisonPeriod1" class="form-select"></select>
-                    </div>
-                    <div class="col-md-4">
-                      <select id="comparisonPeriod2" class="form-select"></select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-bar-chart"></i> Spending Comparison
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="comparisonChart" height="300"></canvas>
-                    <div id="comparisonPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Select periods to compare</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-percent"></i> Change Analysis
-                  </div>
-                  <div class="chart-body">
-                    <div id="changeAnalysis" class="change-analysis-container">
-                      <!-- Change analysis will be populated here -->
-                    </div>
-                    <div id="noChangeAnalysis" class="chart-placeholder">
-                      <i class="bi bi-arrow-left-right" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Compare periods to see changes</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+// Data management functions
+function exportData() {
+    const data = {
+        transactions: transactions,
+        categories: categories,
+        monthlyBudgets: monthlyBudgets,
+        futureTransactions: futureTransactions,
+        loans: loans,
+        currency: currency,
+        exportDate: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `wealth_command_export_${format(new Date(), 'yyyy-MM-dd')}.json`;
+    link.click();
+}
 
-    <!-- Settings Tab -->
-    <div id="tab-settings" class="tab-page d-none">
-      <div class="card shadow-sm mb-4">
-        <div class="card-header"><i class="bi bi-gear"></i> Settings</div>
-        <div class="card-body">
-          <!-- Dark Mode Toggle -->
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="darkModeToggle">
-              <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
-            </div>
-          </div>
-          <hr>
+function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (data.transactions) transactions = data.transactions;
+                if (data.categories) categories = data.categories;
+                if (data.monthlyBudgets) monthlyBudgets = data.monthlyBudgets;
+                if (data.futureTransactions) futureTransactions = data.futureTransactions;
+                if (data.loans) loans = data.loans;
+                if (data.currency) currency = data.currency;
+                
+                saveTransactions();
+                saveCategories();
+                saveMonthlyBudgets(monthlyBudgets);
+                saveFutureTransactions();
+                saveLoans();
+                localStorage.setItem('currency', currency);
+                
+                updateUI();
+                showToast('Data imported successfully', 'success');
+            } catch (error) {
+                showToast('Error importing data: Invalid file format', 'danger');
+            }
+        };
+        
+        reader.readAsText(file);
+    };
+    
+    input.click();
+}
 
-          <!-- Cloud Sync Section -->
-          <div class="mb-3">
-            <label class="form-label">Cloud Sync</label>
-            <div class="d-flex gap-2 mb-2">
-              <button id="manualSyncSettings" class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-cloud-arrow-up"></i> Sync Now
-              </button>
-              <small class="text-muted ms-2" id="syncStatusText">
-                Sign in to sync across devices
-              </small>
-            </div>
-          </div>
-          <hr>
+function clearAllData() {
+    if (!confirm('Are you sure you want to clear ALL data? This action cannot be undone.')) {
+        return;
+    }
+    
+    if (!confirm('This will delete ALL transactions, categories, budgets, and settings. Are you absolutely sure?')) {
+        return;
+    }
+    
+    transactions = [];
+    categories = [
+        { id: 'salary', name: 'Salary', type: 'income', color: '#28a745' },
+        { id: 'freelance', name: 'Freelance', type: 'income', color: '#20c997' },
+        { id: 'investment', name: 'Investment', type: 'income', color: '#17a2b8' },
+        { id: 'food', name: 'Food & Dining', type: 'expense', color: '#dc3545' },
+        { id: 'transport', name: 'Transport', type: 'expense', color: '#fd7e14' },
+        { id: 'shopping', name: 'Shopping', type: 'expense', color: '#e83e8c' },
+        { id: 'entertainment', name: 'Entertainment', type: 'expense', color: '#6f42c1' },
+        { id: 'bills', name: 'Bills & Utilities', type: 'expense', color: '#007bff' },
+        { id: 'healthcare', name: 'Healthcare', type: 'expense', color: '#6c757d' }
+    ];
+    monthlyBudgets = {};
+    futureTransactions = { income: [], expenses: [] };
+    loans = { given: [], taken: [] };
+    currency = "PKR";
+    
+    localStorage.clear();
+    saveTransactions();
+    saveCategories();
+    saveMonthlyBudgets(monthlyBudgets);
+    saveFutureTransactions();
+    saveLoans();
+    localStorage.setItem('currency', currency);
+    
+    updateUI();
+    showToast('All data cleared successfully', 'success');
+}
 
-          <!-- Monthly Rollover Settings -->
-          <div class="mb-3">
-            <label class="form-label">Monthly Rollover Settings</label>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="autoRolloverToggle" checked>
-              <label class="form-check-label" for="autoRolloverToggle">Auto-rollover balances</label>
-            </div>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="allowNegativeRollover">
-              <label class="form-check-label" for="allowNegativeRollover">Allow negative rollovers</label>
-            </div>
-            <small class="text-muted">Automatically carry over surplus/deficit to next month</small>
-          </div>
-          <hr>
-
-          <!-- Currency Selection -->
-          <div class="mb-3">
-            <label for="currencySelect" class="form-label">Currency</label>
-            <select id="currencySelect" class="form-select">
-              <option value="PKR">PKR - Pakistani Rupee</option>
-              <option value="USD">USD - US Dollar</option>
-              <option value="EUR">EUR - Euro</option>
-            </select>
-          </div>
-
-          <!-- Enhanced Category Management -->
-          <div>
-            <button id="toggleCategorySettings" class="btn btn-outline-secondary w-100 mb-2" type="button">
-              <span id="catCollapseIcon"><i class="bi bi-chevron-right"></i></span> Category Settings
-            </button>
-            <div id="categorySettingsPanel" class="collapse">
-              <div class="input-group mb-2">
-                <input type="text" id="newCategoryInput" class="form-control" placeholder="New category">
-                <select id="newCategoryType" class="form-select" style="max-width: 120px;">
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
-                <button id="addCategoryBtn" class="btn btn-primary" type="button"><i class="bi bi-plus"></i> Add</button>
-              </div>
-              <ul id="categoryList" class="list-group"></ul>
-            </div>
-          </div>
-          <hr>
-
-          <!-- Import / Export -->
-          <div>
-            <label class="form-label">Import / Export Transactions</label>
-            <div class="mb-2">
-              <button id="exportBtn" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Export</button>
-              <input type="file" id="importFile" accept=".json" style="display:none;">
-              <button id="importBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-upload"></i> Import</button>
-            </div>
-            <div id="importExportAlert" class="alert alert-info d-none"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Add/Edit Transaction Modal -->
-  <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form id="transactionForm" autocomplete="off">
-          <div class="modal-header">
-            <h5 class="modal-title" id="addTransactionModalLabel"><i class="bi bi-plus-circle"></i> Add Transaction</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="editTransactionIndex" value="-1">
-            <div class="row g-2 align-items-end">
-              <div class="col-6 col-md-4">
-                <label for="dateInput" class="form-label">Date</label>
-                <input type="date" class="form-control" id="dateInput" required>
-              </div>
-              <div class="col-12 col-md-4">
-                <label for="descInput" class="form-label">Description</label>
-                <input type="text" class="form-control" id="descInput" required>
-              </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label">Type</label>
-                <select class="form-select" id="typeInput" required>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
-              </div>
-              <div class="col-6 col-md-2">
-                <label for="categoryInput" class="form-label">Category</label>
-                <select class="form-select" id="categoryInput" required>
-                  <!-- Categories populate here -->
-                </select>
-              </div>
-              <div class="col-6 col-md-2">
-                <label for="amountInput" class="form-label">Amount</label>
-                <input type="number" class="form-control" id="amountInput" required step="0.01">
-              </div>
-            </div>
-            <div id="formAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
-          </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> <span id="submitButtonText">Add</span></button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Confirmation Modal -->
-  <div class="modal fade confirmation-modal" id="confirmationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Confirm Action</h5>
-        </div>
-        <div class="modal-body text-center">
-          <div class="confirmation-icon confirmation-danger">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-          </div>
-          <h6 id="confirmationTitle">Are you sure?</h6>
-          <p id="confirmationMessage" class="text-muted">This action cannot be undone.</p>
-        </div>
-        <div class="modal-footer justify-content-center">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Enhanced Bottom Navigation Bar -->
-  <nav class="navbar navbar-light p-0 fixed-bottom" id="fixedNavBar">
-    <div class="container-fluid p-0">
-      <div class="d-flex justify-content-around w-100">
-        <button class="nav-btn" data-tab="dashboard">
-          <i class="bi bi-house-door"></i>
-          <small>Dashboard</small>
-        </button>
-        <button class="nav-btn" data-tab="transactions">
-          <i class="bi bi-list-ul"></i>
-          <small>Transactions</small>
-        </button>
-        <button class="nav-btn" data-tab="planner">
-          <i class="bi bi-calendar-check"></i>
-          <small>Planner</small>
-        </button>
-        <button class="nav-btn" data-tab="debt">
-          <i class="bi bi-cash-coin"></i>
-          <small>Debt</small>
-        </button>
-        <button class="nav-btn" data-tab="analytics">
-          <i class="bi bi-bar-chart"></i>
-          <small>Analytics</small>
-        </button>
-        <button class="nav-btn" data-tab="settings">
-          <i class="bi bi-gear"></i>
-          <small>Settings</small>
-        </button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+// Export transaction functions for global access
+window.addTransaction = addTransaction;
+window.addCategory = addCategory;
+window.addFutureTransaction = addFutureTransaction;
+window.addLoan = addLoan;
+window.deleteTransaction = deleteTransaction;
+window.deleteFutureTransaction = deleteFutureTransaction;
+window.deleteCategory = deleteCategory;
+window.addLoanPayment = addLoanPayment;
+window.exportData = exportData;
+window.importData = importData;
+window.clearAllData = clearAllData;
+window.updateCurrency = updateCurrency;
