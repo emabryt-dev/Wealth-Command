@@ -9,17 +9,35 @@
   <!-- Bootstrap 5 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- External Libraries -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+  <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-content">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3">Loading Wealth Command...</p>
+    </div>
+  </div>
+
   <!-- Top Navbar with Profile Picture -->
   <nav class="navbar navbar-dark bg-primary">
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <a class="navbar-brand" href="#">Wealth Command</a>
       <div class="d-flex align-items-center gap-2">
+        <!-- Sync Status -->
+        <div class="sync-status">
+          <span id="syncStatusIcon" class="sync-icon bi bi-cloud" data-bs-toggle="tooltip" title="Not signed in"></span>
         </div>
         
         <!-- Profile Picture -->
@@ -135,7 +153,7 @@
   <div class="modal fade" id="futureIncomeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form id="futureIncomeForm" autocomplete="off">
+        <form id="futureIncomeForm" autocomplete="off" novalidate>
           <div class="modal-header">
             <h5 class="modal-title" id="futureIncomeModalLabel">Add Future Income</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -145,6 +163,7 @@
             <div class="mb-3">
               <label for="futureIncomeDescription" class="form-label">Description</label>
               <input type="text" class="form-control" id="futureIncomeDescription" required>
+              <div class="invalid-feedback">Please enter a description</div>
             </div>
             <div class="row g-2">
               <div class="col-md-6">
@@ -155,10 +174,12 @@
                   <option value="sale">Asset Sale</option>
                   <option value="committee">Committee Payout</option>
                 </select>
+                <div class="invalid-feedback">Please select a type</div>
               </div>
               <div class="col-md-6">
                 <label for="futureIncomeAmount" class="form-label">Amount</label>
-                <input type="number" class="form-control" id="futureIncomeAmount" required step="0.01">
+                <input type="number" class="form-control" id="futureIncomeAmount" required step="0.01" min="0.01">
+                <div class="invalid-feedback">Please enter a valid amount</div>
               </div>
             </div>
             <div class="row g-2 mt-2">
@@ -169,10 +190,12 @@
                   <option value="monthly">Monthly</option>
                   <option value="quarterly">Quarterly</option>
                 </select>
+                <div class="invalid-feedback">Please select frequency</div>
               </div>
               <div class="col-md-6">
                 <label for="futureIncomeStartDate" class="form-label">Start Date</label>
                 <input type="date" class="form-control" id="futureIncomeStartDate" required>
+                <div class="invalid-feedback">Please select start date</div>
               </div>
             </div>
             <div class="mb-3">
@@ -194,7 +217,7 @@
   <div class="modal fade" id="futureExpenseModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form id="futureExpenseForm" autocomplete="off">
+        <form id="futureExpenseForm" autocomplete="off" novalidate>
           <div class="modal-header">
             <h5 class="modal-title" id="futureExpenseModalLabel">Add Future Expense</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -204,6 +227,7 @@
             <div class="mb-3">
               <label for="futureExpenseDescription" class="form-label">Description</label>
               <input type="text" class="form-control" id="futureExpenseDescription" required>
+              <div class="invalid-feedback">Please enter a description</div>
             </div>
             <div class="row g-2">
               <div class="col-md-6">
@@ -215,10 +239,12 @@
                   <option value="loan_returned">Loan Repayment</option>
                   <option value="committee">Committee</option>
                 </select>
+                <div class="invalid-feedback">Please select a type</div>
               </div>
               <div class="col-md-6">
                 <label for="futureExpenseAmount" class="form-label">Amount</label>
-                <input type="number" class="form-control" id="futureExpenseAmount" required step="0.01">
+                <input type="number" class="form-control" id="futureExpenseAmount" required step="0.01" min="0.01">
+                <div class="invalid-feedback">Please enter a valid amount</div>
               </div>
             </div>
             <div class="row g-2 mt-2">
@@ -229,10 +255,12 @@
                   <option value="monthly">Monthly</option>
                   <option value="quarterly">Quarterly</option>
                 </select>
+                <div class="invalid-feedback">Please select frequency</div>
               </div>
               <div class="col-md-6">
                 <label for="futureExpenseStartDate" class="form-label">Start Date</label>
                 <input type="date" class="form-control" id="futureExpenseStartDate" required>
+                <div class="invalid-feedback">Please select start date</div>
               </div>
             </div>
             <div class="mb-3">
@@ -254,7 +282,7 @@
   <div class="modal fade" id="loanModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form id="loanForm" autocomplete="off">
+        <form id="loanForm" autocomplete="off" novalidate>
           <div class="modal-header">
             <h5 class="modal-title" id="loanModalLabel">Add Loan</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -268,32 +296,39 @@
             </div>
             <div class="mb-3">
               <label for="loanAmount" class="form-label">Amount</label>
-              <input type="number" class="form-control" id="loanAmount" required step="0.01">
+              <input type="number" class="form-control" id="loanAmount" required step="0.01" min="0.01">
+              <div class="invalid-feedback">Please enter a valid amount</div>
             </div>
             <div class="mb-3" id="loanBorrowerLabel">
               <label for="loanBorrower" class="form-label">Borrower Name</label>
-              <input type="text" class="form-control" id="loanBorrower">
+              <input type="text" class="form-control" id="loanBorrower" required>
+              <div class="invalid-feedback">Please enter borrower name</div>
             </div>
             <div class="mb-3" id="loanLenderLabel" style="display: none;">
               <label for="loanLender" class="form-label">Lender Name</label>
-              <input type="text" class="form-control" id="loanLender">
+              <input type="text" class="form-control" id="loanLender" required>
+              <div class="invalid-feedback">Please enter lender name</div>
             </div>
             <div class="row g-2">
               <div class="col-md-6" id="loanDateGivenLabel">
                 <label for="loanDateGiven" class="form-label">Date Given</label>
-                <input type="date" class="form-control" id="loanDateGiven">
+                <input type="date" class="form-control" id="loanDateGiven" required>
+                <div class="invalid-feedback">Please select date</div>
               </div>
               <div class="col-md-6" id="loanDateTakenLabel" style="display: none;">
                 <label for="loanDateTaken" class="form-label">Date Taken</label>
-                <input type="date" class="form-control" id="loanDateTaken">
+                <input type="date" class="form-control" id="loanDateTaken" required>
+                <div class="invalid-feedback">Please select date</div>
               </div>
               <div class="col-md-6" id="loanExpectedReturnLabel">
                 <label for="loanExpectedReturn" class="form-label">Expected Return Date</label>
-                <input type="date" class="form-control" id="loanExpectedReturn">
+                <input type="date" class="form-control" id="loanExpectedReturn" required>
+                <div class="invalid-feedback">Please select expected return date</div>
               </div>
               <div class="col-md-6" id="loanDueDateLabel" style="display: none;">
                 <label for="loanDueDate" class="form-label">Due Date</label>
-                <input type="date" class="form-control" id="loanDueDate">
+                <input type="date" class="form-control" id="loanDueDate" required>
+                <div class="invalid-feedback">Please select due date</div>
               </div>
             </div>
           </div>
@@ -309,67 +344,67 @@
   <div class="main-content container py-3">
 
     <!-- Monthly Details Modal -->
-<div class="modal fade" id="monthDetailsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="monthDetailsModalLabel">
-          <i class="bi bi-calendar-month"></i> Month Details
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="month-details-summary">
-          <div class="row text-center">
-            <div class="col-4">
-              <div class="text-success">
-                <div class="fw-bold fs-4" id="monthDetailsIncome">0</div>
-                <small>Total Income</small>
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="text-danger">
-                <div class="fw-bold fs-4" id="monthDetailsExpenses">0</div>
-                <small>Total Expenses</small>
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="text-primary">
-                <div class="fw-bold fs-4" id="monthDetailsBalance">0</div>
-                <small>Ending Balance</small>
-              </div>
-            </div>
+    <div class="modal fade" id="monthDetailsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="monthDetailsModalLabel">
+              <i class="bi bi-calendar-month"></i> Month Details
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-        </div>
+          <div class="modal-body">
+            <div class="month-details-summary">
+              <div class="row text-center">
+                <div class="col-4">
+                  <div class="text-success">
+                    <div class="fw-bold fs-4" id="monthDetailsIncome">0</div>
+                    <small>Total Income</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="text-danger">
+                    <div class="fw-bold fs-4" id="monthDetailsExpenses">0</div>
+                    <small>Total Expenses</small>
+                  </div>
+                </div>
+                <div class="col-4">
+                  <div class="text-primary">
+                    <div class="fw-bold fs-4" id="monthDetailsBalance">0</div>
+                    <small>Ending Balance</small>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <div class="row">
-          <div class="col-md-6">
-            <h6><i class="bi bi-currency-dollar text-success"></i> Income Breakdown</h6>
-            <div id="monthDetailsIncomeList" class="month-details-breakdown">
-              <!-- Income items will be populated here -->
+            <div class="row">
+              <div class="col-md-6">
+                <h6><i class="bi bi-currency-dollar text-success"></i> Income Breakdown</h6>
+                <div id="monthDetailsIncomeList" class="month-details-breakdown">
+                  <!-- Income items will be populated here -->
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6><i class="bi bi-cart text-danger"></i> Expense Breakdown</h6>
+                <div id="monthDetailsExpensesList" class="month-details-breakdown">
+                  <!-- Expense items will be populated here -->
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="col-md-6">
-            <h6><i class="bi bi-cart text-danger"></i> Expense Breakdown</h6>
-            <div id="monthDetailsExpensesList" class="month-details-breakdown">
-              <!-- Expense items will be populated here -->
-            </div>
-          </div>
-        </div>
 
-        <div class="mt-3">
-          <h6><i class="bi bi-info-circle text-info"></i> Transaction Details</h6>
-          <div id="monthDetailsTransactions" class="month-details-breakdown">
-            <!-- Individual transaction calculations will be shown here -->
+            <div class="mt-3">
+              <h6><i class="bi bi-info-circle text-info"></i> Transaction Details</h6>
+              <div id="monthDetailsTransactions" class="month-details-breakdown">
+                <!-- Individual transaction calculations will be shown here -->
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
-  </div>
-</div>
     
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
@@ -460,6 +495,37 @@
 
     <!-- Transactions Tab -->
     <div id="tab-transactions" class="tab-page d-none">
+      <!-- Search and Filter Bar -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="transactionSearch" class="form-control" placeholder="Search transactions...">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <select id="transactionTypeFilter" class="form-select">
+                <option value="all">All Types</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <select id="transactionCategoryFilter" class="form-select">
+                <option value="all">All Categories</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-outline-secondary w-100" onclick="clearTransactionFilters()">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Improved Transactions Table with Click-to-Edit -->
       <div class="card shadow-sm mb-4">
         <div class="card-header">
@@ -706,231 +772,151 @@
             <div class="col-12 col-md-4">
               <div class="health-score-card">
                 <div class="health-score-header">
-                  <i class="bi bi-heart-pulse"></i> Financial Health
+                  <i class="bi bi-heart-pulse"></i>
+                  <span>Financial Health Score</span>
                 </div>
-                <div class="health-score-value" id="healthScoreValue">--</div>
-                <div class="health-score-label" id="healthScoreLabel">Calculating...</div>
-                <div class="health-score-trend" id="healthScoreTrend"></div>
+                <div class="health-score-value" id="healthScore">-</div>
+                <div class="health-score-description" id="healthDescription">Calculating...</div>
               </div>
             </div>
-            <div class="col-12 col-md-4">
-              <div class="savings-rate-card">
-                <div class="savings-rate-header">
-                  <i class="bi bi-piggy-bank"></i> Savings Rate
-                </div>
-                <div class="savings-rate-value" id="savingsRateValue">--</div>
-                <div class="savings-rate-label" id="savingsRateLabel">This Month</div>
-                <div class="savings-rate-progress">
-                  <div class="progress">
-                    <div id="savingsRateProgress" class="progress-bar" role="progressbar"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-8">
               <div class="ai-recommendations-card">
                 <div class="ai-recommendations-header">
-                  <i class="bi bi-robot"></i> AI Insights
+                  <i class="bi bi-robot"></i>
+                  <span>AI Recommendations</span>
                 </div>
-                <div id="aiQuickInsights" class="ai-quick-insights">
-                  <div class="text-center text-muted">
-                    <small>Analyzing your spending patterns...</small>
+                <div id="aiRecommendations" class="ai-recommendations-content">
+                  <div class="ai-recommendation-item">
+                    <i class="bi bi-lightbulb"></i>
+                    <span>Add more transactions to get personalized insights</span>
                   </div>
                 </div>
-                <button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="showFullAIAnalysis()">
-                  <i class="bi bi-graph-up"></i> View Full Analysis
+                <div class="ai-recommendations-footer">
+                  <button class="btn btn-sm btn-primary" onclick="openAIAnalysis()">
+                    <i class="bi bi-robot"></i> Get Detailed Analysis
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Time Period Selector -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <div class="row g-2 align-items-center">
+              <div class="col-md-4">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                  <select id="analyticsPeriod" class="form-select">
+                    <option value="1month">Last 1 Month</option>
+                    <option value="3months">Last 3 Months</option>
+                    <option value="6months">Last 6 Months</option>
+                    <option value="1year">Last 1 Year</option>
+                    <option value="all">All Time</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-funnel"></i></span>
+                  <select id="analyticsType" class="form-select">
+                    <option value="both">Income & Expenses</option>
+                    <option value="income">Income Only</option>
+                    <option value="expense">Expenses Only</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-outline-secondary w-100" onclick="refreshAnalytics()">
+                  <i class="bi bi-arrow-clockwise"></i> Refresh
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Analytics Navigation -->
-        <div class="analytics-nav">
-          <div class="nav nav-pills nav-fill" id="analyticsTabs" role="tablist">
-            <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button">
-              <i class="bi bi-speedometer2"></i> Overview
-            </button>
-            <button class="nav-link" id="trends-tab" data-bs-toggle="pill" data-bs-target="#trends" type="button">
-              <i class="bi bi-bar-chart"></i> Trends
-            </button>
-            <button class="nav-link" id="comparison-tab" data-bs-toggle="pill" data-bs-target="#comparison" type="button">
-              <i class="bi bi-calendar-range"></i> Comparison
-            </button>
+        <!-- Charts Section -->
+        <div class="row g-4 mb-4">
+          <div class="col-12 col-lg-6">
+            <div class="chart-card">
+              <div class="chart-header">
+                <i class="bi bi-pie-chart"></i>
+                <span>Spending by Category</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="categoryChart" width="400" height="300"></canvas>
+                <div class="chart-loading">
+                  <div class="spinner-border spinner-border-sm" role="status"></div>
+                  <span>Loading chart...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="chart-card">
+              <div class="chart-header">
+                <i class="bi bi-bar-chart"></i>
+                <span>Monthly Trends</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="trendChart" width="400" height="300"></canvas>
+                <div class="chart-loading">
+                  <div class="spinner-border spinner-border-sm" role="status"></div>
+                  <span>Loading chart...</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Analytics Content -->
-        <div class="tab-content" id="analyticsTabContent">
-          <!-- Overview Tab -->
-          <div class="tab-pane fade show active" id="overview" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12 col-lg-8">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-graph-up"></i> Spending Overview
-                    <div class="chart-controls">
-                      <select id="overviewChartType" class="form-select form-select-sm">
-                        <option value="category">By Category</option>
-                        <option value="monthly">Monthly Trend</option>
-                        <option value="yearly">Yearly Comparison</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="overviewChart" height="300"></canvas>
-                    <div id="overviewChartPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Select a chart type to view data visualization</p>
-                    </div>
-                  </div>
+        <!-- Spending Patterns -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header">
+            <i class="bi bi-graph-up"></i> Spending Patterns
+          </div>
+          <div class="card-body">
+            <div id="spendingPatterns" class="spending-patterns">
+              <div class="pattern-item">
+                <i class="bi bi-arrow-up-right text-success"></i>
+                <div>
+                  <strong>Highest Spending Category:</strong>
+                  <span id="highestCategory">-</span>
                 </div>
               </div>
-              <div class="col-12 col-lg-4">
-                <div class="distribution-card income">
-                  <div class="card-header">
-                    <i class="bi bi-pie-chart"></i> Income Distribution
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="incomePieChart" height="250"></canvas>
-                    <div id="incomePiePlaceholder" class="chart-placeholder">
-                      <i class="bi bi-currency-dollar" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">No income data available</p>
-                    </div>
-                  </div>
+              <div class="pattern-item">
+                <i class="bi bi-calendar-week text-primary"></i>
+                <div>
+                  <strong>Average Monthly Expenses:</strong>
+                  <span id="avgMonthlyExpenses">-</span>
                 </div>
-                <div class="distribution-card expense mt-3">
-                  <div class="card-header">
-                    <i class="bi bi-pie-chart"></i> Expense Distribution
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="expensePieChart" height="250"></canvas>
-                    <div id="expensePiePlaceholder" class="chart-placeholder">
-                      <i class="bi bi-cart" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">No expense data available</p>
-                    </div>
-                  </div>
+              </div>
+              <div class="pattern-item">
+                <i class="bi bi-lightning text-warning"></i>
+                <div>
+                  <strong>Largest Single Expense:</strong>
+                  <span id="largestExpense">-</span>
                 </div>
-                <div class="chart-card mt-3">
-                  <div class="chart-header">
-                    <i class="bi bi-exclamation-triangle"></i> Risk Alerts
-                  </div>
-                  <div class="chart-body">
-                    <div id="riskAlerts" class="risk-alerts-container">
-                      <!-- Risk alerts will be populated here -->
-                    </div>
-                    <div id="noRiskAlerts" class="chart-placeholder">
-                      <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">No spending risks detected</p>
-                    </div>
-                  </div>
+              </div>
+              <div class="pattern-item">
+                <i class="bi bi-arrow-trend-up text-info"></i>
+                <div>
+                  <strong>Spending Trend:</strong>
+                  <span id="spendingTrend">-</span>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Trends Tab -->
-          <div class="tab-pane fade" id="trends" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-heart-pulse"></i> Financial Health Trend
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="healthTrendChart" height="200"></canvas>
-                    <div id="healthTrendPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-heart-pulse" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Tracking your financial health over time...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-calendar-week"></i> Spending Heat Map
-                  </div>
-                  <div class="chart-body">
-                    <div id="heatMapContainer" class="heat-map-container">
-                      <!-- Heat map will be populated here -->
-                    </div>
-                    <div id="heatMapPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Heat map requires transaction data</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-arrow-up-right"></i> Category Trends
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="categoryTrendChart" height="300"></canvas>
-                    <div id="categoryTrendPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-tag" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Analyzing category spending trends...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <!-- Category Comparison -->
+        <div class="card shadow-sm">
+          <div class="card-header">
+            <i class="bi bi-percent"></i> Category Comparison
           </div>
-
-          <!-- Comparison Tab -->
-          <div class="tab-pane fade" id="comparison" role="tabpanel">
-            <div class="row g-3">
-              <div class="col-12">
-                <div class="comparison-controls">
-                  <div class="row g-2">
-                    <div class="col-md-4">
-                      <select id="comparisonType" class="form-select">
-                        <option value="month">Month vs Month</option>
-                        <option value="year">Year vs Year</option>
-                        <option value="average">vs 3-Month Average</option>
-                      </select>
-                    </div>
-                    <div class="col-md-4">
-                      <select id="comparisonPeriod1" class="form-select"></select>
-                    </div>
-                    <div class="col-md-4">
-                      <select id="comparisonPeriod2" class="form-select"></select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-bar-chart"></i> Spending Comparison
-                  </div>
-                  <div class="chart-body">
-                    <canvas id="comparisonChart" height="300"></canvas>
-                    <div id="comparisonPlaceholder" class="chart-placeholder">
-                      <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Select periods to compare</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-12 col-lg-6">
-                <div class="chart-card">
-                  <div class="chart-header">
-                    <i class="bi bi-percent"></i> Change Analysis
-                  </div>
-                  <div class="chart-body">
-                    <div id="changeAnalysis" class="change-analysis-container">
-                      <!-- Change analysis will be populated here -->
-                    </div>
-                    <div id="noChangeAnalysis" class="chart-placeholder">
-                      <i class="bi bi-arrow-left-right" style="font-size: 3rem; opacity: 0.5;"></i>
-                      <p class="mt-2">Compare periods to see changes</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div class="card-body">
+            <div id="categoryComparison" class="category-comparison">
+              <!-- Category comparison items will be populated here -->
             </div>
           </div>
         </div>
@@ -940,132 +926,194 @@
     <!-- Settings Tab -->
     <div id="tab-settings" class="tab-page d-none">
       <div class="card shadow-sm mb-4">
-        <div class="card-header"><i class="bi bi-gear"></i> Settings</div>
+        <div class="card-header">
+          <i class="bi bi-gear"></i> Settings
+        </div>
         <div class="card-body">
-          <!-- Dark Mode Toggle -->
-          <div class="mb-3">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="darkModeToggle">
-              <label class="form-check-label" for="darkModeToggle">Dark Mode</label>
-            </div>
-          </div>
-          <hr>
-
-          <!-- Cloud Sync Section -->
-          <div class="mb-3">
-            <label class="form-label">Cloud Sync</label>
-            <div class="d-flex gap-2 mb-2">
-              <button id="manualSyncSettings" class="btn btn-outline-primary btn-sm">
-                <i class="bi bi-cloud-arrow-up"></i> Sync Now
-              </button>
-              <small class="text-muted ms-2" id="syncStatusText">
-                Sign in to sync across devices
-              </small>
-            </div>
-          </div>
-          <hr>
-
-          <!-- Monthly Rollover Settings -->
-          <div class="mb-3">
-            <label class="form-label">Monthly Rollover Settings</label>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="autoRolloverToggle" checked>
-              <label class="form-check-label" for="autoRolloverToggle">Auto-rollover balances</label>
-            </div>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="allowNegativeRollover">
-              <label class="form-check-label" for="allowNegativeRollover">Allow negative rollovers</label>
-            </div>
-            <small class="text-muted">Automatically carry over surplus/deficit to next month</small>
-          </div>
-          <hr>
-
-          <!-- Currency Selection -->
-          <div class="mb-3">
-            <label for="currencySelect" class="form-label">Currency</label>
-            <select id="currencySelect" class="form-select">
-              <option value="PKR">PKR - Pakistani Rupee</option>
-              <option value="USD">USD - US Dollar</option>
-              <option value="EUR">EUR - Euro</option>
-            </select>
-          </div>
-
-          <!-- Enhanced Category Management -->
-          <div>
-            <button id="toggleCategorySettings" class="btn btn-outline-secondary w-100 mb-2" type="button">
-              <span id="catCollapseIcon"><i class="bi bi-chevron-right"></i></span> Category Settings
-            </button>
-            <div id="categorySettingsPanel" class="collapse">
-              <div class="input-group mb-2">
-                <input type="text" id="newCategoryInput" class="form-control" placeholder="New category">
-                <select id="newCategoryType" class="form-select" style="max-width: 120px;">
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
+          <!-- Currency Settings -->
+          <div class="mb-4">
+            <h6><i class="bi bi-currency-exchange"></i> Currency Settings</h6>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label for="currencySelect" class="form-label">Default Currency</label>
+                <select id="currencySelect" class="form-select">
+                  <option value="PKR">Pakistani Rupee (PKR)</option>
+                  <option value="USD">US Dollar (USD)</option>
+                  <option value="EUR">Euro (EUR)</option>
+                  <option value="GBP">British Pound (GBP)</option>
+                  <option value="INR">Indian Rupee (INR)</option>
                 </select>
-                <button id="addCategoryBtn" class="btn btn-primary" type="button"><i class="bi bi-plus"></i> Add</button>
               </div>
-              <ul id="categoryList" class="list-group"></ul>
+              <div class="col-md-6">
+                <label for="currencyFormat" class="form-label">Display Format</label>
+                <select id="currencyFormat" class="form-select">
+                  <option value="symbol">Symbol (e.g., ₨1,234.56)</option>
+                  <option value="code">Code (e.g., PKR 1,234.56)</option>
+                  <option value="none">Number only (1,234.56)</option>
+                </select>
+              </div>
             </div>
           </div>
-          <hr>
 
-          <!-- Import / Export -->
-          <div>
-            <label class="form-label">Import / Export Transactions</label>
-            <div class="mb-2">
-              <button id="exportBtn" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Export</button>
-              <input type="file" id="importFile" accept=".json" style="display:none;">
-              <button id="importBtn" class="btn btn-outline-primary btn-sm"><i class="bi bi-upload"></i> Import</button>
+          <!-- Theme Settings -->
+          <div class="mb-4">
+            <h6><i class="bi bi-palette"></i> Theme Settings</h6>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label for="themeSelect" class="form-label">Theme</label>
+                <select id="themeSelect" class="form-select">
+                  <option value="auto">Auto (System)</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label for="accentColor" class="form-label">Accent Color</label>
+                <select id="accentColor" class="form-select">
+                  <option value="blue">Blue</option>
+                  <option value="green">Green</option>
+                  <option value="purple">Purple</option>
+                  <option value="orange">Orange</option>
+                  <option value="red">Red</option>
+                </select>
+              </div>
             </div>
-            <div id="importExportAlert" class="alert alert-info d-none"></div>
+          </div>
+
+          <!-- Data Management -->
+          <div class="mb-4">
+            <h6><i class="bi bi-database"></i> Data Management</h6>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <button class="btn btn-outline-primary w-100" onclick="exportData()">
+                  <i class="bi bi-download"></i> Export Data
+                </button>
+              </div>
+              <div class="col-md-6">
+                <button class="btn btn-outline-warning w-100" onclick="importData()">
+                  <i class="bi bi-upload"></i> Import Data
+                </button>
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-12">
+                <button class="btn btn-outline-danger w-100" onclick="clearAllData()">
+                  <i class="bi bi-trash"></i> Clear All Data
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rollover Settings -->
+          <div class="mb-4">
+            <h6><i class="bi bi-arrow-repeat"></i> Balance Rollover</h6>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="enableRollover">
+              <label class="form-check-label" for="enableRollover">Enable automatic balance rollover</label>
+            </div>
+            <div class="form-text">When enabled, your ending balance will carry over to the next month</div>
+          </div>
+
+          <!-- About Section -->
+          <div class="mb-4">
+            <h6><i class="bi bi-info-circle"></i> About</h6>
+            <div class="about-content">
+              <p><strong>Wealth Command</strong> - Your Personal Finance Manager</p>
+              <p class="text-muted small">Version 2.0.0</p>
+              <p class="text-muted small">Built with ❤️ for better financial management</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Add/Edit Transaction Modal -->
-  <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
+  <!-- Bottom Navigation Bar -->
+  <nav class="navbar navbar-dark bg-primary fixed-bottom bottom-nav">
+    <div class="container-fluid justify-content-around">
+      <button class="btn btn-link text-white" onclick="showTab('tab-dashboard')">
+        <i class="bi bi-speedometer2 d-block"></i>
+        <small>Dashboard</small>
+      </button>
+      <button class="btn btn-link text-white" onclick="showTab('tab-transactions')">
+        <i class="bi bi-list-ul d-block"></i>
+        <small>Transactions</small>
+      </button>
+      <button class="btn btn-link text-white" onclick="showTab('tab-planner')">
+        <i class="bi bi-calendar-check d-block"></i>
+        <small>Planner</small>
+      </button>
+      <button class="btn btn-link text-white" onclick="showTab('tab-debt')">
+        <i class="bi bi-cash-coin d-block"></i>
+        <small>Debt</small>
+      </button>
+      <button class="btn btn-link text-white" onclick="showTab('tab-analytics')">
+        <i class="bi bi-graph-up d-block"></i>
+        <small>Analytics</small>
+      </button>
+      <button class="btn btn-link text-white" onclick="showTab('tab-settings')">
+        <i class="bi bi-gear d-block"></i>
+        <small>Settings</small>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Add Transaction Modal -->
+  <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form id="transactionForm" autocomplete="off">
+        <form id="transactionForm" autocomplete="off" novalidate>
           <div class="modal-header">
-            <h5 class="modal-title" id="addTransactionModalLabel"><i class="bi bi-plus-circle"></i> Add Transaction</h5>
+            <h5 class="modal-title" id="transactionModalLabel">Add Transaction</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <input type="hidden" id="editTransactionIndex" value="-1">
-            <div class="row g-2 align-items-end">
-              <div class="col-6 col-md-4">
-                <label for="dateInput" class="form-label">Date</label>
-                <input type="date" class="form-control" id="dateInput" required>
+            <input type="hidden" id="transactionIndex" value="-1">
+            <div class="mb-3">
+              <label for="transactionDescription" class="form-label">Description</label>
+              <input type="text" class="form-control" id="transactionDescription" required>
+              <div class="invalid-feedback">Please enter a description</div>
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label for="transactionAmount" class="form-label">Amount</label>
+                <input type="number" class="form-control" id="transactionAmount" required step="0.01" min="0.01">
+                <div class="invalid-feedback">Please enter a valid amount</div>
               </div>
-              <div class="col-12 col-md-4">
-                <label for="descInput" class="form-label">Description</label>
-                <input type="text" class="form-control" id="descInput" required>
+              <div class="col-md-6">
+                <label for="transactionDate" class="form-label">Date</label>
+                <input type="date" class="form-control" id="transactionDate" required>
+                <div class="invalid-feedback">Please select a date</div>
               </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label">Type</label>
-                <select class="form-select" id="typeInput" required>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-md-6">
+                <label for="transactionType" class="form-label">Type</label>
+                <select class="form-select" id="transactionType" required>
+                  <option value="">Select Type</option>
                   <option value="income">Income</option>
                   <option value="expense">Expense</option>
                 </select>
+                <div class="invalid-feedback">Please select a type</div>
               </div>
-              <div class="col-6 col-md-2">
-                <label for="categoryInput" class="form-label">Category</label>
-                <select class="form-select" id="categoryInput" required>
-                  <!-- Categories populate here -->
+              <div class="col-md-6">
+                <label for="transactionCategory" class="form-label">Category</label>
+                <select class="form-select" id="transactionCategory" required>
+                  <option value="">Select Category</option>
                 </select>
-              </div>
-              <div class="col-6 col-md-2">
-                <label for="amountInput" class="form-label">Amount</label>
-                <input type="number" class="form-control" id="amountInput" required step="0.01">
+                <div class="invalid-feedback">Please select a category</div>
               </div>
             </div>
-            <div id="formAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+            <!-- Recent Categories Quick Select -->
+            <div id="recentCategoriesSection" class="mt-3 d-none">
+              <label class="form-label">Recent Categories</label>
+              <div id="recentCategories" class="d-flex flex-wrap gap-1">
+                <!-- Recent categories will be populated here -->
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
-            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> <span id="submitButtonText">Add</span></button>
+            <button type="submit" class="btn btn-success">Save</button>
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           </div>
         </form>
@@ -1073,63 +1121,18 @@
     </div>
   </div>
 
-  <!-- Confirmation Modal -->
-  <div class="modal fade confirmation-modal" id="confirmationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Confirm Action</h5>
-        </div>
-        <div class="modal-body text-center">
-          <div class="confirmation-icon confirmation-danger">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-          </div>
-          <h6 id="confirmationTitle">Are you sure?</h6>
-          <p id="confirmationMessage" class="text-muted">This action cannot be undone.</p>
-        </div>
-        <div class="modal-footer justify-content-center">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Enhanced Bottom Navigation Bar -->
-  <nav class="navbar navbar-light p-0 fixed-bottom" id="fixedNavBar">
-    <div class="container-fluid p-0">
-      <div class="d-flex justify-content-around w-100">
-        <button class="nav-btn" data-tab="dashboard">
-          <i class="bi bi-house-door"></i>
-          <small>Dashboard</small>
-        </button>
-        <button class="nav-btn" data-tab="transactions">
-          <i class="bi bi-list-ul"></i>
-          <small>Transactions</small>
-        </button>
-        <button class="nav-btn" data-tab="planner">
-          <i class="bi bi-calendar-check"></i>
-          <small>Planner</small>
-        </button>
-        <button class="nav-btn" data-tab="debt">
-          <i class="bi bi-cash-coin"></i>
-          <small>Debt</small>
-        </button>
-        <button class="nav-btn" data-tab="analytics">
-          <i class="bi bi-bar-chart"></i>
-          <small>Analytics</small>
-        </button>
-        <button class="nav-btn" data-tab="settings">
-          <i class="bi bi-gear"></i>
-          <small>Settings</small>
-        </button>
-      </div>
-    </div>
-  </nav>
+  <!-- Quick Add FAB -->
+  <button id="quickAddFAB" class="btn btn-primary fab-button" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
+    <i class="bi bi-plus-lg"></i>
+  </button>
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/numeral@2.0.6/numeral.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
