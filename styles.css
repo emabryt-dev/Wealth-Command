@@ -84,7 +84,8 @@ body {
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   width: 95%; /* Changed from max-width: 500px */
-  left: 0; /* Changed from left: 50% */
+  left: 2.5%; /* Changed from left: 50% */
+  border-radius: 20px 20px 0 0;
   transform: none; /* Remove the transform */
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
   height: 70px;
