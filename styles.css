@@ -1455,7 +1455,7 @@ body.dark-mode .repayment-item {
   
   .breakdown-container {
     min-height: 200px;
-    max-height: 400px;
+    max-height: none;
   }
   
   .heat-map-grid {
