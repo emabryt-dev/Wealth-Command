@@ -2,7 +2,7 @@ body {
   background-color: #f8f9fa;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 0.97rem;
-  padding-bottom: 250px;
+  padding-bottom: 180px;
 }
 
 .navbar {
@@ -46,8 +46,8 @@ body {
   font-size: 0.97rem;
 }
 .tab-page {
-  display: block;
-  scroll-padding-bottom: 100px;
+  display: flex;
+  flex-direction: column;
 }
 .tab-page.d-none {
   display: none !important;
@@ -162,7 +162,7 @@ body {
 /* FIXED: Improved Main Content Layout */
 .main-content {
   min-height: calc(100vh - 140px);
-  padding-bottom: 250px;
+  padding-bottom: 180px;
   display: flex;
   flex-direction: column;
 }
@@ -235,14 +235,8 @@ body {
 
 /* FIXED: Proper scrolling for breakdown lists */
 .breakdown-list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   padding: 1rem;
-  overflow-y: auto;
-  max-height: 280px;
-  min-height: 150px;
-}
+  }
 
 .breakdown-item {
   display: flex;
@@ -252,7 +246,6 @@ body {
   border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  flex-shrink: 0;
 }
 
 .breakdown-item:hover {
@@ -444,7 +437,7 @@ body {
 
 .distribution-card .chart-body {
   padding: 1.5rem;
-  height: 250px;
+  height: 300px;
   position: relative;
 }
 
@@ -1303,12 +1296,20 @@ body.dark-mode .repayment-item {
 /* Responsive design */
 @media (max-width: 768px) {
   .breakdown-container {
-    min-height: 250px;
-    max-height: 400px;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
   
   .breakdown-card {
-    min-height: 180px;
+    padding: 0;
+    border-radius: 0.8rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
   }
   
   #tab-transactions .table-container {
@@ -1485,7 +1486,10 @@ body.dark-mode .repayment-item {
   }
   
   .main-content {
-    padding-bottom: 0 !important;
+      min-height: calc(100vh - 140px);
+      padding-bottom: 250px;
+      display: flex;
+      flex-direction: column;
   }
   
   footer {
