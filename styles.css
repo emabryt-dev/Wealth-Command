@@ -94,6 +94,12 @@ body {
   z-index: 1030;
 }
 
+.navbar-spacer {
+  height: 80px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
 .nav-btn {
   display: flex;
   flex-direction: column;
