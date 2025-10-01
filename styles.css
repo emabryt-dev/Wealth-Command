@@ -2,7 +2,7 @@ body {
   background-color: #f8f9fa;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 0.97rem;
-  padding-bottom: none;
+  padding-bottom: 0;
 }
 
 .navbar {
@@ -661,16 +661,16 @@ body {
 
 /* Transactions Tab */
 #tab-transactions {
- padding-bottom: 180px;
+ padding-bottom: 50px;
 }
 
 #tab-transactions .card {
-  margin-bottom: 180px;
+  margin-bottom: 50px;
 }
 
 #tab-transactions .table-container {
   height: calc(100vh - 300px);
-  max-height: none;
+  max-height: 600px;
   overflow: auto;
   border: 1px solid #dee2e6;
   border-radius: 0.6rem;
