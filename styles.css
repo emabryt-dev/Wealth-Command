@@ -670,7 +670,7 @@ body {
 
 #tab-transactions .table-container {
   height: calc(100vh - 300px);
-  max-height: 600px;
+  max-height: none;
   overflow: auto;
   border: 1px solid #dee2e6;
   border-radius: 0.6rem;
