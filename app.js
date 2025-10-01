@@ -1,5522 +1,1173 @@
-// Wealth Command: Enhanced with all new features and plugins
-
-// Initialize variables first
-let transactions = loadTransactions();
-let categories = loadCategories();
-let currency = loadCurrency() || "PKR";
-let currentCategoryFilter = 'all';
-let mainChart = null;
-let incomePieChart = null;
-let expensePieChart = null;
-let currentChartType = 'category';
-
-// Analytics Charts
-let overviewChart = null;
-let healthTrendChart = null;
-let categoryTrendChart = null;
-let comparisonChart = null;
-
-// Planner Data
-let futureTransactions = loadFutureTransactions();
-let plannerTimeframe = '1year';
-
-// Debt Management Data
-let loans = loadLoans();
-
-// Enhanced Google Drive Sync with Two-Tier Backup System
-const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
-const GOOGLE_CLIENT_ID = '86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com';
-let googleUser = null;
-let googleAuth = null;
-let isOnline = navigator.onLine;
-let syncInProgress = false;
-let pendingSync = false;
-let lastBackupMonth = null;
-let lastSyncTime = null;
-
-// Recent categories for quick add
-let recentCategories = loadRecentCategories();
-
-// Search functionality
-let searchTimeout = null;
-
-// Enhanced initialization with plugins
-function initializePlugins() {
-    // Initialize Flatpickr for date inputs
-    const dateInputs = document.querySelectorAll('input[type="date"]');
-    dateInputs.forEach(input => {
-        flatpickr(input, {
-            dateFormat: "Y-m-d",
-            allowInput: true,
-            clickOpens: true,
-            theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
-        });
-    });
-
-    // Initialize Choices.js for category selects
-    const categorySelect = document.getElementById('categoryInput');
-    if (categorySelect) {
-        new Choices(categorySelect, {
-            searchEnabled: true,
-            itemSelectText: '',
-            shouldSort: false,
-            position: 'bottom'
-        });
+// Wealth Command - Enhanced Financial Tracking App
+class WealthCommand {
+    constructor() {
+        this.transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+        this.budgets = JSON.parse(localStorage.getItem('budgets')) || [];
+        this.categories = [
+            'Food & Dining', 'Transportation', 'Shopping', 'Entertainment', 
+            'Bills & Utilities', 'Healthcare', 'Travel', 'Education', 
+            'Salary', 'Freelance', 'Investments', 'Other Income', 'Gifts'
+        ];
+        this.user = null;
+        this.charts = {};
+        this.isDarkMode = localStorage.getItem('darkMode') === 'true';
+        this.recentCategoryLimit = 5;
+        
+        this.init();
     }
 
-    // Initialize numeral.js locale
-    numeral.locale('en');
-}
-
-// Enhanced number formatting with numeral.js
-function formatCurrency(amount) {
-    return numeral(amount).format('0,0.00');
-}
-
-function parseCurrency(amount) {
-    return numeral(amount).value();
-}
-
-// Enhanced date handling with date-fns
-function formatDate(dateString, format = 'yyyy-MM-dd') {
-    try {
-        return dateFns.format(new Date(dateString), format);
-    } catch {
-        return dateString;
+    init() {
+        this.initializeTheme();
+        this.setupEventListeners();
+        this.showAuthScreen();
+        this.initializeDatePicker();
+        this.initializeCategorySelect();
     }
-}
 
-function isValidDate(dateString) {
-    return dateFns.isValid(new Date(dateString));
-}
-
-function isFutureDate(dateString) {
-    return dateFns.isAfter(new Date(dateString), new Date());
-}
-
-// AI Analytics Engine
-const AnalyticsEngine = {
-    // Calculate financial health score (0-100)
-    calculateHealthScore: function(transactions, monthlyBudgets) {
-        if (transactions.length === 0) return 50; // Neutral score for no data
-        
-        const now = new Date();
-        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        
-        // Get recent transactions (last 3 months)
-        const recentTransactions = transactions.filter(tx => {
-            const txDate = new Date(tx.date);
-            return txDate >= threeMonthsAgo;
-        });
-        
-        if (recentTransactions.length === 0) return 50;
-        
-        const totalIncome = recentTransactions.filter(tx => tx.type === 'income')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-        const totalExpenses = recentTransactions.filter(tx => tx.type === 'expense')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-        
-        // Component scores
-        const savingsRate = totalIncome > 0 ? Math.max(0, (totalIncome - totalExpenses) / totalIncome) : 0;
-        const savingsScore = Math.min(100, savingsRate * 200); // 50% savings rate = 100 points
-        
-        const expenseStability = this.calculateExpenseStability(recentTransactions);
-        const stabilityScore = Math.min(100, expenseStability * 100);
-        
-        const incomeDiversity = this.calculateIncomeDiversity(recentTransactions);
-        const diversityScore = Math.min(100, incomeDiversity * 100);
-        
-        const emergencyFundScore = this.calculateEmergencyFundScore(totalExpenses, monthlyBudgets);
-        
-        // Weighted final score
-        const finalScore = 
-            (savingsScore * 0.4) + 
-            (stabilityScore * 0.3) + 
-            (diversityScore * 0.2) + 
-            (emergencyFundScore * 0.1);
-        
-        return Math.round(finalScore);
-    },
-    
-    calculateExpenseStability: function(transactions) {
-        const monthlyExpenses = {};
-        transactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                const month = tx.date.substring(0, 7); // YYYY-MM
-                monthlyExpenses[month] = (monthlyExpenses[month] || 0) + tx.amount;
-            }
-        });
-        
-        const amounts = Object.values(monthlyExpenses);
-        if (amounts.length < 2) return 0.7; // Default stability
-        
-        const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-        const variance = amounts.reduce((sum, amount) => sum + Math.pow(amount - avg, 2), 0) / amounts.length;
-        const stability = 1 - (Math.sqrt(variance) / avg);
-        
-        return Math.max(0, Math.min(1, stability));
-    },
-    
-    calculateIncomeDiversity: function(transactions) {
-        const incomeByCategory = {};
-        const incomeTransactions = transactions.filter(tx => tx.type === 'income');
-        
-        if (incomeTransactions.length === 0) return 0;
-        
-        incomeTransactions.forEach(tx => {
-            incomeByCategory[tx.category] = (incomeByCategory[tx.category] || 0) + tx.amount;
-        });
-        
-        const totalIncome = Object.values(incomeByCategory).reduce((a, b) => a + b, 0);
-        const shares = Object.values(incomeByCategory).map(amount => amount / totalIncome);
-        const diversity = 1 - shares.reduce((sum, share) => sum + Math.pow(share, 2), 0);
-        
-        return diversity;
-    },
-    
-    calculateEmergencyFundScore: function(monthlyExpenses, monthlyBudgets) {
-        const avgMonthlyExpense = monthlyExpenses / 3; // Based on last 3 months
-        const currentMonth = getCurrentMonthKey();
-        const currentBalance = monthlyBudgets[currentMonth]?.endingBalance || 0;
-        
-        if (avgMonthlyExpense === 0) return 50;
-        
-        const monthsCovered = currentBalance / avgMonthlyExpense;
-        if (monthsCovered >= 6) return 100;
-        if (monthsCovered >= 3) return 75;
-        if (monthsCovered >= 1) return 50;
-        return 25;
-    },
-    
-    // Predict next month's spending
-    predictNextMonthSpending: function(transactions) {
-        const now = new Date();
-        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        
-        const recentTransactions = transactions.filter(tx => {
-            const txDate = new Date(tx.date);
-            return txDate >= sixMonthsAgo;
-        });
-        
-        if (recentTransactions.length < 10) return null; // Insufficient data
-        
-        const monthlyExpenses = {};
-        recentTransactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                const month = tx.date.substring(0, 7);
-                monthlyExpenses[month] = (monthlyExpenses[month] || 0) + tx.amount;
-            }
-        });
-        
-        const amounts = Object.values(monthlyExpenses);
-        const avgExpense = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-        
-        // Simple trend calculation
-        let trend = 0;
-        if (amounts.length >= 2) {
-            const lastTwo = amounts.slice(-2);
-            trend = (lastTwo[1] - lastTwo[0]) / lastTwo[0];
-        }
-        
-        const prediction = avgExpense * (1 + trend * 0.5); // Conservative trend application
-        const confidence = Math.min(0.9, amounts.length / 10); // More data = more confidence
-        
-        return {
-            amount: Math.round(prediction),
-            confidence: confidence,
-            trend: trend
-        };
-    },
-    
-    // Generate AI insights
-    generateInsights: function(transactions, monthlyBudgets) {
-        const insights = [];
-        const healthScore = this.calculateHealthScore(transactions, monthlyBudgets);
-        const prediction = this.predictNextMonthSpending(transactions);
-        
-        // Health score insights
-        if (healthScore >= 80) {
-            insights.push({
-                type: 'positive',
-                message: 'Excellent financial health! Your spending habits are very sustainable.',
-                icon: 'bi-emoji-smile'
-            });
-        } else if (healthScore >= 60) {
-            insights.push({
-                type: 'info',
-                message: 'Good financial health. Small improvements could make it excellent.',
-                icon: 'bi-emoji-neutral'
-            });
+    initializeTheme() {
+        if (this.isDarkMode) {
+            document.body.setAttribute('data-theme', 'dark');
+            document.getElementById('darkModeStatus').textContent = 'On';
         } else {
-            insights.push({
-                type: 'warning',
-                message: 'Your financial health needs attention. Consider reviewing your spending patterns.',
-                icon: 'bi-emoji-frown'
-            });
+            document.body.removeAttribute('data-theme');
+            document.getElementById('darkModeStatus').textContent = 'Off';
         }
-        
-        // Savings rate insights
-        const savingsRate = this.calculateSavingsRate(transactions);
-        if (savingsRate >= 0.2) {
-            insights.push({
-                type: 'positive',
-                message: `Great savings rate of ${(savingsRate * 100).toFixed(0)}%! You're building wealth effectively.`,
-                icon: 'bi-piggy-bank'
-            });
-        } else if (savingsRate >= 0.1) {
-            insights.push({
-                type: 'info',
-                message: `Decent savings rate of ${(savingsRate * 100).toFixed(0)}%. Aim for 20% for optimal wealth building.`,
-                icon: 'bi-piggy-bank'
-            });
-        } else if (savingsRate < 0) {
-            insights.push({
-                type: 'warning',
-                message: 'You\'re spending more than you earn. Consider reducing expenses or increasing income.',
-                icon: 'bi-exclamation-triangle'
-            });
-        }
-        
-        // Spending pattern insights
-        const categoryTrends = this.analyzeCategoryTrends(transactions);
-        categoryTrends.forEach(trend => {
-            if (trend.trend > 0.1) { // More than 10% increase
-                insights.push({
-                    type: 'warning',
-                    message: `${trend.category} spending is trending up significantly.`,
-                    icon: 'bi-graph-up-arrow'
-                });
-            } else if (trend.trend < -0.1) { // More than 10% decrease
-                insights.push({
-                    type: 'positive',
-                    message: `Great job reducing ${trend.category} spending!`,
-                    icon: 'bi-graph-down-arrow'
-                });
-            }
-        });
-        
-        // Prediction insights
-        if (prediction && prediction.confidence > 0.6) {
-            insights.push({
-                type: 'info',
-                message: `Next month's predicted spending: ${formatCurrency(prediction.amount)} ${currency}`,
-                icon: 'bi-magic'
-            });
-        }
-        
-        return insights.slice(0, 5); // Return top 5 insights
-    },
-    
-    calculateSavingsRate: function(transactions) {
-        const now = new Date();
-        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        
-        const recentTransactions = transactions.filter(tx => {
-            const txDate = new Date(tx.date);
-            return txDate >= threeMonthsAgo;
-        });
-        
-        const totalIncome = recentTransactions.filter(tx => tx.type === 'income')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-        const totalExpenses = recentTransactions.filter(tx => tx.type === 'expense')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-        
-        return totalIncome > 0 ? (totalIncome - totalExpenses) / totalIncome : 0;
-    },
-    
-    analyzeCategoryTrends: function(transactions) {
-        const now = new Date();
-        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthKey = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
-        
-        const currentMonthExpenses = {};
-        const lastMonthExpenses = {};
-        
-        transactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                const month = tx.date.substring(0, 7);
-                if (month === currentMonth) {
-                    currentMonthExpenses[tx.category] = (currentMonthExpenses[tx.category] || 0) + tx.amount;
-                } else if (month === lastMonthKey) {
-                    lastMonthExpenses[tx.category] = (lastMonthExpenses[tx.category] || 0) + tx.amount;
-                }
-            }
-        });
-        
-        const trends = [];
-        Object.keys(currentMonthExpenses).forEach(category => {
-            const current = currentMonthExpenses[category];
-            const last = lastMonthExpenses[category] || current * 0.5; // Default if no last month data
-            const trend = last > 0 ? (current - last) / last : 0;
-            
-            trends.push({
-                category: category,
-                current: current,
-                last: last,
-                trend: trend,
-                change: current - last
-            });
-        });
-        
-        return trends.sort((a, b) => Math.abs(b.trend) - Math.abs(a.trend)); // Sort by magnitude of change
-    },
-    
-    // Generate heat map data
-    generateHeatMap: function(transactions, year, month) {
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const heatMap = [];
-        
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dayTransactions = transactions.filter(tx => tx.date === dateStr && tx.type === 'expense');
-            const total = dayTransactions.reduce((sum, tx) => sum + tx.amount, 0);
-            
-            heatMap.push({
-                day: day,
-                date: dateStr,
-                amount: total,
-                transactions: dayTransactions.length
-            });
-        }
-        
-        return heatMap;
-    },
-    
-    // Compare periods
-    comparePeriods: function(transactions, period1, period2, type) {
-        const data1 = this.getPeriodData(transactions, period1, type);
-        const data2 = this.getPeriodData(transactions, period2, type);
-        
-        const comparison = {};
-        const allCategories = [...new Set([...Object.keys(data1), ...Object.keys(data2)])];
-        
-        allCategories.forEach(category => {
-            const amount1 = data1[category] || 0;
-            const amount2 = data2[category] || 0;
-            const change = amount2 - amount1;
-            const percentChange = amount1 > 0 ? (change / amount1) * 100 : (amount2 > 0 ? 100 : 0);
-            
-            comparison[category] = {
-                period1: amount1,
-                period2: amount2,
-                change: change,
-                percentChange: percentChange
-            };
-        });
-        
-        return comparison;
-    },
-    
-    getPeriodData: function(transactions, period, type) {
-        const data = {};
-        
-        transactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                let include = false;
-                
-                if (type === 'month') {
-                    const txMonth = tx.date.substring(0, 7);
-                    include = txMonth === period;
-                } else if (type === 'year') {
-                    const txYear = tx.date.substring(0, 4);
-                    include = txYear === period;
-                }
-                
-                if (include) {
-                    data[tx.category] = (data[tx.category] || 0) + tx.amount;
-                }
-            }
-        });
-        
-        return data;
     }
-};
 
-// Planner Engine
-const PlannerEngine = {
-    calculateProjections: function(futureTransactions, timeframe, currentBalance) {
-        const projections = {
-            months: [],
-            summary: {
-                totalIncome: 0,
-                totalExpenses: 0,
-                netWealth: currentBalance,
-                endingBalance: currentBalance
-            }
-        };
-        
-        const now = new Date();
-        const months = timeframe === '1year' ? 12 : timeframe === '2years' ? 24 : 36;
-        
-        let runningBalance = currentBalance;
-        
-        for (let i = 0; i < months; i++) {
-            const currentDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
-            const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-            const monthName = currentDate.toLocaleDateString('en', { month: 'long', year: 'numeric' });
-            
-            let monthIncome = 0;
-            let monthExpenses = 0;
-            
-            // Calculate income for this month
-            futureTransactions.income.forEach(income => {
-                if (this.shouldIncludeInMonth(income, currentDate)) {
-                    monthIncome += income.amount;
-                }
+    setupEventListeners() {
+        // Navigation
+        document.querySelectorAll('[data-tab]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.switchTab(e.target.getAttribute('data-tab'));
             });
-            
-            // Calculate expenses for this month
-            futureTransactions.expenses.forEach(expense => {
-                if (this.shouldIncludeInMonth(expense, currentDate)) {
-                    monthExpenses += expense.amount;
-                }
-            });
-            
-            runningBalance += monthIncome - monthExpenses;
-            
-            projections.months.push({
-                month: monthKey,
-                name: monthName,
-                income: monthIncome,
-                expenses: monthExpenses,
-                net: monthIncome - monthExpenses,
-                balance: runningBalance
-            });
-            
-            projections.summary.totalIncome += monthIncome;
-            projections.summary.totalExpenses += monthExpenses;
-        }
-        
-        projections.summary.netWealth = projections.summary.totalIncome - projections.summary.totalExpenses;
-        projections.summary.endingBalance = runningBalance;
-        
-        return projections;
-    },
-    
-    shouldIncludeInMonth: function(transaction, targetDate) {
-        const targetMonth = targetDate.getMonth();
-        const targetYear = targetDate.getFullYear();
-        
-        const startDate = new Date(transaction.startDate);
-        const startMonth = startDate.getMonth();
-        const startYear = startDate.getFullYear();
-        
-        // If transaction starts after target month, exclude
-        if (startYear > targetYear || (startYear === targetYear && startMonth > targetMonth)) {
-            return false;
-        }
-        
-        // Check end date if exists
-        if (transaction.endDate) {
-            const endDate = new Date(transaction.endDate);
-            const endMonth = endDate.getMonth();
-            const endYear = endDate.getFullYear();
-            
-            if (endYear < targetYear || (endYear === targetYear && endMonth < targetMonth)) {
-                return false;
-            }
-        }
-        
-        // Check frequency
-        if (transaction.frequency === 'one-time') {
-            return startMonth === targetMonth && startYear === targetYear;
-        } else if (transaction.frequency === 'monthly') {
-            return true; // Include every month
-        } else if (transaction.frequency === 'quarterly') {
-            const monthsDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
-            return monthsDiff % 3 === 0;
-        }
-        
-        return false;
-    }
-};
-
-// Debt Management Engine
-const DebtEngine = {
-    calculateDebtSummary: function(loans) {
-        const totalGiven = loans.given.reduce((sum, loan) => sum + (loan.amount - this.getPaidAmount(loan)), 0);
-        const totalTaken = loans.taken.reduce((sum, loan) => sum + (loan.amount - this.getPaidAmount(loan)), 0);
-        
-        const upcomingRepayments = [...loans.given, ...loans.taken]
-            .filter(loan => loan.status !== 'completed')
-            .sort((a, b) => new Date(a.expectedReturn || a.dueDate) - new Date(b.expectedReturn || b.dueDate))
-            .slice(0, 5);
-        
-        return {
-            totalGiven,
-            totalTaken,
-            netPosition: totalGiven - totalTaken,
-            upcomingRepayments
-        };
-    },
-    
-    getPaidAmount: function(loan) {
-        return loan.payments ? loan.payments.reduce((sum, payment) => sum + payment.amount, 0) : 0;
-    },
-    
-    getLoanStatus: function(loan) {
-        const paid = this.getPaidAmount(loan);
-        const dueDate = new Date(loan.expectedReturn || loan.dueDate);
-        const today = new Date();
-        
-        if (paid >= loan.amount) return 'completed';
-        if (dueDate < today) return 'overdue';
-        if (paid > 0) return 'partially_paid';
-        return 'pending';
-    },
-    
-    addPayment: function(loan, amount, date) {
-        if (!loan.payments) loan.payments = [];
-        loan.payments.push({
-            date: date || new Date().toISOString().split('T')[0],
-            amount: amount
         });
-        
-        // Update status
-        loan.status = this.getLoanStatus(loan);
-    }
-};
 
-// Recent Categories Management
-function loadRecentCategories() {
-    try {
-        return JSON.parse(localStorage.getItem('recentCategories')) || [];
-    } catch {
-        return [];
-    }
-}
-
-function saveRecentCategories(categories) {
-    localStorage.setItem('recentCategories', JSON.stringify(categories));
-}
-
-function addToRecentCategories(category, type) {
-    const existingIndex = recentCategories.findIndex(cat => cat.name === category && cat.type === type);
-    
-    if (existingIndex !== -1) {
-        // Remove existing to re-add at beginning
-        recentCategories.splice(existingIndex, 1);
-    }
-    
-    // Add to beginning
-    recentCategories.unshift({ name: category, type });
-    
-    // Keep only last 5
-    recentCategories = recentCategories.slice(0, 5);
-    
-    saveRecentCategories(recentCategories);
-    renderRecentCategories();
-}
-
-function renderRecentCategories() {
-    const container = document.getElementById('recentCategories');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    if (recentCategories.length === 0) {
-        container.innerHTML = '<small class="text-muted">No recent categories</small>';
-        return;
-    }
-    
-    recentCategories.forEach(cat => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `quick-category-btn ${cat.type}`;
-        button.innerHTML = `
-            ${cat.name}
-            <small class="ms-1 badge bg-${cat.type === 'income' ? 'success' : 'danger'}">${cat.type}</small>
-        `;
-        button.onclick = () => quickAddTransaction(cat.name, cat.type);
-        container.appendChild(button);
-    });
-}
-
-function quickAddTransaction(category, type) {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('quickAddModal'));
-    if (modal) {
-        modal.hide();
-    }
-    
-    document.getElementById('addTransactionModalLabel').innerHTML = '<i class="bi bi-plus-circle"></i> Add Transaction';
-    document.getElementById('submitButtonText').textContent = 'Add';
-    document.getElementById('editTransactionIndex').value = '-1';
-    document.getElementById('transactionForm').reset();
-    
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('dateInput').value = today;
-    document.getElementById('typeInput').value = type;
-    updateCategorySelect();
-    document.getElementById('categoryInput').value = category;
-    
-    const addTxModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
-    addTxModal.show();
-}
-
-// Search Functionality
-function initSearch() {
-    const searchInput = document.getElementById('globalSearch');
-    const clearButton = document.getElementById('clearSearch');
-    const resultsContainer = document.getElementById('searchResults');
-    
-    if (!searchInput) return;
-    
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        
-        if (this.value.trim() === '') {
-            clearButton.style.display = 'none';
-            resultsContainer.classList.remove('show');
-            return;
-        }
-        
-        clearButton.style.display = 'block';
-        
-        searchTimeout = setTimeout(() => {
-            performSearch(this.value.trim());
-        }, 300);
-    });
-    
-    clearButton.addEventListener('click', function() {
-        searchInput.value = '';
-        this.style.display = 'none';
-        resultsContainer.classList.remove('show');
-    });
-    
-    // Close search results when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.closest('.search-container')) {
-            resultsContainer.classList.remove('show');
-        }
-    });
-}
-
-function performSearch(query) {
-    const resultsContainer = document.getElementById('searchResults');
-    const lowerQuery = query.toLowerCase();
-    
-    const results = transactions.filter(tx => 
-        tx.desc.toLowerCase().includes(lowerQuery) ||
-        tx.category.toLowerCase().includes(lowerQuery) ||
-        tx.amount.toString().includes(lowerQuery) ||
-        tx.date.includes(lowerQuery)
-    ).slice(0, 10); // Limit to 10 results
-    
-    resultsContainer.innerHTML = '';
-    
-    if (results.length === 0) {
-        resultsContainer.innerHTML = '<div class="search-result-item text-muted">No results found</div>';
-    } else {
-        results.forEach(tx => {
-            const item = document.createElement('div');
-            item.className = 'search-result-item';
-            item.innerHTML = `
-                <div class="fw-bold">${tx.desc}</div>
-                <small class="text-muted">${tx.date} • ${tx.category}</small>
-                <div class="search-result-amount ${tx.type}">
-                    ${formatCurrency(tx.amount)} ${currency}
-                </div>
-            `;
-            item.onclick = () => {
-                const index = transactions.findIndex(t => 
-                    t.date === tx.date && t.desc === tx.desc && t.amount === tx.amount
-                );
-                if (index !== -1) {
-                    editTransaction(index);
-                    resultsContainer.classList.remove('show');
-                }
-            };
-            resultsContainer.appendChild(item);
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.toggleDarkMode();
         });
-    }
-    
-    resultsContainer.classList.add('show');
-}
 
-// Loading States Management
-function showLoadingState(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const skeleton = container.querySelector('.skeleton-loader');
-    const content = container.querySelector('.skeleton-content');
-    
-    if (skeleton) skeleton.style.display = 'block';
-    if (content) content.style.display = 'none';
-}
-
-function hideLoadingState(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const skeleton = container.querySelector('.skeleton-loader');
-    const content = container.querySelector('.skeleton-content');
-    
-    if (skeleton) skeleton.style.display = 'none';
-    if (content) content.style.display = 'block';
-}
-
-function showChartLoading(chartId) {
-    const chartContainer = document.getElementById(chartId).parentElement;
-    chartContainer.classList.add('chart-loading');
-}
-
-function hideChartLoading(chartId) {
-    const chartContainer = document.getElementById(chartId).parentElement;
-    chartContainer.classList.remove('chart-loading');
-}
-
-// Enhanced Form Validation
-function initFormValidation() {
-    const forms = document.querySelectorAll('form[novalidate]');
-    
-    forms.forEach(form => {
-        form.addEventListener('submit', function(event) {
-            if (!this.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-                
-                // Show validation summary
-                const summary = this.querySelector('.validation-summary');
-                if (summary) {
-                    summary.classList.remove('d-none');
-                }
-            }
-            
-            this.classList.add('was-validated');
+        // Sign out
+        document.getElementById('signOutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.signOut();
         });
-        
+
+        // Transaction search
+        document.getElementById('transactionSearch').addEventListener('input', (e) => {
+            this.filterTransactions(e.target.value);
+        });
+
+        // Form submissions
+        document.getElementById('addTransactionForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addTransaction();
+        });
+
+        // Modal events
+        const transactionModal = document.getElementById('addTransactionModal');
+        transactionModal.addEventListener('show.bs.modal', () => {
+            this.updateRecentCategories();
+        });
+
         // Real-time validation
-        const inputs = form.querySelectorAll('input, select, textarea');
+        this.setupRealTimeValidation();
+    }
+
+    initializeDatePicker() {
+        flatpickr('#transactionDate', {
+            dateFormat: 'Y-m-d',
+            defaultDate: 'today',
+            maxDate: 'today'
+        });
+    }
+
+    initializeCategorySelect() {
+        const categorySelect = document.getElementById('transactionCategory');
+        categorySelect.innerHTML = '<option value="">Select Category</option>' +
+            this.categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    }
+
+    setupRealTimeValidation() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            const inputs = form.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('blur', () => this.validateField(input));
+                input.addEventListener('input', () => this.validateField(input));
+            });
+        });
+    }
+
+    validateField(field) {
+        const value = field.value.trim();
+        let isValid = true;
+        let message = '';
+
+        // Remove existing validation classes
+        field.classList.remove('is-valid', 'is-invalid');
+        
+        // Remove existing feedback
+        const existingFeedback = field.parentNode.querySelector('.validation-feedback');
+        if (existingFeedback) {
+            existingFeedback.remove();
+        }
+
+        // Skip validation if field is empty (except for required fields on blur)
+        if (!value && !field.hasAttribute('required')) {
+            return true;
+        }
+
+        switch (field.type) {
+            case 'number':
+                if (field.name === 'amount') {
+                    const amount = parseFloat(value);
+                    if (isNaN(amount) || amount <= 0) {
+                        isValid = false;
+                        message = 'Please enter a valid positive amount';
+                    } else if (amount > 1000000) {
+                        isValid = false;
+                        message = 'Amount seems too large. Please verify.';
+                    }
+                }
+                break;
+            
+            case 'text':
+                if (field.name === 'description') {
+                    if (value.length < 2) {
+                        isValid = false;
+                        message = 'Description must be at least 2 characters';
+                    } else if (value.length > 100) {
+                        isValid = false;
+                        message = 'Description is too long (max 100 characters)';
+                    }
+                }
+                break;
+            
+            case 'select-one':
+                if (!value) {
+                    isValid = false;
+                    message = 'Please select a category';
+                }
+                break;
+        }
+
+        // Apply validation styling
+        if (value) {
+            field.classList.add(isValid ? 'is-valid' : 'is-invalid');
+            
+            if (!isValid) {
+                const feedback = document.createElement('div');
+                feedback.className = `validation-${isValid ? 'valid' : 'invalid'}`;
+                feedback.textContent = message;
+                field.parentNode.appendChild(feedback);
+            }
+        }
+
+        return isValid;
+    }
+
+    validateForm(form) {
+        const inputs = form.querySelectorAll('input[required], select[required]');
+        let isValid = true;
+        const errors = [];
+
         inputs.forEach(input => {
-            input.addEventListener('input', function() {
-                this.classList.remove('is-invalid', 'is-valid');
-                
-                if (this.checkValidity()) {
-                    this.classList.add('is-valid');
-                } else {
-                    this.classList.add('is-invalid');
-                }
-                
-                // Hide validation summary when user starts fixing errors
-                const summary = form.querySelector('.validation-summary');
-                if (summary && form.checkValidity()) {
-                    summary.classList.add('d-none');
-                }
-            });
-            
-            // Custom validation for dates
-            if (input.type === 'date') {
-                input.addEventListener('change', function() {
-                    if (this.value && isFutureDate(this.value)) {
-                        this.setCustomValidity('Date cannot be in the future');
-                    } else {
-                        this.setCustomValidity('');
-                    }
-                });
-            }
-            
-            // Custom validation for amounts
-            if (input.type === 'number' && input.step === '0.01') {
-                input.addEventListener('input', function() {
-                    if (this.value && parseFloat(this.value) <= 0) {
-                        this.setCustomValidity('Amount must be greater than 0');
-                    } else {
-                        this.setCustomValidity('');
-                    }
-                });
+            if (!this.validateField(input)) {
+                isValid = false;
+                errors.push(input.name);
             }
         });
-    });
-}
 
-// Enhanced Toast System without dark mode messages
-function showToast(message, type = 'info', duration = 4000) {
-    // Don't show toast for theme changes
-    if (message.includes('mode enabled')) {
-        return;
-    }
-    
-    // Only show critical toasts, use status icons for sync messages
-    if (type === 'info' && message.includes('sync') || message.includes('Sync')) {
-        updateSyncStatus(type, message);
-        return;
-    }
-    
-    const toastContainer = document.getElementById('toastContainer');
-    const toastId = 'toast-' + Date.now();
-    
-    const icons = {
-        success: 'bi-check-circle-fill',
-        info: 'bi-info-circle-fill',
-        warning: 'bi-exclamation-triangle-fill',
-        danger: 'bi-x-circle-fill'
-    };
-    
-    const toastHTML = `
-        <div id="${toastId}" class="toast toast-${type}" role="alert">
-            <div class="toast-body">
-                <div class="d-flex align-items-center">
-                    <i class="bi ${icons[type]} me-2 text-${type}"></i>
-                    <span class="flex-grow-1">${message}</span>
-                    <button type="button" class="btn-close ms-2" data-bs-dismiss="toast"></button>
-                </div>
-                <div class="toast-progress"></div>
-            </div>
-        </div>
-    `;
-    
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    const toastElement = document.getElementById(toastId);
-    const bsToast = new bootstrap.Toast(toastElement, { delay: duration });
-    
-    toastElement.addEventListener('hidden.bs.toast', () => {
-        toastElement.remove();
-    });
-    
-    bsToast.show();
-}
-
-// FAB Functionality
-function initFAB() {
-    const fab = document.getElementById('quickAddFab');
-    if (!fab) return;
-    
-    fab.addEventListener('click', function() {
-        const modal = new bootstrap.Modal(document.getElementById('quickAddModal'));
-        modal.show();
-    });
-}
-
-function openFullAddModal() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('quickAddModal'));
-    if (modal) {
-        modal.hide();
-    }
-    
-    setTimeout(() => {
-        document.getElementById('openAddTransactionModal').click();
-    }, 300);
-}
-
-// Enhanced initialization
-document.addEventListener('DOMContentLoaded', function() {
-    // Show loading overlay
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    
-    // Initialize plugins
-    initializePlugins();
-    
-    // Initialize search
-    initSearch();
-    
-    // Initialize form validation
-    initFormValidation();
-    
-    // Initialize FAB
-    initFAB();
-    
-    // Load recent categories
-    renderRecentCategories();
-    
-    // Initialize application data
-    function initializeApplicationData() {
-        showLoadingState('incomeBreakdown');
-        showLoadingState('expenseBreakdown');
-        showLoadingState('transactionsBody');
-        
-        if (categories.length === 0) {
-            categories = loadCategories();
-            saveCategories(categories);
-        }
-        
-        if (transactions.length === 0) {
-            transactions = loadTransactions();
-        }
-        
-        currency = loadCurrency() || "PKR";
-        monthlyBudgets = loadMonthlyBudgets();
-        futureTransactions = loadFutureTransactions();
-        loans = loadLoans();
-        
-        calculateMonthlyRollover();
-        
-        // Hide loading states after a short delay to show animations
-        setTimeout(() => {
-            updateUI();
-            populateSummaryFilters();
-            renderCategoryList();
-            renderPlannerProjections();
-            renderDebtManagement();
-            
-            hideLoadingState('incomeBreakdown');
-            hideLoadingState('expenseBreakdown');
-            hideLoadingState('transactionsBody');
-            
-            // Hide main loading overlay
-            if (loadingOverlay) {
-                loadingOverlay.classList.add('hidden');
-                setTimeout(() => {
-                    loadingOverlay.style.display = 'none';
-                }, 300);
-            }
-        }, 1000);
-        
-        const autoRolloverToggle = document.getElementById('autoRolloverToggle');
-        const allowNegativeToggle = document.getElementById('allowNegativeRollover');
-        
-        if (autoRolloverToggle) {
-            const currentMonth = getCurrentMonthKey();
-            autoRolloverToggle.checked = monthlyBudgets[currentMonth]?.autoRollover !== false;
-            autoRolloverToggle.addEventListener('change', function() {
-                Object.keys(monthlyBudgets).forEach(month => {
-                    monthlyBudgets[month].autoRollover = this.checked;
-                });
-                saveMonthlyBudgets(monthlyBudgets);
-                calculateMonthlyRollover();
-                updateUI();
-            });
-        }
-        
-        if (allowNegativeToggle) {
-            const currentMonth = getCurrentMonthKey();
-            allowNegativeToggle.checked = monthlyBudgets[currentMonth]?.allowNegative === true;
-            allowNegativeToggle.addEventListener('change', function() {
-                Object.keys(monthlyBudgets).forEach(month => {
-                    monthlyBudgets[month].allowNegative = this.checked;
-                });
-                saveMonthlyBudgets(monthlyBudgets);
-                calculateMonthlyRollover();
-                updateUI();
-            });
-        }
+        return { isValid, errors };
     }
 
-    initializeApplicationData();
-    
-    // Initialize tab state
-    initTabState();
-    
-    // Initialize Google Auth and sync
-    const savedUser = localStorage.getItem('googleUser');
-    if (savedUser) {
+    showAuthScreen() {
+        document.getElementById('globalLoading').classList.add('d-none');
+        document.getElementById('authScreen').classList.remove('d-none');
+        document.getElementById('app').classList.add('d-none');
+    }
+
+    showMainApp() {
+        document.getElementById('authScreen').classList.add('d-none');
+        document.getElementById('app').classList.remove('d-none');
+        this.loadDashboard();
+    }
+
+    async handleGoogleSignIn(response) {
         try {
-            googleUser = JSON.parse(savedUser);
-            const tokenAge = Date.now() - googleUser.acquired_at;
-            if (tokenAge > (googleUser.expires_in - 60) * 1000) {
-                localStorage.removeItem('googleUser');
-                googleUser = null;
-                showSyncStatus('offline', 'Session expired. Please sign in again.');
-            } else {
-                showSyncStatus('success', 'Google Drive connected');
-                loadDataFromDrive().then(success => {
-                    if (!success) {
-                        initializeApplicationData();
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error parsing saved user:', error);
-            localStorage.removeItem('googleUser');
-            googleUser = null;
-            showSyncStatus('offline', 'Error loading saved session');
-        }
-    } else {
-        showSyncStatus('offline', 'Sign in to sync with Google Drive');
-    }
-    
-    setTimeout(() => {
-        initGoogleAuth();
-        updateProfileUI();
-    }, 100);
-    
-    setTimeout(() => {
-        const manualSyncBtn = document.getElementById('manualSyncSettings');
-        if (manualSyncBtn) {
-            manualSyncBtn.addEventListener('click', manualSync);
-        }
-    }, 200);
-    
-    // Start periodic sync
-    startPeriodicSync();
-    
-    console.log('Wealth Command enhanced initialization complete');
-});
-
-// Enhanced UI update functions with animations
-function updateUI() {
-    document.getElementById("currencyLabel").textContent = currency;
-    
-    const monthSel = document.getElementById('summaryMonth');
-    const yearSel = document.getElementById('summaryYear');
-    let filteredTx = transactions;
-    
-    if (monthSel && yearSel && (monthSel.value !== "all" || yearSel.value !== "all")) {
-        filteredTx = transactions.filter(tx => {
-            const d = new Date(tx.date);
-            if (isNaN(d)) return false;
-            let valid = true;
-            if (monthSel.value !== "all") valid = valid && (d.getMonth()+1) == monthSel.value;
-            if (yearSel.value !== "all") valid = valid && d.getFullYear() == yearSel.value;
-            return valid;
-        });
-    }
-    
-    let totalIncome = filteredTx.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-    let totalExpense = filteredTx.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
-    let netWealth = totalIncome - totalExpense;
-    
-    if (monthSel.value !== "all" && yearSel.value !== "all") {
-        const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
-        const monthData = monthlyBudgets[monthKey];
-        if (monthData) {
-            netWealth += monthData.startingBalance;
-        }
-    }
-    
-    document.getElementById("totalIncome").textContent = formatCurrency(totalIncome) + " " + currency;
-    document.getElementById("totalExpense").textContent = formatCurrency(totalExpense) + " " + currency;
-    document.getElementById("netWealth").textContent = formatCurrency(netWealth) + " " + currency;
-
-    updateRolloverDisplay();
-
-    // Update transaction count
-    document.getElementById('transactionCount').textContent = `${transactions.length} transactions`;
-
-    // Income Breakdown - Only show categories with amount > 0
-    const incomeBreakdown = document.getElementById("incomeBreakdown");
-    const noIncomeMsg = document.getElementById("noIncomeCategories");
-    incomeBreakdown.innerHTML = "";
-    
-    const incomeCategories = categories.filter(cat => cat.type === "income");
-    let hasIncomeData = false;
-    
-    if (incomeCategories.length === 0) {
-        noIncomeMsg.style.display = 'block';
-    } else {
-        noIncomeMsg.style.display = 'none';
-        
-        incomeCategories.forEach(cat => {
-            const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income")
-                .reduce((sum, tx) => sum + tx.amount, 0);
+            document.getElementById('globalLoading').classList.remove('d-none');
             
-            if (catAmount > 0) {
-                hasIncomeData = true;
-                
-                const item = document.createElement("div");
-                item.className = "breakdown-item";
-                item.onclick = (e) => {
-                    e.stopPropagation();
-                    showCategoryTransactions('income', cat.name);
-                };
-                item.innerHTML = `
-                    <span class="breakdown-category">${cat.name}</span>
-                    <span class="breakdown-amount">${formatCurrency(catAmount)} ${currency}</span>
-                `;
-                incomeBreakdown.appendChild(item);
-            }
-        });
-        
-        if (!hasIncomeData) {
-            noIncomeMsg.style.display = 'block';
-        } else {
-            noIncomeMsg.style.display = 'none';
-        }
-    }
-
-    // Expense Breakdown - Only show categories with amount > 0
-    const expenseBreakdown = document.getElementById("expenseBreakdown");
-    const noExpenseMsg = document.getElementById("noExpenseCategories");
-    expenseBreakdown.innerHTML = "";
-    
-    const expenseCategories = categories.filter(cat => cat.type === "expense");
-    let hasExpenseData = false;
-    
-    if (expenseCategories.length === 0) {
-        noExpenseMsg.style.display = 'block';
-    } else {
-        noExpenseMsg.style.display = 'none';
-        
-        expenseCategories.forEach(cat => {
-            const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense")
-                .reduce((sum, tx) => sum + tx.amount, 0);
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
             
-            if (catAmount > 0) {
-                hasExpenseData = true;
-                
-                const item = document.createElement("div");
-                item.className = "breakdown-item";
-                item.onclick = (e) => {
-                    e.stopPropagation();
-                    showCategoryTransactions('expense', cat.name);
-                };
-                item.innerHTML = `
-                    <span class="breakdown-category">${cat.name}</span>
-                    <span class="breakdown-amount">${formatCurrency(catAmount)} ${currency}</span>
-                `;
-                expenseBreakdown.appendChild(item);
-            }
-        });
-        
-        if (!hasExpenseData) {
-            noExpenseMsg.style.display = 'block';
-        } else {
-            noExpenseMsg.style.display = 'none';
-        }
-    }
-
-    // Transactions Table with enhanced description column and horizontal scrolling
-    const tbody = document.getElementById('transactionsBody');
-    tbody.innerHTML = "";
-    if (transactions.length === 0) {
-        document.getElementById('noTransactions').style.display = 'block';
-    } else {
-        document.getElementById('noTransactions').style.display = 'none';
-        transactions.slice().reverse().forEach((tx, idx) => {
-            const originalIndex = transactions.length - 1 - idx;
-            const row = document.createElement('tr');
-            row.className = 'clickable-row';
-            row.onclick = () => editTransaction(originalIndex);
-            
-            // Format date using date-fns
-            const formattedDate = formatDate(tx.date, 'dd-MMM');
-            
-            const descCell = tx.desc.length > 30 ? 
-                `<td class="description-cell" data-fulltext="${tx.desc}">${tx.desc.substring(0, 30)}...</td>` :
-                `<td>${tx.desc}</td>`;
-            
-            row.innerHTML = `
-                <td>${formattedDate}</td>
-                ${descCell}
-                <td class="fw-bold ${tx.type === 'income' ? 'text-success' : 'text-danger'}">${tx.type}</td>
-                <td>${tx.category}</td>
-                <td class="fw-bold">${formatCurrency(tx.amount)} ${currency}</td>
-                <td>
-                    <button class="btn-action btn-delete" title="Delete" onclick="event.stopPropagation(); removeTransaction(${originalIndex})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-}
-
-// Enhanced form submission with loading states
-document.getElementById('transactionForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const submitButton = this.querySelector('button[type="submit"]');
-    const spinner = submitButton.querySelector('.submit-spinner');
-    
-    // Show loading state
-    submitButton.disabled = true;
-    spinner.classList.remove('d-none');
-    
-    const date = document.getElementById('dateInput').value;
-    const desc = document.getElementById('descInput').value.trim();
-    const type = document.getElementById('typeInput').value;
-    const cat = document.getElementById('categoryInput').value;
-    const amount = parseFloat(document.getElementById('amountInput').value);
-    const editIndex = parseInt(document.getElementById('editTransactionIndex').value);
-    const alertBox = document.getElementById('formAlert');
-    alertBox.classList.add('d-none');
-
-    if (!date || !desc || !type || !cat || isNaN(amount)) {
-        alertBox.textContent = "Please fill out all fields correctly.";
-        alertBox.classList.remove('d-none');
-        
-        // Hide loading state
-        submitButton.disabled = false;
-        spinner.classList.add('d-none');
-        return;
-    }
-    
-    if (desc.length < 2) {
-        alertBox.textContent = "Description must be at least 2 characters.";
-        alertBox.classList.remove('d-none');
-        
-        // Hide loading state
-        submitButton.disabled = false;
-        spinner.classList.add('d-none');
-        return;
-    }
-    
-    // Add to recent categories
-    addToRecentCategories(cat, type);
-    
-    // Simulate processing delay for better UX
-    setTimeout(() => {
-        if (editIndex >= 0) {
-            transactions[editIndex] = { date, desc, type, category: cat, amount };
-            showToast('Transaction updated successfully', 'success');
-        } else {
-            transactions.push({ date, desc, type, category: cat, amount });
-            showToast('Transaction added successfully', 'success');
-        }
-        
-        saveTransactions(transactions);
-        calculateMonthlyRollover();
-        updateUI();
-        
-        const addTxModal = bootstrap.Modal.getInstance(document.getElementById('addTransactionModal'));
-        if (addTxModal) {
-            addTxModal.hide();
-        }
-        
-        this.reset();
-        
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('dateInput').value = today;
-        
-        // Hide loading state
-        submitButton.disabled = false;
-        spinner.classList.add('d-none');
-    }, 500);
-});
-
-
-
-// ---- Included Original Functions ----
-
-// Wealth Command: Complete with Google Drive Sync, Monthly Rollover, and AI Analytics
-
-// Initialize variables first
-let transactions = loadTransactions();
-let categories = loadCategories();
-let currency = loadCurrency() || "PKR";
-let currentCategoryFilter = 'all';
-let mainChart = null;
-let incomePieChart = null;
-let expensePieChart = null;
-let currentChartType = 'category';
-
-// Analytics Charts
-let overviewChart = null;
-let healthTrendChart = null;
-let categoryTrendChart = null;
-let comparisonChart = null;
-
-// Planner Data
-let futureTransactions = loadFutureTransactions();
-let plannerTimeframe = '1year';
-
-// Debt Management Data
-let loans = loadLoans();
-
-// Enhanced Google Drive Sync with Two-Tier Backup System
-const GOOGLE_DRIVE_FILE_NAME = 'wealth_command_data.json';
-const GOOGLE_CLIENT_ID = '86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com';
-let googleUser = null;
-let googleAuth = null;
-let isOnline = navigator.onLine;
-let syncInProgress = false;
-let pendingSync = false;
-let lastBackupMonth = null;
-let lastSyncTime = null;
-
-// AI Analytics Engine
-const AnalyticsEngine = {
-    // Calculate financial health score (0-100)
-    calculateHealthScore: function(transactions, monthlyBudgets) {
-        if (transactions.length === 0) return 50; // Neutral score for no data
-        
-        const now = new Date();
-        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        
-        // Get recent transactions (last 3 months)
-        const recentTransactions = transactions.filter(tx => {
-            const txDate = new Date(tx.date);
-            return txDate >= threeMonthsAgo;
-        });
-        
-        if (recentTransactions.length === 0) return 50;
-        
-        const totalIncome = recentTransactions.filter(tx => tx.type === 'income')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-        const totalExpenses = recentTransactions.filter(tx => tx.type === 'expense')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-        
-        // Component scores
-        const savingsRate = totalIncome > 0 ? Math.max(0, (totalIncome - totalExpenses) / totalIncome) : 0;
-        const savingsScore = Math.min(100, savingsRate * 200); // 50% savings rate = 100 points
-        
-        const expenseStability = this.calculateExpenseStability(recentTransactions);
-        const stabilityScore = Math.min(100, expenseStability * 100);
-        
-        const incomeDiversity = this.calculateIncomeDiversity(recentTransactions);
-        const diversityScore = Math.min(100, incomeDiversity * 100);
-        
-        const emergencyFundScore = this.calculateEmergencyFundScore(totalExpenses, monthlyBudgets);
-        
-        // Weighted final score
-        const finalScore = 
-            (savingsScore * 0.4) + 
-            (stabilityScore * 0.3) + 
-            (diversityScore * 0.2) + 
-            (emergencyFundScore * 0.1);
-        
-        return Math.round(finalScore);
-    },
-    
-    calculateExpenseStability: function(transactions) {
-        const monthlyExpenses = {};
-        transactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                const month = tx.date.substring(0, 7); // YYYY-MM
-                monthlyExpenses[month] = (monthlyExpenses[month] || 0) + tx.amount;
-            }
-        });
-        
-        const amounts = Object.values(monthlyExpenses);
-        if (amounts.length < 2) return 0.7; // Default stability
-        
-        const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-        const variance = amounts.reduce((sum, amount) => sum + Math.pow(amount - avg, 2), 0) / amounts.length;
-        const stability = 1 - (Math.sqrt(variance) / avg);
-        
-        return Math.max(0, Math.min(1, stability));
-    },
-    
-    calculateIncomeDiversity: function(transactions) {
-        const incomeByCategory = {};
-        const incomeTransactions = transactions.filter(tx => tx.type === 'income');
-        
-        if (incomeTransactions.length === 0) return 0;
-        
-        incomeTransactions.forEach(tx => {
-            incomeByCategory[tx.category] = (incomeByCategory[tx.category] || 0) + tx.amount;
-        });
-        
-        const totalIncome = Object.values(incomeByCategory).reduce((a, b) => a + b, 0);
-        const shares = Object.values(incomeByCategory).map(amount => amount / totalIncome);
-        const diversity = 1 - shares.reduce((sum, share) => sum + Math.pow(share, 2), 0);
-        
-        return diversity;
-    },
-    
-    calculateEmergencyFundScore: function(monthlyExpenses, monthlyBudgets) {
-        const avgMonthlyExpense = monthlyExpenses / 3; // Based on last 3 months
-        const currentMonth = getCurrentMonthKey();
-        const currentBalance = monthlyBudgets[currentMonth]?.endingBalance || 0;
-        
-        if (avgMonthlyExpense === 0) return 50;
-        
-        const monthsCovered = currentBalance / avgMonthlyExpense;
-        if (monthsCovered >= 6) return 100;
-        if (monthsCovered >= 3) return 75;
-        if (monthsCovered >= 1) return 50;
-        return 25;
-    },
-    
-    // Predict next month's spending
-    predictNextMonthSpending: function(transactions) {
-        const now = new Date();
-        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        
-        const recentTransactions = transactions.filter(tx => {
-            const txDate = new Date(tx.date);
-            return txDate >= sixMonthsAgo;
-        });
-        
-        if (recentTransactions.length < 10) return null; // Insufficient data
-        
-        const monthlyExpenses = {};
-        recentTransactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                const month = tx.date.substring(0, 7);
-                monthlyExpenses[month] = (monthlyExpenses[month] || 0) + tx.amount;
-            }
-        });
-        
-        const amounts = Object.values(monthlyExpenses);
-        const avgExpense = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-        
-        // Simple trend calculation
-        let trend = 0;
-        if (amounts.length >= 2) {
-            const lastTwo = amounts.slice(-2);
-            trend = (lastTwo[1] - lastTwo[0]) / lastTwo[0];
-        }
-        
-        const prediction = avgExpense * (1 + trend * 0.5); // Conservative trend application
-        const confidence = Math.min(0.9, amounts.length / 10); // More data = more confidence
-        
-        return {
-            amount: Math.round(prediction),
-            confidence: confidence,
-            trend: trend
-        };
-    },
-    
-    // Generate AI insights
-    generateInsights: function(transactions, monthlyBudgets) {
-        const insights = [];
-        const healthScore = this.calculateHealthScore(transactions, monthlyBudgets);
-        const prediction = this.predictNextMonthSpending(transactions);
-        
-        // Health score insights
-        if (healthScore >= 80) {
-            insights.push({
-                type: 'positive',
-                message: 'Excellent financial health! Your spending habits are very sustainable.',
-                icon: 'bi-emoji-smile'
-            });
-        } else if (healthScore >= 60) {
-            insights.push({
-                type: 'info',
-                message: 'Good financial health. Small improvements could make it excellent.',
-                icon: 'bi-emoji-neutral'
-            });
-        } else {
-            insights.push({
-                type: 'warning',
-                message: 'Your financial health needs attention. Consider reviewing your spending patterns.',
-                icon: 'bi-emoji-frown'
-            });
-        }
-        
-        // Savings rate insights
-        const savingsRate = this.calculateSavingsRate(transactions);
-        if (savingsRate >= 0.2) {
-            insights.push({
-                type: 'positive',
-                message: `Great savings rate of ${(savingsRate * 100).toFixed(0)}%! You're building wealth effectively.`,
-                icon: 'bi-piggy-bank'
-            });
-        } else if (savingsRate >= 0.1) {
-            insights.push({
-                type: 'info',
-                message: `Decent savings rate of ${(savingsRate * 100).toFixed(0)}%. Aim for 20% for optimal wealth building.`,
-                icon: 'bi-piggy-bank'
-            });
-        } else if (savingsRate < 0) {
-            insights.push({
-                type: 'warning',
-                message: 'You\'re spending more than you earn. Consider reducing expenses or increasing income.',
-                icon: 'bi-exclamation-triangle'
-            });
-        }
-        
-        // Spending pattern insights
-        const categoryTrends = this.analyzeCategoryTrends(transactions);
-        categoryTrends.forEach(trend => {
-            if (trend.trend > 0.1) { // More than 10% increase
-                insights.push({
-                    type: 'warning',
-                    message: `${trend.category} spending is trending up significantly.`,
-                    icon: 'bi-graph-up-arrow'
-                });
-            } else if (trend.trend < -0.1) { // More than 10% decrease
-                insights.push({
-                    type: 'positive',
-                    message: `Great job reducing ${trend.category} spending!`,
-                    icon: 'bi-graph-down-arrow'
-                });
-            }
-        });
-        
-        // Prediction insights
-        if (prediction && prediction.confidence > 0.6) {
-            insights.push({
-                type: 'info',
-                message: `Next month's predicted spending: ${prediction.amount.toLocaleString()} ${currency}`,
-                icon: 'bi-magic'
-            });
-        }
-        
-        return insights.slice(0, 5); // Return top 5 insights
-    },
-    
-    calculateSavingsRate: function(transactions) {
-        const now = new Date();
-        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        
-        const recentTransactions = transactions.filter(tx => {
-            const txDate = new Date(tx.date);
-            return txDate >= threeMonthsAgo;
-        });
-        
-        const totalIncome = recentTransactions.filter(tx => tx.type === 'income')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-        const totalExpenses = recentTransactions.filter(tx => tx.type === 'expense')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-        
-        return totalIncome > 0 ? (totalIncome - totalExpenses) / totalIncome : 0;
-    },
-    
-    analyzeCategoryTrends: function(transactions) {
-        const now = new Date();
-        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthKey = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
-        
-        const currentMonthExpenses = {};
-        const lastMonthExpenses = {};
-        
-        transactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                const month = tx.date.substring(0, 7);
-                if (month === currentMonth) {
-                    currentMonthExpenses[tx.category] = (currentMonthExpenses[tx.category] || 0) + tx.amount;
-                } else if (month === lastMonthKey) {
-                    lastMonthExpenses[tx.category] = (lastMonthExpenses[tx.category] || 0) + tx.amount;
-                }
-            }
-        });
-        
-        const trends = [];
-        Object.keys(currentMonthExpenses).forEach(category => {
-            const current = currentMonthExpenses[category];
-            const last = lastMonthExpenses[category] || current * 0.5; // Default if no last month data
-            const trend = last > 0 ? (current - last) / last : 0;
-            
-            trends.push({
-                category: category,
-                current: current,
-                last: last,
-                trend: trend,
-                change: current - last
-            });
-        });
-        
-        return trends.sort((a, b) => Math.abs(b.trend) - Math.abs(a.trend)); // Sort by magnitude of change
-    },
-    
-    // Generate heat map data
-    generateHeatMap: function(transactions, year, month) {
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const heatMap = [];
-        
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dayTransactions = transactions.filter(tx => tx.date === dateStr && tx.type === 'expense');
-            const total = dayTransactions.reduce((sum, tx) => sum + tx.amount, 0);
-            
-            heatMap.push({
-                day: day,
-                date: dateStr,
-                amount: total,
-                transactions: dayTransactions.length
-            });
-        }
-        
-        return heatMap;
-    },
-    
-    // Compare periods
-    comparePeriods: function(transactions, period1, period2, type) {
-        const data1 = this.getPeriodData(transactions, period1, type);
-        const data2 = this.getPeriodData(transactions, period2, type);
-        
-        const comparison = {};
-        const allCategories = [...new Set([...Object.keys(data1), ...Object.keys(data2)])];
-        
-        allCategories.forEach(category => {
-            const amount1 = data1[category] || 0;
-            const amount2 = data2[category] || 0;
-            const change = amount2 - amount1;
-            const percentChange = amount1 > 0 ? (change / amount1) * 100 : (amount2 > 0 ? 100 : 0);
-            
-            comparison[category] = {
-                period1: amount1,
-                period2: amount2,
-                change: change,
-                percentChange: percentChange
+            this.user = {
+                name: response.credential.name,
+                email: response.credential.email,
+                picture: response.credential.picture
             };
-        });
-        
-        return comparison;
-    },
-    
-    getPeriodData: function(transactions, period, type) {
-        const data = {};
-        
-        transactions.forEach(tx => {
-            if (tx.type === 'expense') {
-                let include = false;
-                
-                if (type === 'month') {
-                    const txMonth = tx.date.substring(0, 7);
-                    include = txMonth === period;
-                } else if (type === 'year') {
-                    const txYear = tx.date.substring(0, 4);
-                    include = txYear === period;
-                }
-                
-                if (include) {
-                    data[tx.category] = (data[tx.category] || 0) + tx.amount;
-                }
-            }
-        });
-        
-        return data;
+            
+            document.getElementById('userName').textContent = this.user.name;
+            this.showMainApp();
+            this.showToast('Successfully signed in!', 'success');
+            
+        } catch (error) {
+            console.error('Sign in error:', error);
+            this.showToast('Sign in failed. Please try again.', 'error');
+        } finally {
+            document.getElementById('globalLoading').classList.add('d-none');
+        }
     }
-};
 
-// Planner Engine
-const PlannerEngine = {
-    calculateProjections: function(futureTransactions, timeframe, currentBalance) {
-        const projections = {
-            months: [],
-            summary: {
-                totalIncome: 0,
-                totalExpenses: 0,
-                netWealth: currentBalance,
-                endingBalance: currentBalance
-            }
-        };
+    signOut() {
+        google.accounts.id.disableAutoSelect();
+        this.user = null;
+        this.showAuthScreen();
+        this.showToast('Successfully signed out!', 'success');
+    }
+
+    toggleDarkMode() {
+        this.isDarkMode = !this.isDarkMode;
+        localStorage.setItem('darkMode', this.isDarkMode);
+        this.initializeTheme();
         
+        // Update charts for theme change
+        Object.values(this.charts).forEach(chart => {
+            if (chart) {
+                chart.destroy();
+            }
+        });
+        this.charts = {};
+        
+        // Reload current tab
+        const activeTab = document.querySelector('.nav-link.active').getAttribute('data-tab');
+        this.switchTab(activeTab);
+    }
+
+    switchTab(tabName) {
+        // Update navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('d-none');
+        });
+
+        // Show selected tab
+        document.getElementById(`${tabName}Tab`).classList.remove('d-none');
+
+        // Load tab content
+        switch (tabName) {
+            case 'dashboard':
+                this.loadDashboard();
+                break;
+            case 'transactions':
+                this.loadTransactions();
+                break;
+            case 'budgets':
+                this.loadBudgets();
+                break;
+            case 'reports':
+                this.loadReports();
+                break;
+        }
+
+        // Show/hide FAB
+        const fab = document.getElementById('quickAddFab');
+        if (tabName === 'transactions' || tabName === 'dashboard') {
+            fab.classList.remove('d-none');
+            fab.classList.add('animate__bounceIn');
+        } else {
+            fab.classList.add('d-none');
+        }
+    }
+
+    async loadDashboard() {
+        this.showSkeleton('#dashboardTab');
+        
+        // Simulate data loading
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        this.updateQuickStats();
+        this.renderSpendingChart();
+        this.renderCategoryChart();
+        this.renderRecentTransactions();
+        this.renderBudgetProgress();
+        
+        this.hideSkeleton('#dashboardTab');
+    }
+
+    showSkeleton(container) {
+        const skeletons = document.querySelectorAll(`${container} .skeleton`);
+        skeletons.forEach(skeleton => skeleton.classList.remove('d-none'));
+    }
+
+    hideSkeleton(container) {
+        const skeletons = document.querySelectorAll(`${container} .skeleton`);
+        skeletons.forEach(skeleton => skeleton.classList.add('d-none'));
+    }
+
+    updateQuickStats() {
         const now = new Date();
-        const months = timeframe === '1year' ? 12 : timeframe === '2years' ? 24 : 36;
-        
-        let runningBalance = currentBalance;
-        
-        for (let i = 0; i < months; i++) {
-            const currentDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
-            const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-            const monthName = currentDate.toLocaleDateString('en', { month: 'long', year: 'numeric' });
-            
-            let monthIncome = 0;
-            let monthExpenses = 0;
-            
-            // Calculate income for this month
-            futureTransactions.income.forEach(income => {
-                if (this.shouldIncludeInMonth(income, currentDate)) {
-                    monthIncome += income.amount;
-                }
-            });
-            
-            // Calculate expenses for this month
-            futureTransactions.expenses.forEach(expense => {
-                if (this.shouldIncludeInMonth(expense, currentDate)) {
-                    monthExpenses += expense.amount;
-                }
-            });
-            
-            runningBalance += monthIncome - monthExpenses;
-            
-            projections.months.push({
-                month: monthKey,
-                name: monthName,
-                income: monthIncome,
-                expenses: monthExpenses,
-                net: monthIncome - monthExpenses,
-                balance: runningBalance
-            });
-            
-            projections.summary.totalIncome += monthIncome;
-            projections.summary.totalExpenses += monthExpenses;
-        }
-        
-        projections.summary.netWealth = projections.summary.totalIncome - projections.summary.totalExpenses;
-        projections.summary.endingBalance = runningBalance;
-        
-        return projections;
-    },
-    
-    shouldIncludeInMonth: function(transaction, targetDate) {
-    const targetMonth = targetDate.getMonth();
-    const targetYear = targetDate.getFullYear();
-    
-    const startDate = new Date(transaction.startDate);
-    const startMonth = startDate.getMonth();
-    const startYear = startDate.getFullYear();
-    
-    // If transaction starts after target month, exclude
-    if (startYear > targetYear || (startYear === targetYear && startMonth > targetMonth)) {
-        return false;
-    }
-    
-    // Check end date if exists
-    if (transaction.endDate) {
-        const endDate = new Date(transaction.endDate);
-        const endMonth = endDate.getMonth();
-        const endYear = endDate.getFullYear();
-        
-        if (endYear < targetYear || (endYear === targetYear && endMonth < targetMonth)) {
-            return false;
-        }
-    }
-    
-    // Check frequency
-    if (transaction.frequency === 'one-time') {
-        return startMonth === targetMonth && startYear === targetYear;
-    } else if (transaction.frequency === 'monthly') {
-        return true; // Include every month
-    } else if (transaction.frequency === 'quarterly') {
-        const monthsDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
-        return monthsDiff % 3 === 0;
-    }
-    
-    return false;
-}
-};
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
 
-// Debt Management Engine
-const DebtEngine = {
-    calculateDebtSummary: function(loans) {
-        const totalGiven = loans.given.reduce((sum, loan) => sum + (loan.amount - this.getPaidAmount(loan)), 0);
-        const totalTaken = loans.taken.reduce((sum, loan) => sum + (loan.amount - this.getPaidAmount(loan)), 0);
+        const monthlyTransactions = this.transactions.filter(t => {
+            const transDate = new Date(t.date);
+            return transDate.getMonth() === currentMonth && 
+                   transDate.getFullYear() === currentYear;
+        });
+
+        const income = monthlyTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const expenses = monthlyTransactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + t.amount, 0);
+
+        const balance = income - expenses;
+        const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
+
+        document.getElementById('totalBalance').textContent = this.formatCurrency(balance);
+        document.getElementById('totalIncome').textContent = this.formatCurrency(income);
+        document.getElementById('totalExpenses').textContent = this.formatCurrency(expenses);
+        document.getElementById('savingsRate').textContent = `${savingsRate.toFixed(1)}%`;
+
+        // Add animation to stat cards
+        document.querySelectorAll('.stat-card').forEach((card, index) => {
+            card.classList.add('animate__fadeInUp');
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+    }
+
+    renderSpendingChart() {
+        const ctx = document.getElementById('spendingChart').getContext('2d');
+        const chartLoading = document.getElementById('chartLoading');
         
-        const upcomingRepayments = [...loans.given, ...loans.taken]
-            .filter(loan => loan.status !== 'completed')
-            .sort((a, b) => new Date(a.expectedReturn || a.dueDate) - new Date(b.expectedReturn || b.dueDate))
+        chartLoading.classList.remove('d-none');
+        
+        // Simulate chart loading
+        setTimeout(() => {
+            if (this.charts.spending) {
+                this.charts.spending.destroy();
+            }
+
+            const last30Days = this.getLastNDays(30);
+            const incomeData = this.getDailyAmounts(last30Days, 'income');
+            const expenseData = this.getDailyAmounts(last30Days, 'expense');
+
+            this.charts.spending = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last30Days.map(date => dateFns.format(date, 'MMM dd')),
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: incomeData,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Expenses',
+                            data: expenseData,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: (context) => {
+                                    return `${context.dataset.label}: ${this.formatCurrency(context.parsed.y)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: (value) => this.formatCurrency(value)
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+
+            chartLoading.classList.add('d-none');
+        }, 500);
+    }
+
+    renderCategoryChart() {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        const chartLoading = document.getElementById('categoryChartLoading');
+        
+        chartLoading.classList.remove('d-none');
+
+        setTimeout(() => {
+            if (this.charts.category) {
+                this.charts.category.destroy();
+            }
+
+            const categoryTotals = this.categories.map(category => {
+                const total = this.transactions
+                    .filter(t => t.category === category && t.type === 'expense')
+                    .reduce((sum, t) => sum + t.amount, 0);
+                return { category, total };
+            }).filter(item => item.total > 0);
+
+            if (categoryTotals.length === 0) {
+                chartLoading.classList.add('d-none');
+                return;
+            }
+
+            this.charts.category = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: categoryTotals.map(item => item.category),
+                    datasets: [{
+                        data: categoryTotals.map(item => item.total),
+                        backgroundColor: [
+                            '#3498db', '#e74c3c', '#27ae60', '#f39c12',
+                            '#9b59b6', '#1abc9c', '#d35400', '#34495e',
+                            '#16a085', '#8e44ad', '#2c3e50', '#f1c40f'
+                        ],
+                        borderWidth: 2,
+                        borderColor: document.body.getAttribute('data-theme') === 'dark' ? '#2d2d2d' : '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${this.formatCurrency(context.parsed)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                        duration: 1000
+                    }
+                }
+            });
+
+            chartLoading.classList.add('d-none');
+        }, 500);
+    }
+
+    renderRecentTransactions() {
+        const container = document.getElementById('recentTransactionsList');
+        const emptyState = document.getElementById('recentTransactionsEmpty');
+        
+        const recent = this.transactions
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
             .slice(0, 5);
-        
-        return {
-            totalGiven,
-            totalTaken,
-            netPosition: totalGiven - totalTaken,
-            upcomingRepayments
-        };
-    },
-    
-    getPaidAmount: function(loan) {
-        return loan.payments ? loan.payments.reduce((sum, payment) => sum + payment.amount, 0) : 0;
-    },
-    
-    getLoanStatus: function(loan) {
-        const paid = this.getPaidAmount(loan);
-        const dueDate = new Date(loan.expectedReturn || loan.dueDate);
-        const today = new Date();
-        
-        if (paid >= loan.amount) return 'completed';
-        if (dueDate < today) return 'overdue';
-        if (paid > 0) return 'partially_paid';
-        return 'pending';
-    },
-    
-    addPayment: function(loan, amount, date) {
-        if (!loan.payments) loan.payments = [];
-        loan.payments.push({
-            date: date || new Date().toISOString().split('T')[0],
-            amount: amount
-        });
-        
-        // Update status
-        loan.status = this.getLoanStatus(loan);
-    }
-};
 
-// Helper function to get monthly backup filename
-function getMonthlyBackupFileName() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `wealth_command_backup_${year}-${month}.json`;
-}
-
-// Enhanced Monthly Rollover System
-function loadMonthlyBudgets() {
-    try {
-        const budgets = JSON.parse(localStorage.getItem('monthlyBudgets')) || {};
-        ensureAllMonthsHaveBudgets(budgets);
-        return budgets;
-    } catch {
-        const budgets = {};
-        ensureAllMonthsHaveBudgets(budgets);
-        localStorage.setItem('monthlyBudgets', JSON.stringify(budgets));
-        return budgets;
-    }
-}
-
-function ensureAllMonthsHaveBudgets(budgets) {
-    // Get all unique months from transactions
-    const transactionMonths = [...new Set(transactions.map(tx => getMonthKeyFromDate(tx.date)))];
-    
-    // Add current month if no transactions exist
-    const currentMonth = getCurrentMonthKey();
-    if (!transactionMonths.includes(currentMonth)) {
-        transactionMonths.push(currentMonth);
-    }
-    
-    // Ensure each month has a budget entry
-    transactionMonths.forEach(month => {
-        if (!budgets[month]) {
-            budgets[month] = {
-                startingBalance: 0,
-                income: 0,
-                expenses: 0,
-                endingBalance: 0,
-                autoRollover: true,
-                allowNegative: false
-            };
+        if (recent.length === 0) {
+            container.classList.add('d-none');
+            emptyState.classList.remove('d-none');
+            return;
         }
-    });
-    
-    // Sort months chronologically
-    const sortedMonths = Object.keys(budgets).sort();
-    const sortedBudgets = {};
-    sortedMonths.forEach(month => {
-        sortedBudgets[month] = budgets[month];
-    });
-    
-    return sortedBudgets;
-}
 
-function getCurrentMonthKey() {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
+        container.classList.remove('d-none');
+        emptyState.classList.add('d-none');
 
-let monthlyBudgets = loadMonthlyBudgets();
-
-function saveMonthlyBudgets(budgets) {
-    monthlyBudgets = ensureAllMonthsHaveBudgets(budgets);
-    localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
-    autoSyncToDrive();
-}
-
-function getMonthKeyFromDate(dateString) {
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date)) return getCurrentMonthKey();
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    } catch {
-        return getCurrentMonthKey();
-    }
-}
-
-function calculateMonthlyRollover() {
-    console.log('Calculating monthly rollover...');
-    
-    // Ensure all months have budget entries
-    monthlyBudgets = ensureAllMonthsHaveBudgets(monthlyBudgets);
-    
-    const months = Object.keys(monthlyBudgets).sort();
-    console.log('Processing months:', months);
-    
-    // First pass: Calculate income and expenses for each month
-    months.forEach(month => {
-        const monthData = monthlyBudgets[month];
-        const monthTransactions = transactions.filter(tx => 
-            getMonthKeyFromDate(tx.date) === month
-        );
-        
-        monthData.income = monthTransactions
-            .filter(tx => tx.type === 'income')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-            
-        monthData.expenses = monthTransactions
-            .filter(tx => tx.type === 'expense')
-            .reduce((sum, tx) => sum + tx.amount, 0);
-            
-        console.log(`Month ${month}: Income=${monthData.income}, Expenses=${monthData.expenses}`);
-    });
-    
-    // Second pass: Calculate ending balances and rollovers
-    for (let i = 0; i < months.length; i++) {
-        const currentMonth = months[i];
-        const monthData = monthlyBudgets[currentMonth];
-        
-        monthData.endingBalance = monthData.startingBalance + monthData.income - monthData.expenses;
-        
-        // Roll over to next month if auto-rollover is enabled
-        if (monthData.autoRollover && i < months.length - 1) {
-            const nextMonth = months[i + 1];
-            if (monthData.endingBalance >= 0 || monthData.allowNegative) {
-                monthlyBudgets[nextMonth].startingBalance = monthData.endingBalance;
-            } else {
-                monthlyBudgets[nextMonth].startingBalance = 0;
-            }
-            console.log(`Rollover from ${currentMonth} to ${nextMonth}: ${monthlyBudgets[nextMonth].startingBalance}`);
-        }
-    }
-    
-    saveMonthlyBudgets(monthlyBudgets);
-    console.log('Rollover calculation completed');
-}
-
-function updateRolloverDisplay() {
-    const rolloverElement = document.getElementById('rolloverBalance');
-    const monthSel = document.getElementById('summaryMonth');
-    const yearSel = document.getElementById('summaryYear');
-    
-    const selectedMonth = monthSel.value;
-    const selectedYear = yearSel.value;
-    
-    if (selectedMonth === 'all' || selectedYear === 'all') {
-        rolloverElement.classList.add('d-none');
-        return;
-    }
-    
-    const monthKey = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
-    const monthData = monthlyBudgets[monthKey];
-    
-    if (!monthData || monthData.startingBalance === 0) {
-        rolloverElement.classList.add('d-none');
-        return;
-    }
-    
-    rolloverElement.classList.remove('d-none');
-    
-    if (monthData.startingBalance > 0) {
-        rolloverElement.classList.add('rollover-positive');
-        rolloverElement.classList.remove('rollover-negative');
-    } else if (monthData.startingBalance < 0) {
-        rolloverElement.classList.add('rollover-negative');
-        rolloverElement.classList.remove('rollover-positive');
-    } else {
-        rolloverElement.classList.remove('rollover-positive', 'rollover-negative');
-    }
-    
-    document.getElementById('rolloverAmount').textContent = 
-        `${monthData.startingBalance >= 0 ? '+' : ''}${monthData.startingBalance.toLocaleString()} ${currency}`;
-    
-    const prevMonth = getPreviousMonth(monthKey);
-    document.getElementById('rolloverDescription').textContent = 
-        `Carried over from ${prevMonth}`;
-}
-
-function getPreviousMonth(monthKey) {
-    const [year, month] = monthKey.split('-').map(Number);
-    let prevYear = year;
-    let prevMonth = month - 1;
-    
-    if (prevMonth === 0) {
-        prevMonth = 12;
-        prevYear = year - 1;
-    }
-    
-    return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
-}
-
-function toggleRolloverSettings() {
-    const monthSel = document.getElementById('summaryMonth');
-    const yearSel = document.getElementById('summaryYear');
-    
-    if (monthSel.value === 'all' || yearSel.value === 'all') {
-        showToast('Please select a specific month to adjust rollover settings', 'warning');
-        return;
-    }
-    
-    const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
-    const monthData = monthlyBudgets[monthKey];
-    
-    if (monthData) {
-        const newBalance = prompt('Adjust starting balance:', monthData.startingBalance);
-        if (newBalance !== null && !isNaN(parseFloat(newBalance))) {
-            monthData.startingBalance = parseFloat(newBalance);
-            saveMonthlyBudgets(monthlyBudgets);
-            calculateMonthlyRollover();
-            updateUI();
-            showToast('Starting balance updated', 'success');
-        }
-    }
-}
-
-// Enhanced Toast System for important messages only
-function showToast(message, type = 'info', duration = 4000) {
-    // Only show critical toasts, use status icons for sync messages
-    if (type === 'info' && message.includes('sync') || message.includes('Sync')) {
-        updateSyncStatus(type, message);
-        return;
-    }
-    
-    const toastContainer = document.getElementById('toastContainer');
-    const toastId = 'toast-' + Date.now();
-    
-    const icons = {
-        success: 'bi-check-circle-fill',
-        info: 'bi-info-circle-fill',
-        warning: 'bi-exclamation-triangle-fill',
-        danger: 'bi-x-circle-fill'
-    };
-    
-    const toastHTML = `
-        <div id="${toastId}" class="toast toast-${type}" role="alert">
-            <div class="toast-body">
-                <div class="d-flex align-items-center">
-                    <i class="bi ${icons[type]} me-2 text-${type}"></i>
-                    <span class="flex-grow-1">${message}</span>
-                    <button type="button" class="btn-close ms-2" data-bs-dismiss="toast"></button>
+        container.innerHTML = recent.map((transaction, index) => `
+            <div class="list-group-item animate__animated" style="animation-delay: ${index * 0.1}s">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${transaction.description}</h6>
+                        <small class="text-muted">${transaction.category}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="d-block ${transaction.type === 'income' ? 'text-success' : 'text-danger'}">
+                            ${transaction.type === 'income' ? '+' : '-'}${this.formatCurrency(transaction.amount)}
+                        </span>
+                        <small class="text-muted">${dateFns.format(new Date(transaction.date), 'MMM dd')}</small>
+                    </div>
                 </div>
-                <div class="toast-progress"></div>
             </div>
-        </div>
-    `;
-    
-    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-    const toastElement = document.getElementById(toastId);
-    const bsToast = new bootstrap.Toast(toastElement, { delay: duration });
-    
-    toastElement.addEventListener('hidden.bs.toast', () => {
-        toastElement.remove();
-    });
-    
-    bsToast.show();
-}
+        `).join('');
 
-// Sync Status Icon System
-function updateSyncStatus(status, message = '') {
-    const syncIcon = document.getElementById('syncStatusIcon');
-    const syncTooltip = document.getElementById('syncStatusTooltip');
-    
-    if (!syncIcon) return;
-    
-    // Remove all existing classes
-    syncIcon.className = 'bi';
-    
-    switch (status) {
-        case 'success':
-            syncIcon.classList.add('bi-cloud-check', 'text-success');
-            syncTooltip.textContent = message || `Synced ${lastSyncTime ? new Date(lastSyncTime).toLocaleTimeString() : 'just now'}`;
-            break;
-        case 'info':
-        case 'syncing':
-            syncIcon.classList.add('bi-cloud-arrow-up', 'text-info', 'pulse');
-            syncTooltip.textContent = message || 'Syncing...';
-            break;
-        case 'warning':
-            syncIcon.classList.add('bi-cloud-slash', 'text-warning');
-            syncTooltip.textContent = message || 'Offline - changes will sync when online';
-            break;
-        case 'danger':
-        case 'error':
-            syncIcon.classList.add('bi-cloud-x', 'text-danger');
-            syncTooltip.textContent = message || 'Sync failed';
-            break;
-        case 'offline':
-            syncIcon.classList.add('bi-cloud-slash', 'text-muted');
-            syncTooltip.textContent = message || 'Offline';
-            break;
-        default:
-            syncIcon.classList.add('bi-cloud', 'text-muted');
-            syncTooltip.textContent = message || 'Not signed in';
-    }
-}
-
-function showSyncStatus(message, type) {
-    updateSyncStatus(type, message);
-    // Only show toast for errors
-    if (type === 'danger' || type === 'warning') {
-        const toastContainer = document.getElementById('toastContainer');
-        if (!toastContainer.querySelector('.toast')) {
-            showToast(message, type, 5000);
-        }
-    }
-}
-
-// Enhanced Google Auth with better error handling
-function initGoogleAuth() {
-    if (!window.google) {
-        console.error('Google API not loaded');
-        showSyncStatus('error', 'Google authentication not available');
-        return;
-    }
-    
-    try {
-        googleAuth = google.accounts.oauth2.initTokenClient({
-            client_id: GOOGLE_CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/drive.file',
-            callback: async (tokenResponse) => {
-                if (tokenResponse && tokenResponse.access_token) {
-                    googleUser = {
-                        access_token: tokenResponse.access_token,
-                        expires_in: tokenResponse.expires_in,
-                        acquired_at: Date.now()
-                    };
-                    
-                    localStorage.setItem('googleUser', JSON.stringify(googleUser));
-                    showSyncStatus('success', 'Google Drive connected!');
-                    updateProfileUI();
-                    
-                    // Auto-load data from Drive after sign-in
-                    const success = await loadDataFromDrive();
-                    if (!success) {
-                        // If load fails, sync local data to Drive
-                        await syncDataToDrive();
-                    }
-                }
-            },
-            error_callback: (error) => {
-                console.error('Google Auth error:', error);
-                if (error.type === 'user_logged_out') {
-                    googleUser = null;
-                    localStorage.removeItem('googleUser');
-                    updateProfileUI();
-                    showSyncStatus('offline', 'Signed out from Google Drive');
-                } else {
-                    showSyncStatus('error', 'Google Sign-In failed');
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Error initializing Google Auth:', error);
-        showSyncStatus('error', 'Failed to initialize Google authentication');
-    }
-}
-
-// Profile Picture and Google Sign-In Functions
-function showGoogleSignIn() {
-    if (googleAuth) {
-        googleAuth.requestAccessToken();
-    } else {
-        initGoogleAuth();
-        setTimeout(() => {
-            if (googleAuth) {
-                googleAuth.requestAccessToken();
-            }
-        }, 500);
-    }
-}
-
-function updateProfileUI() {
-    const profilePicture = document.getElementById('profilePicture');
-    const signedInUser = document.getElementById('signedInUser');
-    const userEmail = document.getElementById('userEmail');
-    const signInOption = document.getElementById('signInOption');
-    const signOutOption = document.getElementById('signOutOption');
-    const syncStatusText = document.getElementById('syncStatusText');
-    
-    if (googleUser && googleUser.access_token) {
-        profilePicture.innerHTML = `<i class="bi bi-cloud-check-fill profile-icon"></i>`;
-        signedInUser.classList.remove('d-none');
-        userEmail.textContent = 'Connected to Google Drive';
-        signInOption.classList.add('d-none');
-        signOutOption.classList.remove('d-none');
-        
-        if (syncStatusText) {
-            syncStatusText.textContent = 'Synced with Google Drive';
-        }
-        showSyncStatus('success', 'Connected to Google Drive');
-    } else {
-        profilePicture.innerHTML = `<i class="bi bi-person-circle profile-icon"></i>`;
-        signedInUser.classList.add('d-none');
-        signInOption.classList.remove('d-none');
-        signOutOption.classList.add('d-none');
-        
-        if (syncStatusText) {
-            syncStatusText.textContent = 'Sign in to sync with Google Drive';
-        }
-        showSyncStatus('offline', 'Sign in to sync with Google Drive');
-    }
-}
-
-// Enhanced data loading from Google Drive
-async function loadDataFromDrive() {
-    if (!googleUser || !googleUser.access_token) {
-        showSyncStatus('offline', 'Not authenticated with Google Drive');
-        return false;
-    }
-    
-    if (!isOnline) {
-        showSyncStatus('warning', 'Cannot load: You are offline');
-        return false;
-    }
-    
-    // Check if token is expired
-    if (isTokenExpired(googleUser)) {
-        showSyncStatus('warning', 'Session expired. Please sign in again.');
-        googleSignOut();
-        return false;
-    }
-    
-    try {
-        showSyncStatus('syncing', 'Loading data from Google Drive...');
-        
-        // Search for the main sync file
-        const searchResponse = await fetch(
-            `https://www.googleapis.com/drive/v3/files?q=name='${GOOGLE_DRIVE_FILE_NAME}' and trashed=false&fields=files(id,name,modifiedTime)`,
-            {
-                headers: {
-                    'Authorization': `Bearer ${googleUser.access_token}`
-                }
-            }
-        );
-        
-        if (searchResponse.status === 401) {
-            showSyncStatus('warning', 'Authentication expired. Please sign in again.');
-            googleSignOut();
-            return false;
-        }
-        
-        if (!searchResponse.ok) {
-            throw new Error(`Drive API error: ${searchResponse.status}`);
-        }
-        
-        const searchData = await searchResponse.json();
-        
-        if (searchData.files && searchData.files.length > 0) {
-            const file = searchData.files[0];
-            const fileResponse = await fetch(
-                `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${googleUser.access_token}`
-                    }
-                }
-            );
-            
-            if (!fileResponse.ok) {
-                throw new Error(`File download error: ${fileResponse.status}`);
-            }
-            
-            const driveData = await fileResponse.json();
-            
-            // Validate and load data
-            if (driveData.transactions && Array.isArray(driveData.transactions)) {
-                transactions = driveData.transactions;
-                localStorage.setItem('transactions', JSON.stringify(transactions));
-            }
-            
-            if (driveData.categories && Array.isArray(driveData.categories)) {
-                categories = driveData.categories;
-                localStorage.setItem('categories', JSON.stringify(categories));
-            }
-            
-            if (driveData.currency) {
-                currency = driveData.currency;
-                localStorage.setItem('currency', currency);
-            }
-            
-            if (driveData.monthlyBudgets) {
-                monthlyBudgets = driveData.monthlyBudgets;
-                localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
-            }
-            
-            if (driveData.futureTransactions) {
-                futureTransactions = driveData.futureTransactions;
-                localStorage.setItem('futureTransactions', JSON.stringify(futureTransactions));
-            }
-            
-            if (driveData.loans) {
-                loans = driveData.loans;
-                localStorage.setItem('loans', JSON.stringify(loans));
-            }
-            
-            // Update last backup month from loaded data
-            if (driveData.lastBackupMonth) {
-                lastBackupMonth = driveData.lastBackupMonth;
-            }
-            
-            if (driveData.lastSync) {
-                lastSyncTime = driveData.lastSync;
-            }
-            
-            // Update UI with loaded data
-            updateUI();
-            populateSummaryFilters();
-            renderCategoryList();
-            renderPlannerProjections();
-            renderDebtManagement();
-            
-            showSyncStatus('success', 'Data loaded from Google Drive!');
-            console.log('Data loaded from Drive:', {
-                transactions: transactions.length,
-                categories: categories.length,
-                currency: currency,
-                monthlyBudgets: Object.keys(monthlyBudgets).length,
-                futureTransactions: futureTransactions,
-                loans: loans
-            });
-            
-            return true;
-        } else {
-            showSyncStatus('info', 'No existing data found. Creating new backup...');
-            // No file found, create one with current data
-            await syncDataToDrive();
-            return true;
-        }
-    } catch (error) {
-        console.error('Error loading from Drive:', error);
-        showSyncStatus('error', 'Error loading from Google Drive');
-        return false;
-    }
-}
-
-// Helper function to sync a single file
-async function syncSingleFile(fileName, fileData, overwrite = true) {
-    // Search for existing file
-    const searchResponse = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and trashed=false&fields=files(id)`,
-        {
-            headers: {
-                'Authorization': `Bearer ${googleUser.access_token}`
-            }
-        }
-    );
-    
-    if (searchResponse.status === 401) {
-        throw new Error('Authentication expired');
-    }
-    
-    if (!searchResponse.ok) {
-        throw new Error(`Search failed: ${searchResponse.status}`);
-    }
-    
-    const searchData = await searchResponse.json();
-    const existingFile = searchData.files?.[0];
-    
-    let response;
-    
-    if (existingFile && overwrite) {
-        // Update existing file
-        console.log(`Updating existing file: ${fileName}`);
-        response = await fetch(
-            `https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${googleUser.access_token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(fileData)
-            }
-        );
-    } else if (!existingFile) {
-        // Create new file
-        console.log(`Creating new file: ${fileName}`);
-        
-        // First create the file metadata
-        const createResponse = await fetch(
-            'https://www.googleapis.com/drive/v3/files',
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${googleUser.access_token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: fileName,
-                    mimeType: 'application/json',
-                    description: `Wealth Command ${fileName.includes('backup') ? 'Monthly Backup' : 'Main Sync File'}`
-                })
-            }
-        );
-        
-        if (!createResponse.ok) {
-            throw new Error(`File creation failed: ${createResponse.status}`);
-        }
-        
-        const newFile = await createResponse.json();
-        
-        // Then upload the content
-        response = await fetch(
-            `https://www.googleapis.com/upload/drive/v3/files/${newFile.id}?uploadType=media`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${googleUser.access_token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(fileData)
-            }
-        );
-    } else {
-        // File exists but we shouldn't overwrite (for monthly backups)
-        console.log(`File ${fileName} already exists, skipping creation`);
-        return true;
-    }
-    
-    if (response.ok) {
-        console.log(`File ${fileName} synced successfully`);
-        return true;
-    } else {
-        const errorText = await response.text();
-        throw new Error(`Upload failed: ${response.status} - ${errorText}`);
-    }
-}
-
-// Enhanced sync function with monthly backups
-async function syncDataToDrive() {
-    if (syncInProgress) {
-        pendingSync = true;
-        return false;
-    }
-    
-    if (!googleUser || !googleUser.access_token) {
-        console.log('Not authenticated, skipping sync');
-        return false;
-    }
-    
-    if (!isOnline) {
-        console.log('Offline, skipping sync');
-        pendingSync = true;
-        showSyncStatus('warning', 'Offline - changes queued for sync');
-        return false;
-    }
-    
-    // Check if token is expired
-    if (isTokenExpired(googleUser)) {
-        showSyncStatus('warning', 'Session expired. Please sign in again.');
-        googleSignOut();
-        return false;
-    }
-    
-    syncInProgress = true;
-    showSyncStatus('syncing', 'Syncing to Google Drive...');
-    
-    try {
-        const currentMonth = getCurrentMonthKey();
-        const shouldCreateMonthlyBackup = lastBackupMonth !== currentMonth;
-        
-        const fileData = {
-            transactions,
-            categories,
-            currency,
-            monthlyBudgets,
-            futureTransactions,
-            loans,
-            lastSync: new Date().toISOString(),
-            lastBackupMonth: currentMonth,
-            version: '1.3',
-            app: 'Wealth Command'
-        };
-        
-        // Step 1: Sync main file (always)
-        console.log('Syncing main file...');
-        const mainFileSuccess = await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
-        
-        if (!mainFileSuccess) {
-            throw new Error('Failed to sync main file');
-        }
-        
-        // Step 2: Create monthly backup if needed
-        if (shouldCreateMonthlyBackup) {
-            console.log('Creating monthly backup...');
-            const monthlyFileName = getMonthlyBackupFileName();
-            const monthlyBackupData = {
-                ...fileData,
-                isMonthlyBackup: true,
-                backupMonth: currentMonth,
-                created: new Date().toISOString()
-            };
-            
-            await syncSingleFile(monthlyFileName, monthlyBackupData, false); // Don't overwrite existing monthly backups
-            
-            // Update last backup month
-            lastBackupMonth = currentMonth;
-            fileData.lastBackupMonth = currentMonth;
-            
-            // Update main file with new backup month info
-            await syncSingleFile(GOOGLE_DRIVE_FILE_NAME, fileData);
-            
-            showSyncStatus('success', 'Data synced + monthly backup created!');
-        } else {
-            showSyncStatus('success', 'Data synced to Google Drive!');
-        }
-        
-        lastSyncTime = new Date().toISOString();
-        console.log('Sync completed successfully');
-        return true;
-    } catch (error) {
-        console.error('Error syncing to Drive:', error);
-        
-        if (error.message.includes('Authentication expired') || error.message.includes('401')) {
-            showSyncStatus('warning', 'Authentication expired. Please sign in again.');
-            googleSignOut();
-        } else {
-            showSyncStatus('error', 'Sync failed: ' + error.message);
-        }
-        return false;
-    } finally {
-        syncInProgress = false;
-        
-        // Process pending sync if any
-        if (pendingSync) {
-            pendingSync = false;
-            setTimeout(syncDataToDrive, 1000);
-        }
-    }
-}
-
-// Check if token is expired
-function isTokenExpired(user) {
-    if (!user || !user.acquired_at || !user.expires_in) return true;
-    
-    const elapsed = Date.now() - user.acquired_at;
-    const expiresIn = user.expires_in * 1000; // Convert to milliseconds
-    const buffer = 5 * 60 * 1000; // 5 minutes buffer
-    
-    return elapsed > (expiresIn - buffer);
-}
-
-// Enhanced manual sync with better feedback
-async function manualSync() {
-    if (!googleUser) {
-        showGoogleSignIn();
-        return;
-    }
-    
-    if (!isOnline) {
-        showSyncStatus('warning', 'Cannot sync: You are offline');
-        return;
-    }
-    
-    const success = await syncDataToDrive();
-    if (success) {
-        showSyncStatus('success', 'Manual sync completed!');
-    }
-}
-
-// Enhanced sign-out function
-function googleSignOut() {
-    if (googleUser && googleUser.access_token) {
-        if (window.google && google.accounts.oauth2) {
-            google.accounts.oauth2.revoke(googleUser.access_token, () => {
-                console.log('Token revoked');
-            });
-        }
-    }
-    
-    googleUser = null;
-    localStorage.removeItem('googleUser');
-    updateProfileUI();
-    showSyncStatus('offline', 'Signed out from Google Drive');
-}
-
-// Enhanced online/offline handling
-window.addEventListener('online', () => {
-    isOnline = true;
-    showSyncStatus('info', 'Back online. Syncing data...');
-    
-    if (googleUser) {
-        // Sync when coming back online
-        setTimeout(() => {
-            syncDataToDrive();
-        }, 2000);
-    }
-});
-
-window.addEventListener('offline', () => {
-    isOnline = false;
-    showSyncStatus('warning', 'You are offline. Changes will sync when back online.');
-});
-
-// Auto-sync function (debounced)
-function autoSyncToDrive() {
-    if (googleUser && isOnline) {
-        // Debounce sync to avoid too many requests
-        clearTimeout(window.syncTimeout);
-        window.syncTimeout = setTimeout(() => {
-            syncDataToDrive();
-        }, 2000); // Sync after 2 seconds of inactivity
-    }
-}
-
-// Periodic sync (every 5 minutes when online and authenticated)
-function startPeriodicSync() {
-    setInterval(() => {
-        if (googleUser && isOnline && !syncInProgress) {
-            console.log('Periodic sync check...');
-            syncDataToDrive();
-        }
-    }, 5 * 60 * 1000); // 5 minutes
-}
-
-//Populate Chart Tab
-function populateChartFilters() {
-    const chartMonth = document.getElementById('chartMonth');
-    const chartYear = document.getElementById('chartYear');
-    
-    if (!chartMonth || !chartYear) return;
-    
-    chartMonth.innerHTML = '<option value="all">All Months</option>';
-    chartYear.innerHTML = '<option value="all">All Years</option>';
-    
-    const monthNames = ["January", "February", "March", "April", "May", "June", 
-                       "July", "August", "September", "October", "November", "December"];
-    
-    monthNames.forEach((monthName, index) => {
-        const option = document.createElement('option');
-        option.value = index + 1;
-        option.textContent = monthName;
-        chartMonth.appendChild(option);
-    });
-    
-    const years = Array.from(new Set(transactions.map(tx => {
-        const year = new Date(tx.date).getFullYear();
-        return isNaN(year) ? null : year;
-    }).filter(year => year !== null)))
-    .sort((a, b) => b - a);
-    
-    const currentYear = new Date().getFullYear();
-    if (!years.includes(currentYear)) {
-        years.unshift(currentYear);
-    }
-    
-    years.forEach(year => {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year;
-        chartYear.appendChild(option);
-    });
-    
-    const now = new Date();
-    chartMonth.value = now.getMonth() + 1;
-    chartYear.value = now.getFullYear();
-    
-    chartMonth.addEventListener('change', renderEnhancedAnalytics);
-    chartYear.addEventListener('change', renderEnhancedAnalytics);
-}
-
-// Tab Persistence System
-function initTabState() {
-    const hash = window.location.hash.replace('#', '');
-    const validTabs = ['dashboard', 'transactions', 'planner', 'debt', 'analytics', 'settings'];
-    const savedTab = localStorage.getItem('lastActiveTab');
-    
-    let initialTab = 'dashboard';
-    
-    if (validTabs.includes(hash)) {
-        initialTab = hash;
-    } else if (validTabs.includes(savedTab)) {
-        initialTab = savedTab;
-    }
-    
-    showTab(initialTab);
-}
-
-function updateUrlHash(tab) {
-    if (window.location.hash !== `#${tab}`) {
-        window.location.hash = tab;
-    }
-}
-
-// Page navigation logic with persistence
-const tabs = ["dashboard", "transactions", "planner", "debt", "analytics", "settings"];
-function showTab(tab) {
-    if (!tabs.includes(tab)) {
-        tab = 'dashboard';
-    }
-    
-    // Update URL and storage
-    updateUrlHash(tab);
-    localStorage.setItem('lastActiveTab', tab);
-    
-    // Update UI
-    tabs.forEach(t => {
-        document.getElementById(`tab-${t}`).classList.toggle("d-none", t !== tab);
-        const btn = document.querySelector(`[data-tab='${t}']`);
-        if (btn) {
-            btn.classList.toggle("active", t === tab);
-        }
-    });
-    
-    setTimeout(() => {
-        if (tab === "transactions") {
-            adjustTransactionsTable();
-        }
-    }, 50);
-    
-    if (tab === "analytics") {
-        renderEnhancedAnalytics();
-        populateChartFilters();
-    }
-    
-    if (tab === "planner") {
-        renderPlannerProjections();
-    }
-    
-    if (tab === "debt") {
-        renderDebtManagement();
-    }
-    
-    console.log(`Switched to tab: ${tab}`);
-}
-// Handle browser back/forward buttons
-window.addEventListener('hashchange', () => {
-    const hash = window.location.hash.replace('#', '');
-    if (tabs.includes(hash)) {
-        showTab(hash);
-    }
-});
-
-function adjustTransactionsTable() {
-    const tableContainer = document.querySelector('#tab-transactions .table-container');
-    const table = document.getElementById('transactionsTable');
-    
-    if (tableContainer && table) {
-        tableContainer.style.height = '';
-        table.style.width = '';
-        
-        setTimeout(() => {
-            const availableHeight = window.innerHeight - tableContainer.getBoundingClientRect().top - 100;
-            tableContainer.style.height = Math.max(availableHeight, 300) + 'px';
-        }, 100);
-    }
-}
-
-window.addEventListener('resize', function() {
-    if (!document.getElementById('tab-transactions').classList.contains('d-none')) {
-        adjustTransactionsTable();
-    }
-});
-
-// Enhanced tab switching with animations
-document.querySelectorAll(".nav-btn").forEach(btn => {
-    btn.addEventListener("click", function() {
-        showTab(this.dataset.tab);
-    });
-});
-
-// Fixed Category Transactions Modal
-let currentCategoryView = null;
-let currentCategoryTransactions = [];
-
-function showCategoryTransactions(type, categoryName) {
-    currentCategoryView = { type, categoryName };
-    const modal = new bootstrap.Modal(document.getElementById('categoryTransactionsModal'));
-    const title = document.getElementById('categoryTransactionsTitle');
-    const info = document.getElementById('categoryTransactionsInfo');
-    const totalAmount = document.getElementById('categoryTotalAmount');
-    const transactionsList = document.getElementById('categoryTransactionsList');
-    const noTransactions = document.getElementById('noCategoryTransactions');
-    
-    const monthSel = document.getElementById('summaryMonth');
-    const yearSel = document.getElementById('summaryYear');
-    
-    let filteredTx = transactions.filter(tx => tx.type === type);
-    
-    if (categoryName !== 'all') {
-        filteredTx = filteredTx.filter(tx => tx.category === categoryName);
-    }
-    
-    if (monthSel.value !== "all" || yearSel.value !== "all") {
-        filteredTx = filteredTx.filter(tx => {
-            const d = new Date(tx.date);
-            if (isNaN(d)) return false;
-            let valid = true;
-            if (monthSel.value !== "all") valid = valid && (d.getMonth()+1) == monthSel.value;
-            if (yearSel.value !== "all") valid = valid && d.getFullYear() == yearSel.value;
-            return valid;
+        // Add animation
+        container.querySelectorAll('.list-group-item').forEach((item, index) => {
+            setTimeout(() => {
+                item.classList.add('animate__fadeInRight');
+            }, index * 100);
         });
     }
-    
-    // Store the filtered transactions with their original indices
-    currentCategoryTransactions = filteredTx.map(tx => {
-        const originalIndex = transactions.findIndex(t => 
-            t.date === tx.date && t.desc === tx.desc && t.amount === tx.amount && t.type === tx.type && t.category === tx.category
-        );
-        return { ...tx, originalIndex };
-    }).filter(item => item.originalIndex !== -1);
-    
-    if (categoryName === 'all') {
-        title.innerHTML = `<i class="bi bi-list-ul"></i> All ${type.charAt(0).toUpperCase() + type.slice(1)} Transactions`;
-        info.textContent = `Showing ${currentCategoryTransactions.length} transactions`;
-    } else {
-        title.innerHTML = `<i class="bi bi-tag"></i> ${categoryName} Transactions`;
-        info.textContent = `Showing ${currentCategoryTransactions.length} ${type} transactions`;
-    }
-    
-    const total = currentCategoryTransactions.reduce((sum, tx) => sum + tx.amount, 0);
-    totalAmount.textContent = `${total.toLocaleString()} ${currency}`;
-    totalAmount.className = `fw-bold fs-5 ${type === 'income' ? 'text-success' : 'text-danger'}`;
-    
-    transactionsList.innerHTML = '';
-    
-    if (currentCategoryTransactions.length === 0) {
-        noTransactions.classList.remove('d-none');
-        transactionsList.classList.add('d-none');
-    } else {
-        noTransactions.classList.add('d-none');
-        transactionsList.classList.remove('d-none');
-        
-        currentCategoryTransactions.slice().reverse().forEach((tx, idx) => {
-            const item = document.createElement('div');
-            item.className = 'category-transaction-item';
-            item.innerHTML = `
-                <div class="category-transaction-info">
-                    <div class="fw-bold">${tx.desc}</div>
-                    <small class="text-muted">${tx.date} • ${tx.category}</small>
-                </div>
-                <div class="category-transaction-actions">
-                    <span class="fw-bold ${type === 'income' ? 'text-success' : 'text-danger'}">
-                        ${tx.amount.toLocaleString()} ${currency}
-                    </span>
-                    <button class="btn-action btn-edit" title="Edit" onclick="editTransactionFromCategory(${tx.originalIndex})">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn-action btn-delete" title="Delete" onclick="removeTransactionFromCategory(${tx.originalIndex})">
-                        <i class="bi bi-trash"></i>
-                    </button>
+
+    renderBudgetProgress() {
+        const container = document.getElementById('budgetProgressList');
+        const emptyState = document.getElementById('budgetProgressEmpty');
+
+        if (this.budgets.length === 0) {
+            container.classList.add('d-none');
+            emptyState.classList.remove('d-none');
+            return;
+        }
+
+        container.classList.remove('d-none');
+        emptyState.classList.add('d-none');
+
+        container.innerHTML = this.budgets.map((budget, index) => {
+            const spent = this.transactions
+                .filter(t => t.category === budget.category && t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            const percentage = (spent / budget.amount) * 100;
+            let statusClass = 'bg-success';
+            let statusText = 'On track';
+
+            if (percentage > 75) {
+                statusClass = 'bg-warning';
+                statusText = 'Getting close';
+            }
+            if (percentage >= 100) {
+                statusClass = 'bg-danger';
+                statusText = 'Over budget';
+            }
+
+            return `
+                <div class="budget-item mb-3 animate__animated" style="animation-delay: ${index * 0.1}s">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-medium">${budget.category}</span>
+                        <small class="${percentage >= 100 ? 'text-danger' : percentage > 75 ? 'text-warning' : 'text-success'}">
+                            ${this.formatCurrency(spent)} / ${this.formatCurrency(budget.amount)}
+                        </small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar ${statusClass}" 
+                             role="progressbar" 
+                             style="width: ${Math.min(percentage, 100)}%"
+                             aria-valuenow="${percentage}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                    <small class="text-muted">${statusText} • ${percentage.toFixed(1)}%</small>
                 </div>
             `;
-            transactionsList.appendChild(item);
+        }).join('');
+
+        // Add animations
+        container.querySelectorAll('.budget-item').forEach((item, index) => {
+            setTimeout(() => {
+                item.classList.add('animate__fadeInUp');
+            }, index * 100);
         });
     }
-    
-    modal.show();
-}
 
-function editTransactionFromCategory(idx) {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('categoryTransactionsModal'));
-    if (modal) {
-        modal.hide();
-    }
-    setTimeout(() => editTransaction(idx), 300);
-}
-
-function removeTransactionFromCategory(idx) {
-    const transaction = transactions[idx];
-    if (!transaction) {
-        showToast('Transaction not found', 'danger');
-        return;
-    }
-
-    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-    
-    document.getElementById('confirmationTitle').textContent = 'Delete Transaction?';
-    document.getElementById('confirmationMessage').innerHTML = `
-        Are you sure you want to delete this transaction?<br>
-        <strong>${transaction.desc}</strong> - ${transaction.amount} ${currency}<br>
-        <small class="text-muted">${transaction.date} • ${transaction.category}</small>
-    `;
-    
-    document.getElementById('confirmActionBtn').onclick = function() {
-        transactions.splice(idx, 1);
-        saveTransactions(transactions);
-        updateUI();
-        populateSummaryFilters();
-        confirmationModal.hide();
+    loadTransactions() {
+        const container = document.getElementById('transactionsTableBody');
+        const emptyState = document.getElementById('transactionsEmpty');
         
-        // Refresh the category modal
-        setTimeout(() => {
-            if (currentCategoryView) {
-                showCategoryTransactions(currentCategoryView.type, currentCategoryView.categoryName);
-            }
-        }, 500);
-        
-        showToast('Transaction deleted successfully', 'success');
-    };
-    
-    confirmationModal.show();
-}
-
-function addTransactionForCategory() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('categoryTransactionsModal'));
-    if (modal) {
-        modal.hide();
-    }
-    
-    setTimeout(() => {
-        if (currentCategoryView && currentCategoryView.categoryName !== 'all') {
-            document.getElementById('addTransactionModalLabel').innerHTML = '<i class="bi bi-plus-circle"></i> Add Transaction';
-            document.getElementById('submitButtonText').textContent = 'Add';
-            document.getElementById('editTransactionIndex').value = '-1';
-            document.getElementById('transactionForm').reset();
-            
-            document.getElementById('typeInput').value = currentCategoryView.type;
-            updateCategorySelect();
-            document.getElementById('categoryInput').value = currentCategoryView.categoryName;
-            
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dateInput').value = today;
-            
-            const addTxModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
-            addTxModal.show();
-        } else {
-            document.getElementById('openAddTransactionModal').click();
-        }
-    }, 300);
-}
-
-// Settings: Currency selection
-document.getElementById("currencySelect").value = currency;
-document.getElementById("currencySelect").addEventListener("change", function() {
-    currency = this.value;
-    saveCurrency(currency);
-    document.getElementById("currencyLabel").textContent = currency;
-    updateUI();
-});
-
-// Enhanced Category Management
-const catPanel = document.getElementById('categorySettingsPanel');
-document.getElementById('toggleCategorySettings').onclick = function() {
-    catPanel.classList.toggle('collapse');
-    document.getElementById('catCollapseIcon').innerHTML =
-        catPanel.classList.contains('collapse')
-            ? '<i class="bi bi-chevron-right"></i>'
-            : '<i class="bi bi-chevron-down"></i>';
-};
-
-function renderCategoryList() {
-    const ul = document.getElementById('categoryList');
-    ul.innerHTML = '';
-    
-    const filterButtons = `
-        <div class="category-filter-buttons mb-2">
-            <button class="btn btn-sm category-filter-btn ${currentCategoryFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'}" onclick="setCategoryFilter('all')">All</button>
-            <button class="btn btn-sm category-filter-btn ${currentCategoryFilter === 'income' ? 'btn-success' : 'btn-outline-success'}" onclick="setCategoryFilter('income')">Income</button>
-            <button class="btn btn-sm category-filter-btn ${currentCategoryFilter === 'expense' ? 'btn-danger' : 'btn-outline-danger'}" onclick="setCategoryFilter('expense')">Expense</button>
-        </div>
-    `;
-    ul.innerHTML = filterButtons;
-    
-    const filteredCategories = categories.filter(cat => {
-        if (currentCategoryFilter === 'all') return true;
-        return cat.type === currentCategoryFilter;
-    });
-    
-    if (filteredCategories.length === 0) {
-        const li = document.createElement('li');
-        li.className = "list-group-item text-center text-muted";
-        li.textContent = "No categories found";
-        ul.appendChild(li);
-        return;
-    }
-    
-    filteredCategories.forEach((cat, idx) => {
-        const originalIndex = categories.findIndex(c => c.name === cat.name);
-        const li = document.createElement('li');
-        li.className = "list-group-item d-flex justify-content-between align-items-center";
-        li.innerHTML = `
-            <div>
-                <span>${cat.name}</span>
-                <span class="category-type-badge ${cat.type === 'income' ? 'category-income' : 'category-expense'}">
-                    ${cat.type}
-                </span>
-            </div>
-            <div>
-                <button class="btn btn-sm btn-outline-secondary me-1" title="Edit" onclick="editCategory(${originalIndex})">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="removeCategory(${originalIndex})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        `;
-        ul.appendChild(li);
-    });
-    
-    updateCategorySelect();
-}
-
-window.setCategoryFilter = function(filter) {
-    currentCategoryFilter = filter;
-    renderCategoryList();
-};
-
-document.getElementById('addCategoryBtn').onclick = function() {
-    const name = document.getElementById('newCategoryInput').value.trim();
-    const type = document.getElementById('newCategoryType').value;
-    
-    if (!name) {
-        showCategoryAlert("Please enter a category name", "danger");
-        return;
-    }
-    
-    if (categories.some(cat => cat.name.toLowerCase() === name.toLowerCase())) {
-        showCategoryAlert("Category already exists", "danger");
-        return;
-    }
-    
-    categories.push({ name, type });
-    saveCategories(categories);
-    renderCategoryList();
-    document.getElementById('newCategoryInput').value = '';
-    showCategoryAlert("Category added successfully", "success");
-};
-
-window.editCategory = function(idx) {
-    const cat = categories[idx];
-    const newName = prompt("Edit category name:", cat.name);
-    if (newName && newName.trim() && !categories.some((c, i) => i !== idx && c.name.toLowerCase() === newName.toLowerCase())) {
-        categories[idx].name = newName.trim();
-        saveCategories(categories);
-        renderCategoryList();
-        updateUI();
-    }
-};
-
-window.removeCategory = function(idx) {
-    const isUsed = transactions.some(tx => tx.category === categories[idx].name);
-    
-    if (isUsed) {
-        if (!confirm(`This category is used in ${transactions.filter(tx => tx.category === categories[idx].name).length} transaction(s). Are you sure you want to delete it?`)) {
+        if (this.transactions.length === 0) {
+            container.classList.add('d-none');
+            emptyState.classList.remove('d-none');
             return;
         }
-    } else {
-        if (!confirm("Are you sure you want to delete this category?")) {
-            return;
-        }
-    }
-    
-    categories.splice(idx, 1);
-    saveCategories(categories);
-    renderCategoryList();
-    updateUI();
-};
 
-function showCategoryAlert(message, type) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-2`;
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.getElementById('categorySettingsPanel').appendChild(alertDiv);
-    setTimeout(() => alertDiv.remove(), 3000);
-}
+        container.classList.remove('d-none');
+        emptyState.classList.add('d-none');
 
-function updateCategorySelect() {
-    const typeSelect = document.getElementById('typeInput');
-    const categorySelect = document.getElementById('categoryInput');
-    const currentType = typeSelect.value;
-    
-    const filteredCategories = categories.filter(cat => cat.type === currentType);
-    
-    categorySelect.innerHTML = '';
-    
-    if (filteredCategories.length === 0) {
-        categorySelect.innerHTML = '<option disabled>No categories available</option>';
-        return;
-    }
-    
-    filteredCategories.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = cat.name;
-        opt.textContent = cat.name;
-        categorySelect.appendChild(opt);
-    });
-}
+        const sortedTransactions = this.transactions
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-document.getElementById('typeInput').addEventListener('change', updateCategorySelect);
-
-// Always open with current month filter
-function populateSummaryFilters() {
-    const monthSel = document.getElementById('summaryMonth');
-    const yearSel = document.getElementById('summaryYear');
-    monthSel.innerHTML = '';
-    yearSel.innerHTML = '';
-    
-    const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentYear = currentDate.getFullYear();
-    
-    monthNames.forEach((m,i) => {
-        const opt = document.createElement('option');
-        opt.value = i + 1;
-        opt.textContent = m;
-        opt.selected = (i + 1) === currentMonth;
-        monthSel.appendChild(opt);
-    });
-    
-    const yearsArr = Array.from(new Set(transactions.map(tx => {
-        const d = new Date(tx.date);
-        return isNaN(d) ? null : d.getFullYear();
-    }).filter(Boolean)
-    ));
-    
-    if (!yearsArr.includes(currentYear)) {
-        yearsArr.push(currentYear);
-    }
-    
-    yearsArr.sort((a,b)=>b-a);
-    yearsArr.forEach(y => {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = y;
-        opt.selected = y === currentYear;
-        yearSel.appendChild(opt);
-    });
-    
-    const allMonthOpt = document.createElement('option');
-    allMonthOpt.value = "all";
-    allMonthOpt.textContent = "All Months";
-    monthSel.insertBefore(allMonthOpt, monthSel.firstChild);
-    
-    const allYearOpt = document.createElement('option');
-    allYearOpt.value = "all";
-    allYearOpt.textContent = "All Years";
-    yearSel.insertBefore(allYearOpt, yearSel.firstChild);
-    
-    // Add event listeners
-    monthSel.addEventListener('change', updateUI);
-    yearSel.addEventListener('change', updateUI);
-}
-
-// Add Transaction Modal
-const addTxModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
-document.getElementById('openAddTransactionModal').onclick = () => {
-    document.getElementById('addTransactionModalLabel').innerHTML = '<i class="bi bi-plus-circle"></i> Add Transaction';
-    document.getElementById('submitButtonText').textContent = 'Add';
-    document.getElementById('editTransactionIndex').value = '-1';
-    document.getElementById('transactionForm').reset();
-    
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('dateInput').value = today;
-    
-    addTxModal.show();
-};
-
-// Edit Transaction Function
-window.editTransaction = function(idx) {
-    const transaction = transactions[idx];
-    document.getElementById('addTransactionModalLabel').innerHTML = '<i class="bi bi-pencil"></i> Edit Transaction';
-    document.getElementById('submitButtonText').textContent = 'Update';
-    document.getElementById('editTransactionIndex').value = idx;
-    
-    document.getElementById('dateInput').value = transaction.date;
-    document.getElementById('descInput').value = transaction.desc;
-    document.getElementById('typeInput').value = transaction.type;
-    document.getElementById('amountInput').value = transaction.amount;
-    
-    updateCategorySelect();
-    document.getElementById('categoryInput').value = transaction.category;
-    
-    addTxModal.show();
-};
-
-// Enhanced Delete Confirmation
-window.removeTransaction = function(idx) {
-    const transaction = transactions[idx];
-    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-    
-    document.getElementById('confirmationTitle').textContent = 'Delete Transaction?';
-    document.getElementById('confirmationMessage').innerHTML = `
-        Are you sure you want to delete this transaction?<br>
-        <strong>${transaction.desc}</strong> - ${transaction.amount} ${currency}<br>
-        <small class="text-muted">${transaction.date} • ${transaction.category}</small>
-    `;
-    
-    document.getElementById('confirmActionBtn').onclick = function() {
-        transactions.splice(idx, 1);
-        saveTransactions(transactions);
-        updateUI();
-        populateSummaryFilters();
-        confirmationModal.hide();
-        showToast('Transaction deleted successfully', 'success');
-    };
-    
-    confirmationModal.show();
-};
-
-// Add/Edit Transaction Form
-document.getElementById('transactionForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const date = document.getElementById('dateInput').value;
-    const desc = document.getElementById('descInput').value.trim();
-    const type = document.getElementById('typeInput').value;
-    const cat = document.getElementById('categoryInput').value;
-    const amount = parseFloat(document.getElementById('amountInput').value);
-    const editIndex = parseInt(document.getElementById('editTransactionIndex').value);
-    const alertBox = document.getElementById('formAlert');
-    alertBox.classList.add('d-none');
-
-    if (!date || !desc || !type || !cat || isNaN(amount)) {
-        alertBox.textContent = "Please fill out all fields correctly.";
-        alertBox.classList.remove('d-none');
-        return;
-    }
-    if (desc.length < 2) {
-        alertBox.textContent = "Description must be at least 2 characters.";
-        alertBox.classList.remove('d-none');
-        return;
-    }
-    
-    if (editIndex >= 0) {
-        transactions[editIndex] = { date, desc, type, category: cat, amount };
-        showToast('Transaction updated successfully', 'success');
-    } else {
-        transactions.push({ date, desc, type, category: cat, amount });
-        showToast('Transaction added successfully', 'success');
-    }
-    
-    saveTransactions(transactions);
-    calculateMonthlyRollover();
-    updateUI();
-    addTxModal.hide();
-    this.reset();
-    
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('dateInput').value = today;
-});
-
-// Update UI: Dashboard, Breakdown, Transactions
-function updateUI() {
-    document.getElementById("currencyLabel").textContent = currency;
-    
-    const monthSel = document.getElementById('summaryMonth');
-    const yearSel = document.getElementById('summaryYear');
-    let filteredTx = transactions;
-    
-    if (monthSel && yearSel && (monthSel.value !== "all" || yearSel.value !== "all")) {
-        filteredTx = transactions.filter(tx => {
-            const d = new Date(tx.date);
-            if (isNaN(d)) return false;
-            let valid = true;
-            if (monthSel.value !== "all") valid = valid && (d.getMonth()+1) == monthSel.value;
-            if (yearSel.value !== "all") valid = valid && d.getFullYear() == yearSel.value;
-            return valid;
-        });
-    }
-    
-    let totalIncome = filteredTx.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-    let totalExpense = filteredTx.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
-    let netWealth = totalIncome - totalExpense;
-    
-    if (monthSel.value !== "all" && yearSel.value !== "all") {
-        const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
-        const monthData = monthlyBudgets[monthKey];
-        if (monthData) {
-            netWealth += monthData.startingBalance;
-        }
-    }
-    
-    document.getElementById("totalIncome").textContent = totalIncome.toLocaleString() + " " + currency;
-    document.getElementById("totalExpense").textContent = totalExpense.toLocaleString() + " " + currency;
-    document.getElementById("netWealth").textContent = netWealth.toLocaleString() + " " + currency;
-
-    updateRolloverDisplay();
-
-    // Income Breakdown - Only show categories with amount > 0
-    const incomeBreakdown = document.getElementById("incomeBreakdown");
-    const noIncomeMsg = document.getElementById("noIncomeCategories");
-    incomeBreakdown.innerHTML = "";
-    
-    const incomeCategories = categories.filter(cat => cat.type === "income");
-    let hasIncomeData = false;
-    
-    if (incomeCategories.length === 0) {
-        noIncomeMsg.style.display = 'block';
-    } else {
-        noIncomeMsg.style.display = 'none';
-        
-        incomeCategories.forEach(cat => {
-            const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "income")
-                .reduce((sum, tx) => sum + tx.amount, 0);
-            
-            if (catAmount > 0) {
-                hasIncomeData = true;
-                
-                const item = document.createElement("div");
-                item.className = "breakdown-item";
-                item.onclick = (e) => {
-                    e.stopPropagation();
-                    showCategoryTransactions('income', cat.name);
-                };
-                item.innerHTML = `
-                    <span class="breakdown-category">${cat.name}</span>
-                    <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
-                `;
-                incomeBreakdown.appendChild(item);
-            }
-        });
-        
-        if (!hasIncomeData) {
-            noIncomeMsg.style.display = 'block';
-        } else {
-            noIncomeMsg.style.display = 'none';
-        }
-    }
-
-    // Expense Breakdown - Only show categories with amount > 0
-    const expenseBreakdown = document.getElementById("expenseBreakdown");
-    const noExpenseMsg = document.getElementById("noExpenseCategories");
-    expenseBreakdown.innerHTML = "";
-    
-    const expenseCategories = categories.filter(cat => cat.type === "expense");
-    let hasExpenseData = false;
-    
-    if (expenseCategories.length === 0) {
-        noExpenseMsg.style.display = 'block';
-    } else {
-        noExpenseMsg.style.display = 'none';
-        
-        expenseCategories.forEach(cat => {
-            const catAmount = filteredTx.filter(tx => tx.category === cat.name && tx.type === "expense")
-                .reduce((sum, tx) => sum + tx.amount, 0);
-            
-            if (catAmount > 0) {
-                hasExpenseData = true;
-                
-                const item = document.createElement("div");
-                item.className = "breakdown-item";
-                item.onclick = (e) => {
-                    e.stopPropagation();
-                    showCategoryTransactions('expense', cat.name);
-                };
-                item.innerHTML = `
-                    <span class="breakdown-category">${cat.name}</span>
-                    <span class="breakdown-amount">${catAmount.toLocaleString()} ${currency}</span>
-                `;
-                expenseBreakdown.appendChild(item);
-            }
-        });
-        
-        if (!hasExpenseData) {
-            noExpenseMsg.style.display = 'block';
-        } else {
-            noExpenseMsg.style.display = 'none';
-        }
-    }
-
-    // Transactions Table with enhanced description column and horizontal scrolling
-    const tbody = document.getElementById('transactionsBody');
-    tbody.innerHTML = "";
-    if (transactions.length === 0) {
-        document.getElementById('noTransactions').style.display = 'block';
-    } else {
-        document.getElementById('noTransactions').style.display = 'none';
-        transactions.slice().reverse().forEach((tx, idx) => {
-            const originalIndex = transactions.length - 1 - idx;
-            const row = document.createElement('tr');
-            row.className = 'clickable-row';
-            row.onclick = () => editTransaction(originalIndex);
-            
-            // Format date as "DD-MMM" (e.g., "26-Sep")
-            const transactionDate = new Date(tx.date);
-            const formattedDate = isNaN(transactionDate) ? tx.date : 
-                `${transactionDate.getDate()}-${transactionDate.toLocaleString('default', { month: 'short' })}`;
-            
-            const descCell = tx.desc.length > 30 ? 
-                `<td class="description-cell" data-fulltext="${tx.desc}">${tx.desc.substring(0, 30)}...</td>` :
-                `<td>${tx.desc}</td>`;
-            
-            row.innerHTML = `
-                <td>${formattedDate}</td>
-                ${descCell}
-                <td class="fw-bold ${tx.type === 'income' ? 'text-success' : 'text-danger'}">${tx.type}</td>
-                <td>${tx.category}</td>
-                <td class="fw-bold">${tx.amount.toLocaleString()} ${currency}</td>
+        container.innerHTML = sortedTransactions.map((transaction, index) => `
+            <tr class="animate__animated" style="animation-delay: ${index * 0.05}s">
+                <td>${dateFns.format(new Date(transaction.date), 'MMM dd, yyyy')}</td>
+                <td>${transaction.description}</td>
                 <td>
-                    <button class="btn-action btn-delete" title="Delete" onclick="event.stopPropagation(); removeTransaction(${originalIndex})">
+                    <span class="badge bg-light text-dark">${transaction.category}</span>
+                </td>
+                <td class="${transaction.type === 'income' ? 'text-success' : 'text-danger'}">
+                    ${transaction.type === 'income' ? '+' : '-'}${this.formatCurrency(transaction.amount)}
+                </td>
+                <td>
+                    <span class="badge ${transaction.type === 'income' ? 'bg-success' : 'bg-danger'}">
+                        ${transaction.type}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="app.deleteTransaction(${transaction.id})">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
+            </tr>
+        `).join('');
+
+        // Add animations
+        container.querySelectorAll('tr').forEach((row, index) => {
+            setTimeout(() => {
+                row.classList.add('animate__fadeIn');
+            }, index * 50);
+        });
+    }
+
+    filterTransactions(searchTerm) {
+        const rows = document.querySelectorAll('#transactionsTableBody tr');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const isVisible = text.includes(searchTerm.toLowerCase());
+            row.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount++;
+        });
+
+        // Show empty state if no results
+        const emptyState = document.getElementById('transactionsEmpty');
+        const tableBody = document.getElementById('transactionsTableBody');
+        
+        if (visibleCount === 0 && searchTerm) {
+            tableBody.classList.add('d-none');
+            emptyState.classList.remove('d-none');
+            emptyState.innerHTML = `
+                <i class="bi bi-search display-4 text-muted mb-3"></i>
+                <h5>No transactions found</h5>
+                <p class="text-muted">No transactions match "${searchTerm}"</p>
+                <button class="btn btn-primary" onclick="document.getElementById('transactionSearch').value=''; app.filterTransactions('');">
+                    Clear Search
+                </button>
             `;
-            tbody.appendChild(row);
-        });
-    }
-}
-
-// Enhanced Analytics Functions
-function renderEnhancedAnalytics() {
-    updateAnalyticsOverview();
-    renderTrendsTab();
-    renderComparisonTab();
-    updateAIInsights();
-}
-
-function updateAnalyticsOverview() {
-    // Update health score
-    const healthScore = AnalyticsEngine.calculateHealthScore(transactions, monthlyBudgets);
-    const healthScoreElement = document.getElementById('healthScoreValue');
-    const healthLabelElement = document.getElementById('healthScoreLabel');
-    
-    if (healthScoreElement) {
-        healthScoreElement.textContent = healthScore;
-        healthScoreElement.className = 'health-score-value';
-        
-        if (healthScore >= 80) {
-            healthScoreElement.classList.add('excellent');
-            healthLabelElement.textContent = 'Excellent';
-        } else if (healthScore >= 60) {
-            healthScoreElement.classList.add('good');
-            healthLabelElement.textContent = 'Good';
-        } else if (healthScore >= 40) {
-            healthScoreElement.classList.add('fair');
-            healthLabelElement.textContent = 'Fair';
+        } else if (visibleCount === 0) {
+            tableBody.classList.add('d-none');
+            emptyState.classList.remove('d-none');
         } else {
-            healthScoreElement.classList.add('poor');
-            healthLabelElement.textContent = 'Needs Attention';
+            tableBody.classList.remove('d-none');
+            emptyState.classList.add('d-none');
         }
     }
-    
-    // Update savings rate
-    const savingsRate = AnalyticsEngine.calculateSavingsRate(transactions);
-    const savingsRateElement = document.getElementById('savingsRateValue');
-    const savingsProgressElement = document.getElementById('savingsRateProgress');
-    
-    if (savingsRateElement) {
-        const percentage = (savingsRate * 100).toFixed(1);
-        savingsRateElement.textContent = `${percentage}%`;
-        
-        if (savingsProgressElement) {
-            const progressWidth = Math.min(100, Math.max(0, savingsRate * 200)); // 50% savings = 100% progress
-            savingsProgressElement.style.width = `${progressWidth}%`;
-            
-            if (savingsRate >= 0.2) {
-                savingsProgressElement.className = 'progress-bar bg-success';
-            } else if (savingsRate >= 0.1) {
-                savingsProgressElement.className = 'progress-bar bg-warning';
-            } else {
-                savingsProgressElement.className = 'progress-bar bg-danger';
-            }
-        }
-    }
-    
-    // Render overview chart
-    renderOverviewChart();
-    
-    // Render pie charts
-    renderPieCharts();
-    
-    // Render risk alerts in overview
-    renderRiskAlerts();
-}
 
-function renderOverviewChart() {
-    const ctx = document.getElementById('overviewChart');
-    if (!ctx) return;
-    
-    const canvasCtx = ctx.getContext('2d');
-    const placeholder = document.getElementById('overviewChartPlaceholder');
-    
-    if (overviewChart) {
-        overviewChart.destroy();
-    }
-    
-    if (transactions.length === 0) {
-        placeholder.classList.remove('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    
-    const chartType = document.getElementById('overviewChartType')?.value || 'category';
-    
-    switch (chartType) {
-        case 'category':
-            renderCategoryOverviewChart(canvasCtx);
-            break;
-        case 'monthly':
-            renderMonthlyOverviewChart(canvasCtx);
-            break;
-        case 'yearly':
-            renderYearlyOverviewChart(canvasCtx);
-            break;
-    }
-}
+    loadBudgets() {
+        const container = document.getElementById('budgetsGrid');
+        const emptyState = document.getElementById('budgetsEmpty');
 
-function renderCategoryOverviewChart(ctx) {
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
-    const categoryData = {};
-    categories.forEach(cat => {
-        if (cat.type === 'expense') {
-            categoryData[cat.name] = 0;
-        }
-    });
-    
-    transactions.forEach(tx => {
-        if (tx.type === 'expense' && tx.date.startsWith(currentMonth)) {
-            categoryData[tx.category] = (categoryData[tx.category] || 0) + tx.amount;
-        }
-    });
-    
-    const labels = Object.keys(categoryData).filter(cat => categoryData[cat] > 0);
-    const data = labels.map(cat => categoryData[cat]);
-    
-    overviewChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Spending',
-                data: data,
-                backgroundColor: '#dc3545',
-                borderColor: '#dc3545',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Current Month Spending by Category'
-                },
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString() + ' ' + currency;
-                        }
-                    }
-                }
-            },
-            onClick: (e, elements) => {
-                if (elements.length > 0) {
-                    const index = elements[0].index;
-                    const category = labels[index];
-                    showCategoryTransactions('expense', category);
-                }
-            }
-        }
-    });
-}
-
-function renderMonthlyOverviewChart(ctx) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentYear = new Date().getFullYear();
-    const monthlyData = Array(12).fill().map(() => ({ income: 0, expense: 0 }));
-    
-    transactions.forEach(tx => {
-        const d = new Date(tx.date);
-        if (d.getFullYear() === currentYear) {
-            const month = d.getMonth();
-            if (tx.type === 'income') {
-                monthlyData[month].income += tx.amount;
-            } else {
-                monthlyData[month].expense += tx.amount;
-            }
-        }
-    });
-    
-    const incomeData = monthlyData.map(m => m.income);
-    const expenseData = monthlyData.map(m => m.expense);
-    
-    overviewChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: months,
-            datasets: [
-                {
-                    label: 'Income',
-                    data: incomeData,
-                    borderColor: '#198754',
-                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                    tension: 0.3,
-                    fill: true
-                },
-                {
-                    label: 'Expense',
-                    data: expenseData,
-                    borderColor: '#dc3545',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    tension: 0.3,
-                    fill: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: `Monthly Trend - ${currentYear}`
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString() + ' ' + currency;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-function renderYearlyOverviewChart(ctx) {
-    const years = Array.from(new Set(transactions.map(tx => new Date(tx.date).getFullYear())))
-        .filter(year => !isNaN(year))
-        .sort((a, b) => a - b);
-    
-    const yearlyData = {};
-    years.forEach(year => {
-        yearlyData[year] = { income: 0, expense: 0 };
-    });
-    
-    transactions.forEach(tx => {
-        const year = new Date(tx.date).getFullYear();
-        if (yearlyData[year]) {
-            if (tx.type === 'income') {
-                yearlyData[year].income += tx.amount;
-            } else {
-                yearlyData[year].expense += tx.amount;
-            }
-        }
-    });
-    
-    const incomeData = years.map(year => yearlyData[year].income);
-    const expenseData = years.map(year => yearlyData[year].expense);
-    
-    overviewChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: years,
-            datasets: [
-                {
-                    label: 'Income',
-                    data: incomeData,
-                    backgroundColor: '#198754'
-                },
-                {
-                    label: 'Expense',
-                    data: expenseData,
-                    backgroundColor: '#dc3545'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Yearly Comparison'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString() + ' ' + currency;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-function renderPieCharts() {
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
-    // Income Pie Chart
-    const incomeData = {};
-    transactions.forEach(tx => {
-        if (tx.type === 'income' && tx.date.startsWith(currentMonth)) {
-            incomeData[tx.category] = (incomeData[tx.category] || 0) + tx.amount;
-        }
-    });
-    
-    const incomeCtx = document.getElementById('incomePieChart');
-    const incomePlaceholder = document.getElementById('incomePiePlaceholder');
-    
-    if (incomePieChart) incomePieChart.destroy();
-    
-    if (Object.keys(incomeData).length === 0) {
-        incomePlaceholder.style.display = 'flex';
-    } else {
-        incomePlaceholder.style.display = 'none';
-        incomePieChart = new Chart(incomeCtx, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(incomeData),
-                datasets: [{
-                    data: Object.values(incomeData),
-                    backgroundColor: ['#198754', '#20c997', '#0dcaf0', '#6f42c1', '#fd7e14']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    }
-    
-    // Expense Pie Chart
-    const expenseData = {};
-    transactions.forEach(tx => {
-        if (tx.type === 'expense' && tx.date.startsWith(currentMonth)) {
-            expenseData[tx.category] = (expenseData[tx.category] || 0) + tx.amount;
-        }
-    });
-    
-    const expenseCtx = document.getElementById('expensePieChart');
-    const expensePlaceholder = document.getElementById('expensePiePlaceholder');
-    
-    if (expensePieChart) expensePieChart.destroy();
-    
-    if (Object.keys(expenseData).length === 0) {
-        expensePlaceholder.style.display = 'flex';
-    } else {
-        expensePlaceholder.style.display = 'none';
-        expensePieChart = new Chart(expenseCtx, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(expenseData),
-                datasets: [{
-                    data: Object.values(expenseData),
-                    backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1', '#20c997']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-    }
-}
-
-function renderRiskAlerts() {
-    const container = document.getElementById('riskAlerts');
-    const placeholder = document.getElementById('noRiskAlerts');
-    
-    if (!container) return;
-    
-    const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
-    const riskAlerts = insights.filter(insight => insight.type === 'warning');
-    
-    container.innerHTML = '';
-    
-    if (riskAlerts.length === 0) {
-        placeholder.classList.remove('d-none');
-        container.classList.add('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    container.classList.remove('d-none');
-    
-    riskAlerts.forEach(alert => {
-        const alertElement = document.createElement('div');
-        alertElement.className = `risk-alert risk-${alert.type}`;
-        alertElement.innerHTML = `
-            <div class="risk-alert-icon">
-                <i class="bi ${alert.icon}"></i>
-            </div>
-            <div class="risk-alert-content">
-                <div class="risk-alert-message">${alert.message}</div>
-            </div>
-        `;
-        container.appendChild(alertElement);
-    });
-}
-
-function renderTrendsTab() {
-    renderHealthTrendChart();
-    renderHeatMap();
-    renderCategoryTrendChart();
-}
-
-function renderHealthTrendChart() {
-    const ctx = document.getElementById('healthTrendChart');
-    if (!ctx) return;
-    
-    const canvasCtx = ctx.getContext('2d');
-    const placeholder = document.getElementById('healthTrendPlaceholder');
-    
-    if (healthTrendChart) {
-        healthTrendChart.destroy();
-    }
-    
-    // Calculate health scores for last 6 months
-    const now = new Date();
-    const healthScores = [];
-    const labels = [];
-    
-    for (let i = 5; i >= 0; i--) {
-        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        
-        // Filter transactions for this month
-        const monthTransactions = transactions.filter(tx => 
-            getMonthKeyFromDate(tx.date) === monthKey
-        );
-        
-        const score = AnalyticsEngine.calculateHealthScore(monthTransactions, monthlyBudgets);
-        healthScores.push(score);
-        labels.push(date.toLocaleDateString('en', { month: 'short' }));
-    }
-    
-    if (healthScores.filter(score => score > 0).length < 2) {
-        placeholder.classList.remove('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    
-    healthTrendChart = new Chart(canvasCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Financial Health Score',
-                data: healthScores,
-                borderColor: '#0d6efd',
-                backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Financial Health Trend'
-                }
-            },
-            scales: {
-                y: {
-                    min: 0,
-                    max: 100,
-                    ticks: {
-                        callback: function(value) {
-                            return value + '/100';
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-function renderHeatMap() {
-    const container = document.getElementById('heatMapContainer');
-    const placeholder = document.getElementById('heatMapPlaceholder');
-    
-    if (!container) return;
-    
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    
-    const heatMapData = AnalyticsEngine.generateHeatMap(transactions, currentYear, currentMonth);
-    
-    container.innerHTML = '';
-    
-    if (heatMapData.filter(day => day.amount > 0).length === 0) {
-        placeholder.classList.remove('d-none');
-        container.classList.add('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    container.classList.remove('d-none');
-    
-    // Find max amount for color scaling
-    const maxAmount = Math.max(...heatMapData.map(day => day.amount));
-    
-    const heatMapHTML = heatMapData.map(day => {
-        const intensity = maxAmount > 0 ? (day.amount / maxAmount) : 0;
-        const colorIntensity = Math.floor(intensity * 100);
-        
-        return `
-            <div class="heat-map-day" style="background-color: rgba(220, 53, 69, ${0.3 + intensity * 0.7})" 
-                 title="${day.date}: ${day.amount.toLocaleString()} ${currency}">
-                ${day.day}
-            </div>
-        `;
-    }).join('');
-    
-    container.innerHTML = `<div class="heat-map-grid">${heatMapHTML}</div>`;
-}
-
-function renderCategoryTrendChart() {
-    const ctx = document.getElementById('categoryTrendChart');
-    if (!ctx) return;
-    
-    const canvasCtx = ctx.getContext('2d');
-    const placeholder = document.getElementById('categoryTrendPlaceholder');
-    
-    if (categoryTrendChart) {
-        categoryTrendChart.destroy();
-    }
-    
-    const trends = AnalyticsEngine.analyzeCategoryTrends(transactions);
-    
-    if (trends.length === 0) {
-        placeholder.classList.remove('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    
-    const topTrends = trends.slice(0, 5); // Show top 5 trends
-    
-    categoryTrendChart = new Chart(canvasCtx, {
-        type: 'bar',
-        data: {
-            labels: topTrends.map(t => t.category),
-            datasets: [{
-                label: 'Trend (%)',
-                data: topTrends.map(t => t.trend * 100),
-                backgroundColor: topTrends.map(t => t.trend > 0 ? '#dc3545' : '#198754')
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Category Spending Trends (This vs Last Month)'
-                },
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    ticks: {
-                        callback: function(value) {
-                            return value.toFixed(1) + '%';
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-function renderComparisonTab() {
-    populateComparisonFilters();
-    renderComparisonChart();
-    renderChangeAnalysis();
-}
-
-function populateComparisonFilters() {
-    const typeSelect = document.getElementById('comparisonType');
-    const period1Select = document.getElementById('comparisonPeriod1');
-    const period2Select = document.getElementById('comparisonPeriod2');
-    
-    if (!typeSelect || !period1Select || !period2Select) return;
-    
-    // Get available months and years from transactions
-    const months = Array.from(new Set(transactions.map(tx => tx.date.substring(0, 7)))).sort();
-    const years = Array.from(new Set(transactions.map(tx => tx.date.substring(0, 4)))).sort();
-    
-    // Populate period selects based on comparison type
-    typeSelect.addEventListener('change', function() {
-        period1Select.innerHTML = '';
-        period2Select.innerHTML = '';
-        
-        const now = new Date();
-        
-        switch (this.value) {
-            case 'month':
-                // Populate with available months
-                months.forEach(month => {
-                    const option = document.createElement('option');
-                    option.value = month;
-                    option.textContent = formatDate(new Date(month + '-01'));
-                    period1Select.appendChild(option.cloneNode(true));
-                    period2Select.appendChild(option);
-                });
-                break;
-                
-            case 'year':
-                // Populate with available years
-                years.forEach(year => {
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    period1Select.appendChild(option.cloneNode(true));
-                    period2Select.appendChild(option);
-                });
-                break;
-                
-            case 'average':
-                // For 3-month average comparison
-                for (let i = 0; i < 6; i++) {
-                    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                    const option = document.createElement('option');
-                    option.value = monthKey;
-                    option.textContent = date.toLocaleDateString('en', { year: 'numeric', month: 'long' });
-                    period1Select.appendChild(option.cloneNode(true));
-                    period2Select.appendChild(option);
-                }
-                break;
-        }
-        
-        // Set default values (current and previous period)
-        if (period1Select.options.length > 1) {
-            period1Select.selectedIndex = 1;
-            period2Select.selectedIndex = 0;
-        }
-        
-        renderComparisonChart();
-        renderChangeAnalysis();
-    });
-    
-    // Trigger initial population
-    typeSelect.dispatchEvent(new Event('change'));
-}
-
-function renderComparisonChart() {
-    const ctx = document.getElementById('comparisonChart');
-    if (!ctx) return;
-    
-    const canvasCtx = ctx.getContext('2d');
-    const placeholder = document.getElementById('comparisonPlaceholder');
-    
-    if (comparisonChart) {
-        comparisonChart.destroy();
-    }
-    
-    const type = document.getElementById('comparisonType').value;
-    const period1 = document.getElementById('comparisonPeriod1').value;
-    const period2 = document.getElementById('comparisonPeriod2').value;
-    
-    if (!period1 || !period2) {
-        placeholder.classList.remove('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    
-    const comparison = AnalyticsEngine.comparePeriods(transactions, period1, period2, type);
-    
-    const categories = Object.keys(comparison).filter(cat => 
-        comparison[cat].period1 > 0 || comparison[cat].period2 > 0
-    );
-    
-    const period1Data = categories.map(cat => comparison[cat].period1);
-    const period2Data = categories.map(cat => comparison[cat].period2);
-    
-    comparisonChart = new Chart(canvasCtx, {
-        type: 'bar',
-        data: {
-            labels: categories,
-            datasets: [
-                {
-                    label: period1,
-                    data: period1Data,
-                    backgroundColor: '#6c757d'
-                },
-                {
-                    label: period2,
-                    data: period2Data,
-                    backgroundColor: '#0d6efd'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Spending Comparison'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString() + ' ' + currency;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
-
-function renderChangeAnalysis() {
-    const container = document.getElementById('changeAnalysis');
-    const placeholder = document.getElementById('noChangeAnalysis');
-    
-    if (!container) return;
-    
-    const type = document.getElementById('comparisonType').value;
-    const period1 = document.getElementById('comparisonPeriod1').value;
-    const period2 = document.getElementById('comparisonPeriod2').value;
-    
-    if (!period1 || !period2) {
-        placeholder.classList.remove('d-none');
-        container.classList.add('d-none');
-        return;
-    }
-    
-    const comparison = AnalyticsEngine.comparePeriods(transactions, period1, period2, type);
-    
-    container.innerHTML = '';
-    
-    const significantChanges = Object.entries(comparison)
-        .filter(([cat, data]) => Math.abs(data.percentChange) > 5 && (data.period1 > 0 || data.period2 > 0))
-        .sort((a, b) => Math.abs(b[1].percentChange) - Math.abs(a[1].percentChange))
-        .slice(0, 5);
-    
-    if (significantChanges.length === 0) {
-        placeholder.classList.remove('d-none');
-        container.classList.add('d-none');
-        return;
-    }
-    
-    placeholder.classList.add('d-none');
-    container.classList.remove('d-none');
-    
-    significantChanges.forEach(([category, data]) => {
-        const changeElement = document.createElement('div');
-        changeElement.className = 'change-item';
-        changeElement.innerHTML = `
-            <div class="change-category">${category}</div>
-            <div class="change-details">
-                <span class="change-amount ${data.percentChange >= 0 ? 'text-danger' : 'text-success'}">
-                    <i class="bi ${data.percentChange >= 0 ? 'bi-arrow-up' : 'bi-arrow-down'}"></i>
-                    ${Math.abs(data.percentChange).toFixed(1)}%
-                </span>
-                <small class="text-muted">
-                    ${data.period1.toLocaleString()} → ${data.period2.toLocaleString()} ${currency}
-                </small>
-            </div>
-        `;
-        container.appendChild(changeElement);
-    });
-}
-
-function updateAIInsights() {
-    const container = document.getElementById('aiQuickInsights');
-    if (!container) return;
-    
-    const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
-    
-    container.innerHTML = '';
-    
-    if (insights.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted"><small>Add more transactions for personalized insights</small></div>';
-        return;
-    }
-    
-    // Show top 2 insights in quick view
-    const topInsights = insights.slice(0, 2);
-    
-    topInsights.forEach(insight => {
-        const insightElement = document.createElement('div');
-        insightElement.className = `ai-insight ai-${insight.type}`;
-        insightElement.innerHTML = `
-            <i class="bi ${insight.icon} me-2"></i>
-            <small>${insight.message}</small>
-        `;
-        container.appendChild(insightElement);
-    });
-}
-
-function showFullAIAnalysis() {
-    const modal = new bootstrap.Modal(document.getElementById('aiInsightsModal'));
-    const container = document.getElementById('aiInsightsContent');
-    
-    const insights = AnalyticsEngine.generateInsights(transactions, monthlyBudgets);
-    const healthScore = AnalyticsEngine.calculateHealthScore(transactions, monthlyBudgets);
-    const savingsRate = AnalyticsEngine.calculateSavingsRate(transactions);
-    const prediction = AnalyticsEngine.predictNextMonthSpending(transactions);
-    
-    let html = `
-        <div class="ai-analysis-header">
-            <div class="row text-center">
-                <div class="col-4">
-                    <div class="ai-metric">
-                        <div class="ai-metric-value">${healthScore}/100</div>
-                        <div class="ai-metric-label">Health Score</div>
-                    </div>
-                </div>
-                <div class="col-4">
-                    <div class="ai-metric">
-                        <div class="ai-metric-value">${(savingsRate * 100).toFixed(1)}%</div>
-                        <div class="ai-metric-label">Savings Rate</div>
-                    </div>
-                </div>
-                <div class="col-4">
-                    <div class="ai-metric">
-                        <div class="ai-metric-value">${prediction ? Math.round(prediction.confidence * 100) : '--'}%</div>
-                        <div class="ai-metric-label">Prediction Confidence</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="ai-recommendations">
-            <h6><i class="bi bi-lightbulb"></i> AI Recommendations</h6>
-    `;
-    
-    if (insights.length === 0) {
-        html += `<div class="text-center text-muted p-3">Add more transaction data for personalized recommendations</div>`;
-    } else {
-        insights.forEach(insight => {
-            html += `
-                <div class="ai-recommendation ai-${insight.type}">
-                    <i class="bi ${insight.icon}"></i>
-                    <span>${insight.message}</span>
-                </div>
-            `;
-        });
-    }
-    
-    html += `</div>`;
-    
-    // Add prediction if available
-    if (prediction && prediction.confidence > 0.6) {
-        html += `
-            <div class="ai-prediction mt-3">
-                <h6><i class="bi bi-magic"></i> Spending Forecast</h6>
-                <div class="prediction-card">
-                    <div class="prediction-amount">${prediction.amount.toLocaleString()} ${currency}</div>
-                    <div class="prediction-label">Expected next month spending</div>
-                    <div class="prediction-note">
-                        <small class="text-muted">Based on ${Math.round(prediction.confidence * 100)}% confidence from your spending patterns</small>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    container.innerHTML = html;
-    modal.show();
-}
-
-function applyAISuggestions() {
-    // This would implement the AI suggestions
-    // For now, just show a toast
-    showToast('AI suggestions applied to your financial plan', 'success');
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('aiInsightsModal'));
-    if (modal) {
-        modal.hide();
-    }
-}
-
-// Planner Functions
-function loadFutureTransactions() {
-    try {
-        const data = JSON.parse(localStorage.getItem('futureTransactions'));
-        if (data && data.income && data.expenses) {
-            return data;
-        }
-    } catch (error) {
-        console.error('Error loading future transactions:', error);
-    }
-    
-    // Return default structure
-    return {
-        income: [],
-        expenses: []
-    };
-}
-
-function saveFutureTransactions(data) {
-    futureTransactions = data;
-    localStorage.setItem('futureTransactions', JSON.stringify(data));
-    
-    // Force immediate sync instead of waiting for auto-sync
-    if (googleUser && isOnline) {
-        console.log('Future transactions changed, forcing immediate sync...');
-        autoSyncToDrive();
-    } else {
-        console.log('Future transactions saved locally, will sync when online');
-    }
-}
-
-function renderPlannerProjections() {
-    const currentBalance = getCurrentBalance();
-    const projections = PlannerEngine.calculateProjections(futureTransactions, plannerTimeframe, currentBalance);
-    
-    updatePlannerSummary(projections.summary);
-    renderPlannerTimeline(projections.months);
-    renderFutureIncomeList();
-    renderFutureExpensesList();
-}
-
-function getCurrentBalance() {
-    const monthSel = document.getElementById('summaryMonth');
-    const yearSel = document.getElementById('summaryYear');
-    
-    if (monthSel.value !== "all" && yearSel.value !== "all") {
-        const monthKey = `${yearSel.value}-${String(monthSel.value).padStart(2, '0')}`;
-        const monthData = monthlyBudgets[monthKey];
-        if (monthData) {
-            return monthData.endingBalance;
-        }
-    }
-    
-    // Calculate from all transactions if no specific month selected
-    const totalIncome = transactions.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-    const totalExpense = transactions.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
-    return totalIncome - totalExpense;
-}
-
-function updatePlannerSummary(summary) {
-    document.getElementById('plannerNetWealth').textContent = summary.netWealth.toLocaleString() + ' ' + currency;
-    document.getElementById('plannerTotalIncome').textContent = summary.totalIncome.toLocaleString() + ' ' + currency;
-    document.getElementById('plannerTotalExpenses').textContent = summary.totalExpenses.toLocaleString() + ' ' + currency;
-    document.getElementById('plannerEndingBalance').textContent = summary.endingBalance.toLocaleString() + ' ' + currency;
-}
-
-function renderPlannerTimeline(months) {
-    const container = document.getElementById('plannerTimeline');
-    container.innerHTML = '';
-    
-    if (months.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted p-3">No projection data available</div>';
-        return;
-    }
-    
-    months.forEach(month => {
-        const monthElement = document.createElement('div');
-        monthElement.className = 'planner-month-item clickable';
-        monthElement.onclick = () => showMonthDetails(month);
-        
-        // Add visual indicator for positive/negative months
-        const balanceClass = month.balance >= 0 ? 'text-success' : 'text-danger';
-        const netClass = month.net >= 0 ? 'text-success' : 'text-danger';
-        
-        monthElement.innerHTML = `
-            <div class="planner-month-header">
-                <strong>${month.name}</strong>
-                <span class="planner-month-balance ${balanceClass}">
-                    ${month.balance.toLocaleString()} ${currency}
-                </span>
-            </div>
-            <div class="planner-month-details">
-                <div class="planner-income">
-                    <small class="text-success">+${month.income.toLocaleString()} ${currency}</small>
-                </div>
-                <div class="planner-expense">
-                    <small class="text-danger">-${month.expenses.toLocaleString()} ${currency}</small>
-                </div>
-                <div class="planner-net">
-                    <small class="${netClass}">
-                        Net: ${month.net >= 0 ? '+' : ''}${month.net.toLocaleString()} ${currency}
-                    </small>
-                </div>
-            </div>
-            <div class="text-center mt-2">
-                <small class="text-muted">
-                    <i class="bi bi-info-circle"></i> Click for details
-                </small>
-            </div>
-        `;
-        container.appendChild(monthElement);
-    });
-}
-
-function renderFutureIncomeList() {
-    const container = document.getElementById('futureIncomeList');
-    container.innerHTML = '';
-    
-    if (futureTransactions.income.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted p-3">No future income planned</div>';
-        return;
-    }
-    
-    futureTransactions.income.forEach((income, index) => {
-        const item = document.createElement('div');
-        item.className = 'planner-item';
-        item.innerHTML = `
-            <div class="planner-item-info">
-                <div class="fw-bold">${income.description}</div>
-                <small class="text-muted">
-                    ${income.type} • ${income.frequency} • 
-                    ${income.amount.toLocaleString()} ${currency}
-                </small>
-                <div>
-                    <small class="text-muted">
-                        ${income.startDate} ${income.endDate ? ' to ' + income.endDate : ''}
-                    </small>
-                </div>
-            </div>
-            <div class="planner-item-actions">
-                <button class="btn-action btn-edit" onclick="editFutureIncome(${index})">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn-action btn-delete" onclick="removeFutureIncome(${index})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function renderFutureExpensesList() {
-    const container = document.getElementById('futureExpensesList');
-    container.innerHTML = '';
-    
-    if (futureTransactions.expenses.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted p-3">No future expenses planned</div>';
-        return;
-    }
-    
-    futureTransactions.expenses.forEach((expense, index) => {
-        const item = document.createElement('div');
-        item.className = 'planner-item';
-        item.innerHTML = `
-            <div class="planner-item-info">
-                <div class="fw-bold">${expense.description}</div>
-                <small class="text-muted">
-                    ${expense.type} • ${expense.frequency} • 
-                    ${expense.amount.toLocaleString()} ${currency}
-                </small>
-                <div>
-                    <small class="text-muted">
-                        ${expense.startDate} ${expense.endDate ? ' to ' + expense.endDate : ''}
-                    </small>
-                </div>
-            </div>
-            <div class="planner-item-actions">
-                <button class="btn-action btn-edit" onclick="editFutureExpense(${index})">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn-action btn-delete" onclick="removeFutureExpense(${index})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function changePlannerTimeframe(timeframe) {
-    plannerTimeframe = timeframe;
-    document.querySelectorAll('.planner-timeframe-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-    renderPlannerProjections();
-}
-
-function openAddFutureIncome() {
-    document.getElementById('futureIncomeModalLabel').textContent = 'Add Future Income';
-    document.getElementById('futureIncomeForm').reset();
-    document.getElementById('futureIncomeIndex').value = '-1';
-    document.getElementById('futureIncomeType').value = 'paycheck';
-    document.getElementById('futureIncomeFrequency').value = 'monthly';
-    
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('futureIncomeStartDate').value = today;
-    
-    const modal = new bootstrap.Modal(document.getElementById('futureIncomeModal'));
-    modal.show();
-}
-
-function openAddFutureExpense() {
-    document.getElementById('futureExpenseModalLabel').textContent = 'Add Future Expense';
-    document.getElementById('futureExpenseForm').reset();
-    document.getElementById('futureExpenseIndex').value = '-1';
-    document.getElementById('futureExpenseType').value = 'grocery';
-    document.getElementById('futureExpenseFrequency').value = 'monthly';
-    
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('futureExpenseStartDate').value = today;
-    
-    const modal = new bootstrap.Modal(document.getElementById('futureExpenseModal'));
-    modal.show();
-}
-
-function saveFutureIncome(event) {
-    event.preventDefault();
-    
-    const form = document.getElementById('futureIncomeForm');
-    const index = parseInt(document.getElementById('futureIncomeIndex').value);
-    const incomeData = {
-        description: document.getElementById('futureIncomeDescription').value,
-        type: document.getElementById('futureIncomeType').value,
-        amount: parseFloat(document.getElementById('futureIncomeAmount').value),
-        frequency: document.getElementById('futureIncomeFrequency').value,
-        startDate: document.getElementById('futureIncomeStartDate').value,
-        endDate: document.getElementById('futureIncomeEndDate').value || null
-    };
-    
-    if (index >= 0) {
-        futureTransactions.income[index] = incomeData;
-        showToast('Future income updated successfully', 'success');
-    } else {
-        futureTransactions.income.push(incomeData);
-        showToast('Future income added successfully', 'success');
-    }
-    
-    saveFutureTransactions(futureTransactions);
-    renderPlannerProjections();
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('futureIncomeModal'));
-    modal.hide();
-}
-
-function saveFutureExpense(event) {
-    event.preventDefault();
-    
-    const form = document.getElementById('futureExpenseForm');
-    const index = parseInt(document.getElementById('futureExpenseIndex').value);
-    const expenseData = {
-        description: document.getElementById('futureExpenseDescription').value,
-        type: document.getElementById('futureExpenseType').value,
-        amount: parseFloat(document.getElementById('futureExpenseAmount').value),
-        frequency: document.getElementById('futureExpenseFrequency').value,
-        startDate: document.getElementById('futureExpenseStartDate').value,
-        endDate: document.getElementById('futureExpenseEndDate').value || null
-    };
-    
-    if (index >= 0) {
-        futureTransactions.expenses[index] = expenseData;
-        showToast('Future expense updated successfully', 'success');
-    } else {
-        futureTransactions.expenses.push(expenseData);
-        showToast('Future expense added successfully', 'success');
-    }
-    
-    saveFutureTransactions(futureTransactions);
-    renderPlannerProjections();
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('futureExpenseModal'));
-    modal.hide();
-}
-
-function editFutureIncome(index) {
-    const income = futureTransactions.income[index];
-    document.getElementById('futureIncomeModalLabel').textContent = 'Edit Future Income';
-    document.getElementById('futureIncomeIndex').value = index;
-    document.getElementById('futureIncomeDescription').value = income.description;
-    document.getElementById('futureIncomeType').value = income.type;
-    document.getElementById('futureIncomeAmount').value = income.amount;
-    document.getElementById('futureIncomeFrequency').value = income.frequency;
-    document.getElementById('futureIncomeStartDate').value = income.startDate;
-    document.getElementById('futureIncomeEndDate').value = income.endDate || '';
-    
-    const modal = new bootstrap.Modal(document.getElementById('futureIncomeModal'));
-    modal.show();
-}
-
-function editFutureExpense(index) {
-    const expense = futureTransactions.expenses[index];
-    document.getElementById('futureExpenseModalLabel').textContent = 'Edit Future Expense';
-    document.getElementById('futureExpenseIndex').value = index;
-    document.getElementById('futureExpenseDescription').value = expense.description;
-    document.getElementById('futureExpenseType').value = expense.type;
-    document.getElementById('futureExpenseAmount').value = expense.amount;
-    document.getElementById('futureExpenseFrequency').value = expense.frequency;
-    document.getElementById('futureExpenseStartDate').value = expense.startDate;
-    document.getElementById('futureExpenseEndDate').value = expense.endDate || '';
-    
-    const modal = new bootstrap.Modal(document.getElementById('futureExpenseModal'));
-    modal.show();
-}
-
-function removeFutureIncome(index) {
-    if (confirm('Are you sure you want to remove this future income?')) {
-        futureTransactions.income.splice(index, 1);
-        saveFutureTransactions(futureTransactions);
-        renderPlannerProjections();
-        showToast('Future income removed', 'success');
-    }
-}
-
-function removeFutureExpense(index) {
-    if (confirm('Are you sure you want to remove this future expense?')) {
-        futureTransactions.expenses.splice(index, 1);
-        saveFutureTransactions(futureTransactions);
-        renderPlannerProjections();
-        showToast('Future expense removed', 'success');
-    }
-}
-
-// Debt Management Functions
-function loadLoans() {
-    try {
-        const data = JSON.parse(localStorage.getItem('loans'));
-        if (data && data.given && data.taken) {
-            // Update loan statuses
-            data.given.forEach(loan => loan.status = DebtEngine.getLoanStatus(loan));
-            data.taken.forEach(loan => loan.status = DebtEngine.getLoanStatus(loan));
-            return data;
-        }
-    } catch (error) {
-        console.error('Error loading loans:', error);
-    }
-    
-    // Return default structure
-    return {
-        given: [],
-        taken: []
-    };
-}
-
-// Monthly Details Functions
-function showMonthDetails(monthData) {
-    const modal = new bootstrap.Modal(document.getElementById('monthDetailsModal'));
-    
-    // Update modal title
-    document.getElementById('monthDetailsModalLabel').innerHTML = 
-        `<i class="bi bi-calendar-month"></i> ${monthData.name} Details`;
-    
-    // Update summary
-    document.getElementById('monthDetailsIncome').textContent = 
-        monthData.income.toLocaleString() + ' ' + currency;
-    document.getElementById('monthDetailsExpenses').textContent = 
-        monthData.expenses.toLocaleString() + ' ' + currency;
-    document.getElementById('monthDetailsBalance').textContent = 
-        monthData.balance.toLocaleString() + ' ' + currency;
-    
-    // Calculate and display income breakdown
-    const incomeBreakdown = calculateMonthBreakdown(monthData, 'income');
-    renderMonthBreakdown('monthDetailsIncomeList', incomeBreakdown, 'income');
-    
-    // Calculate and display expense breakdown
-    const expenseBreakdown = calculateMonthBreakdown(monthData, 'expenses');
-    renderMonthBreakdown('monthDetailsExpensesList', expenseBreakdown, 'expenses');
-    
-    // Show transaction calculations
-    renderTransactionCalculations(monthData);
-    
-    modal.show();
-}
-
-function formatCategoryName(category) {
-    const nameMap = {
-        // Income categories
-        'paycheck': 'Salary',
-        'loan': 'Loan',
-        'sale': 'Asset Sale',
-        'committee': 'Committee',
-        
-        // Expense categories
-        'grocery': 'Grocery',
-        'bike_fuel': 'Bike & Fuel',
-        'expenses': 'General Expenses',
-        'loan_returned': 'Loan Repayment',
-        'committee': 'Committee'
-    };
-    
-    return nameMap[category] || category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
-
-function calculateMonthBreakdown(monthData, type) {
-    const breakdown = {};
-    const transactions = type === 'income' ? futureTransactions.income : futureTransactions.expenses;
-    
-    transactions.forEach(transaction => {
-        if (shouldIncludeTransactionInMonth(transaction, monthData.month)) {
-            const category = transaction.type;
-            if (!breakdown[category]) {
-                breakdown[category] = {
-                    amount: 0,
-                    transactions: []
-                };
-            }
-            breakdown[category].amount += transaction.amount;
-            breakdown[category].transactions.push(transaction);
-        }
-    });
-    
-    return breakdown;
-}
-
-function shouldIncludeTransactionInMonth(transaction, targetMonth) {
-    const [targetYear, targetMonthNum] = targetMonth.split('-').map(Number);
-    const startDate = new Date(transaction.startDate);
-    const startYear = startDate.getFullYear();
-    const startMonth = startDate.getMonth() + 1;
-    
-    // Check if transaction starts after target month
-    if (startYear > targetYear || (startYear === targetYear && startMonth > targetMonthNum)) {
-        return false;
-    }
-    
-    // Check end date if exists
-    if (transaction.endDate) {
-        const endDate = new Date(transaction.endDate);
-        const endYear = endDate.getFullYear();
-        const endMonth = endDate.getMonth() + 1;
-        
-        if (endYear < targetYear || (endYear === targetYear && endMonth < targetMonthNum)) {
-            return false;
-        }
-    }
-    
-    // Check frequency
-    if (transaction.frequency === 'one-time') {
-        return startYear === targetYear && startMonth === targetMonthNum;
-    } else if (transaction.frequency === 'monthly') {
-        return true;
-    } else if (transaction.frequency === 'quarterly') {
-        const monthsDiff = (targetYear - startYear) * 12 + (targetMonthNum - startMonth);
-        return monthsDiff % 3 === 0;
-    }
-    
-    return false;
-}
-
-function renderMonthBreakdown(containerId, breakdown, type) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = '';
-    
-    if (Object.keys(breakdown).length === 0) {
-        container.innerHTML = `
-            <div class="text-center text-muted p-3">
-                <i class="bi bi-${type === 'income' ? 'currency-dollar' : 'cart'} fs-4"></i>
-                <p class="mt-2">No ${type} for this month</p>
-            </div>
-        `;
-        return;
-    }
-    
-    Object.entries(breakdown).forEach(([category, data]) => {
-        const item = document.createElement('div');
-        item.className = type === 'income' ? 'month-details-income-item' : 'month-details-expense-item';
-        
-        const categoryName = getCategoryDisplayName(category, type);
-        
-        item.innerHTML = `
-            <div>
-                <div class="fw-bold">${categoryName}</div>
-                <small class="text-muted">${data.transactions.length} transaction(s)</small>
-            </div>
-            <div class="fw-bold ${type === 'income' ? 'text-success' : 'text-danger'}">
-                ${data.amount.toLocaleString()} ${currency}
-            </div>
-        `;
-        
-        container.appendChild(item);
-    });
-}
-
-function getCategoryDisplayName(categoryKey, type) {
-    const categoryNames = {
-        income: {
-            paycheck: 'Salary/Paycheck',
-            loan: 'Loan Income',
-            sale: 'Asset Sale',
-            committee: 'Committee Payout'
-        },
-        expenses: {
-            grocery: 'Grocery',
-            bike_fuel: 'Bike/Fuel',
-            expenses: 'General Expenses',
-            loan_returned: 'Loan Repayment',
-            committee: 'Committee'
-        }
-    };
-    
-    return categoryNames[type][categoryKey] || categoryKey;
-}
-
-function renderTransactionCalculations(monthData) {
-    const container = document.getElementById('monthDetailsTransactions');
-    container.innerHTML = '';
-    
-    // Show calculation breakdown
-    const calculationHTML = `
-        <div class="alert alert-info">
-            <h6><i class="bi bi-calculator"></i> Balance Calculation</h6>
-            <div class="small">
-                <div class="d-flex justify-content-between">
-                    <span>Starting Balance:</span>
-                    <span>${(monthData.balance - monthData.net).toLocaleString()} ${currency}</span>
-                </div>
-                <div class="d-flex justify-content-between text-success">
-                    <span>+ Total Income:</span>
-                    <span>+${monthData.income.toLocaleString()} ${currency}</span>
-                </div>
-                <div class="d-flex justify-content-between text-danger">
-                    <span>- Total Expenses:</span>
-                    <span>-${monthData.expenses.toLocaleString()} ${currency}</span>
-                </div>
-                <hr class="my-1">
-                <div class="d-flex justify-content-between fw-bold">
-                    <span>Ending Balance:</span>
-                    <span class="${monthData.balance >= 0 ? 'text-success' : 'text-danger'}">
-                        ${monthData.balance.toLocaleString()} ${currency}
-                    </span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="alert alert-light">
-            <h6><i class="bi bi-lightbulb"></i> Financial Health</h6>
-            <div class="small">
-                <div class="d-flex justify-content-between">
-                    <span>Savings Rate:</span>
-                    <span class="${monthData.income > 0 ? (monthData.net / monthData.income) >= 0.2 ? 'text-success' : 'text-warning' : 'text-danger'}">
-                        ${monthData.income > 0 ? ((monthData.net / monthData.income) * 100).toFixed(1) : '0'}%
-                    </span>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span>Net Cash Flow:</span>
-                    <span class="${monthData.net >= 0 ? 'text-success' : 'text-danger'}">
-                        ${monthData.net >= 0 ? '+' : ''}${monthData.net.toLocaleString()} ${currency}
-                    </span>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    container.innerHTML = calculationHTML;
-}
-
-function saveLoans(data) {
-    loans = data;
-    localStorage.setItem('loans', JSON.stringify(data));
-    
-    // Force immediate sync instead of waiting for auto-sync
-    if (googleUser && isOnline) {
-        console.log('Loans changed, forcing immediate sync...');
-        autoSyncToDrive();
-    } else {
-        console.log('Loans saved locally, will sync when online');
-    }
-}
-
-function renderDebtManagement() {
-    const summary = DebtEngine.calculateDebtSummary(loans);
-    updateDebtSummary(summary);
-    renderLoansGivenList();
-    renderLoansTakenList();
-    renderUpcomingRepayments(summary.upcomingRepayments);
-}
-
-function updateDebtSummary(summary) {
-    document.getElementById('totalLoansGiven').textContent = summary.totalGiven.toLocaleString() + ' ' + currency;
-    document.getElementById('totalLoansTaken').textContent = summary.totalTaken.toLocaleString() + ' ' + currency;
-    document.getElementById('netDebtPosition').textContent = summary.netPosition.toLocaleString() + ' ' + currency;
-    document.getElementById('netDebtPosition').className = summary.netPosition >= 0 ? 'text-success' : 'text-danger';
-}
-
-function renderLoansGivenList() {
-    const container = document.getElementById('loansGivenList');
-    container.innerHTML = '';
-    
-    if (loans.given.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted p-3">No loans given</div>';
-        return;
-    }
-    
-    loans.given.forEach((loan, index) => {
-        const paid = DebtEngine.getPaidAmount(loan);
-        const remaining = loan.amount - paid;
-        const status = DebtEngine.getLoanStatus(loan);
-        
-        const item = document.createElement('div');
-        item.className = `debt-item debt-status-${status}`;
-        item.innerHTML = `
-            <div class="debt-item-info">
-                <div class="fw-bold">${loan.borrower}</div>
-                <small class="text-muted">
-                    ${loan.amount.toLocaleString()} ${currency} • 
-                    Given: ${loan.dateGiven} • 
-                    Expected: ${loan.expectedReturn}
-                </small>
-                <div class="debt-progress">
-                    <div class="progress" style="height: 5px;">
-                        <div class="progress-bar" style="width: ${(paid / loan.amount) * 100}%"></div>
-                    </div>
-                    <small class="text-muted">
-                        Paid: ${paid.toLocaleString()} ${currency} • 
-                        Remaining: ${remaining.toLocaleString()} ${currency}
-                    </small>
-                </div>
-            </div>
-            <div class="debt-item-actions">
-                <button class="btn-action btn-payment" onclick="addLoanPayment('given', ${index})" title="Add Payment">
-                    <i class="bi bi-cash-coin"></i>
-                </button>
-                <button class="btn-action btn-edit" onclick="editLoan('given', ${index})">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn-action btn-delete" onclick="removeLoan('given', ${index})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function renderLoansTakenList() {
-    const container = document.getElementById('loansTakenList');
-    container.innerHTML = '';
-    
-    if (loans.taken.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted p-3">No loans taken</div>';
-        return;
-    }
-    
-    loans.taken.forEach((loan, index) => {
-        const paid = DebtEngine.getPaidAmount(loan);
-        const remaining = loan.amount - paid;
-        const status = DebtEngine.getLoanStatus(loan);
-        
-        const item = document.createElement('div');
-        item.className = `debt-item debt-status-${status}`;
-        item.innerHTML = `
-            <div class="debt-item-info">
-                <div class="fw-bold">${loan.lender}</div>
-                <small class="text-muted">
-                    ${loan.amount.toLocaleString()} ${currency} • 
-                    Taken: ${loan.dateTaken} • 
-                    Due: ${loan.dueDate}
-                </small>
-                <div class="debt-progress">
-                    <div class="progress" style="height: 5px;">
-                        <div class="progress-bar" style="width: ${(paid / loan.amount) * 100}%"></div>
-                    </div>
-                    <small class="text-muted">
-                        Paid: ${paid.toLocaleString()} ${currency} • 
-                        Remaining: ${remaining.toLocaleString()} ${currency}
-                    </small>
-                </div>
-            </div>
-            <div class="debt-item-actions">
-                <button class="btn-action btn-payment" onclick="addLoanPayment('taken', ${index})" title="Add Payment">
-                    <i class="bi bi-cash-coin"></i>
-                </button>
-                <button class="btn-action btn-edit" onclick="editLoan('taken', ${index})">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn-action btn-delete" onclick="removeLoan('taken', ${index})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function renderUpcomingRepayments(repayments) {
-    const container = document.getElementById('upcomingRepayments');
-    container.innerHTML = '';
-    
-    if (repayments.length === 0) {
-        container.innerHTML = '<div class="text-center text-muted p-3">No upcoming repayments</div>';
-        return;
-    }
-    
-    repayments.forEach(loan => {
-        const isGiven = loans.given.includes(loan);
-        const paid = DebtEngine.getPaidAmount(loan);
-        const remaining = loan.amount - paid;
-        const dueDate = new Date(loan.expectedReturn || loan.dueDate);
-        const today = new Date();
-        const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-        
-        const item = document.createElement('div');
-        item.className = 'repayment-item';
-        item.innerHTML = `
-            <div class="repayment-info">
-                <div class="fw-bold">${isGiven ? loan.borrower : loan.lender}</div>
-                <small class="text-muted">
-                    ${remaining.toLocaleString()} ${currency} • 
-                    Due in ${daysUntilDue} days
-                </small>
-            </div>
-            <div class="repayment-amount">
-                <small class="${daysUntilDue <= 7 ? 'text-danger' : 'text-warning'}">
-                    ${dueDate.toLocaleDateString()}
-                </small>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
-
-function openAddLoan(type) {
-    document.getElementById('loanModalLabel').textContent = `Add Loan ${type === 'given' ? 'Given' : 'Taken'}`;
-    document.getElementById('loanForm').reset();
-    document.getElementById('loanIndex').value = '-1';
-    document.getElementById('loanType').value = type;
-    
-    const today = new Date().toISOString().split('T')[0];
-    if (type === 'given') {
-        document.getElementById('loanBorrowerLabel').style.display = 'block';
-        document.getElementById('loanBorrower').style.display = 'block';
-        document.getElementById('loanLenderLabel').style.display = 'none';
-        document.getElementById('loanLender').style.display = 'none';
-        document.getElementById('loanExpectedReturnLabel').style.display = 'block';
-        document.getElementById('loanExpectedReturn').style.display = 'block';
-        document.getElementById('loanDueDateLabel').style.display = 'none';
-        document.getElementById('loanDueDate').style.display = 'none';
-        document.getElementById('loanDateGivenLabel').style.display = 'block';
-        document.getElementById('loanDateGiven').style.display = 'block';
-        document.getElementById('loanDateTakenLabel').style.display = 'none';
-        document.getElementById('loanDateTaken').style.display = 'none';
-    } else {
-        document.getElementById('loanBorrowerLabel').style.display = 'none';
-        document.getElementById('loanBorrower').style.display = 'none';
-        document.getElementById('loanLenderLabel').style.display = 'block';
-        document.getElementById('loanLender').style.display = 'block';
-        document.getElementById('loanExpectedReturnLabel').style.display = 'none';
-        document.getElementById('loanExpectedReturn').style.display = 'none';
-        document.getElementById('loanDueDateLabel').style.display = 'block';
-        document.getElementById('loanDueDate').style.display = 'block';
-        document.getElementById('loanDateGivenLabel').style.display = 'none';
-        document.getElementById('loanDateGiven').style.display = 'none';
-        document.getElementById('loanDateTakenLabel').style.display = 'block';
-        document.getElementById('loanDateTaken').style.display = 'block';
-    }
-    
-    const modal = new bootstrap.Modal(document.getElementById('loanModal'));
-    modal.show();
-}
-
-function saveLoan(event) {
-    event.preventDefault();
-    
-    const form = document.getElementById('loanForm');
-    const index = parseInt(document.getElementById('loanIndex').value);
-    const type = document.getElementById('loanType').value;
-    
-    const loanData = {
-        amount: parseFloat(document.getElementById('loanAmount').value),
-        description: document.getElementById('loanDescription').value,
-        status: 'pending'
-    };
-    
-    if (type === 'given') {
-        loanData.borrower = document.getElementById('loanBorrower').value;
-        loanData.dateGiven = document.getElementById('loanDateGiven').value;
-        loanData.expectedReturn = document.getElementById('loanExpectedReturn').value;
-        loanData.payments = [];
-        
-        if (index >= 0) {
-            loans.given[index] = { ...loans.given[index], ...loanData };
-        } else {
-            loans.given.push(loanData);
-        }
-    } else {
-        loanData.lender = document.getElementById('loanLender').value;
-        loanData.dateTaken = document.getElementById('loanDateTaken').value;
-        loanData.dueDate = document.getElementById('loanDueDate').value;
-        loanData.payments = [];
-        
-        if (index >= 0) {
-            loans.taken[index] = { ...loans.taken[index], ...loanData };
-        } else {
-            loans.taken.push(loanData);
-        }
-    }
-    
-    saveLoans(loans);
-    renderDebtManagement();
-    showToast(`Loan ${type === 'given' ? 'given' : 'taken'} saved successfully`, 'success');
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('loanModal'));
-    modal.hide();
-}
-
-function editLoan(type, index) {
-    const loan = type === 'given' ? loans.given[index] : loans.taken[index];
-    
-    document.getElementById('loanModalLabel').textContent = `Edit Loan ${type === 'given' ? 'Given' : 'Taken'}`;
-    document.getElementById('loanIndex').value = index;
-    document.getElementById('loanType').value = type;
-    document.getElementById('loanAmount').value = loan.amount;
-    document.getElementById('loanDescription').value = loan.description || '';
-    
-    if (type === 'given') {
-        document.getElementById('loanBorrowerLabel').style.display = 'block';
-        document.getElementById('loanBorrower').style.display = 'block';
-        document.getElementById('loanLenderLabel').style.display = 'none';
-        document.getElementById('loanLender').style.display = 'none';
-        document.getElementById('loanExpectedReturnLabel').style.display = 'block';
-        document.getElementById('loanExpectedReturn').style.display = 'block';
-        document.getElementById('loanDueDateLabel').style.display = 'none';
-        document.getElementById('loanDueDate').style.display = 'none';
-        document.getElementById('loanDateGivenLabel').style.display = 'block';
-        document.getElementById('loanDateGiven').style.display = 'block';
-        document.getElementById('loanDateTakenLabel').style.display = 'none';
-        document.getElementById('loanDateTaken').style.display = 'none';
-        
-        document.getElementById('loanBorrower').value = loan.borrower;
-        document.getElementById('loanDateGiven').value = loan.dateGiven;
-        document.getElementById('loanExpectedReturn').value = loan.expectedReturn;
-    } else {
-        document.getElementById('loanBorrowerLabel').style.display = 'none';
-        document.getElementById('loanBorrower').style.display = 'none';
-        document.getElementById('loanLenderLabel').style.display = 'block';
-        document.getElementById('loanLender').style.display = 'block';
-        document.getElementById('loanExpectedReturnLabel').style.display = 'none';
-        document.getElementById('loanExpectedReturn').style.display = 'none';
-        document.getElementById('loanDueDateLabel').style.display = 'block';
-        document.getElementById('loanDueDate').style.display = 'block';
-        document.getElementById('loanDateGivenLabel').style.display = 'none';
-        document.getElementById('loanDateGiven').style.display = 'none';
-        document.getElementById('loanDateTakenLabel').style.display = 'block';
-        document.getElementById('loanDateTaken').style.display = 'block';
-        
-        document.getElementById('loanLender').value = loan.lender;
-        document.getElementById('loanDateTaken').value = loan.dateTaken;
-        document.getElementById('loanDueDate').value = loan.dueDate;
-    }
-    
-    const modal = new bootstrap.Modal(document.getElementById('loanModal'));
-    modal.show();
-}
-
-function removeLoan(type, index) {
-    const loan = type === 'given' ? loans.given[index] : loans.taken[index];
-    const name = type === 'given' ? loan.borrower : loan.lender;
-    
-    if (confirm(`Are you sure you want to remove the loan for ${name}?`)) {
-        if (type === 'given') {
-            loans.given.splice(index, 1);
-        } else {
-            loans.taken.splice(index, 1);
-        }
-        saveLoans(loans);
-        renderDebtManagement();
-        showToast('Loan removed', 'success');
-    }
-}
-
-function addLoanPayment(type, index) {
-    const loan = type === 'given' ? loans.given[index] : loans.taken[index];
-    const name = type === 'given' ? loan.borrower : loan.lender;
-    const paid = DebtEngine.getPaidAmount(loan);
-    const remaining = loan.amount - paid;
-    
-    const amount = prompt(`Enter payment amount for ${name} (Remaining: ${remaining.toLocaleString()} ${currency}):`, remaining);
-    
-    if (amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
-        if (parseFloat(amount) > remaining) {
-            showToast('Payment amount cannot exceed remaining balance', 'warning');
+        if (this.budgets.length === 0) {
+            container.classList.add('d-none');
+            emptyState.classList.remove('d-none');
             return;
         }
-        
-        DebtEngine.addPayment(loan, parseFloat(amount));
-        saveLoans(loans);
-        renderDebtManagement();
-        showToast('Payment recorded successfully', 'success');
-    }
-}
 
-// Add event listeners for analytics
-document.addEventListener('DOMContentLoaded', function() {
-    // Overview chart type change
-    const overviewChartType = document.getElementById('overviewChartType');
-    if (overviewChartType) {
-        overviewChartType.addEventListener('change', renderOverviewChart);
-    }
-    
-    // Comparison filters change
-    const comparisonType = document.getElementById('comparisonType');
-    const comparisonPeriod1 = document.getElementById('comparisonPeriod1');
-    const comparisonPeriod2 = document.getElementById('comparisonPeriod2');
-    
-    if (comparisonType) {
-        comparisonType.addEventListener('change', function() {
+        container.classList.remove('d-none');
+        emptyState.classList.add('d-none');
+
+        container.innerHTML = this.budgets.map((budget, index) => {
+            const spent = this.transactions
+                .filter(t => t.category === budget.category && t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            const percentage = (spent / budget.amount) * 100;
+            const remaining = budget.amount - spent;
+            let statusClass = 'border-success';
+            let statusIcon = 'bi-check-circle text-success';
+
+            if (percentage > 75) {
+                statusClass = 'border-warning';
+                statusIcon = 'bi-exclamation-circle text-warning';
+            }
+            if (percentage >= 100) {
+                statusClass = 'border-danger';
+                statusIcon = 'bi-x-circle text-danger';
+            }
+
+            return `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 animate__animated ${statusClass}" style="animation-delay: ${index * 0.1}s">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="card-title mb-0">${budget.category}</h6>
+                                <i class="bi ${statusIcon}"></i>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted">Spent</small>
+                                    <small class="${percentage >= 100 ? 'text-danger' : 'text-muted'}">
+                                        ${this.formatCurrency(spent)} / ${this.formatCurrency(budget.amount)}
+                                    </small>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar ${percentage >= 100 ? 'bg-danger' : percentage > 75 ? 'bg-warning' : 'bg-success'}" 
+                                         style="width: ${Math.min(percentage, 100)}%">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span>${percentage.toFixed(1)}%</span>
+                                <span>Remaining: ${this.formatCurrency(Math.max(remaining, 0))}</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <button class="btn btn-sm btn-outline-danger w-100" onclick="app.deleteBudget('${budget.id}')">
+                                Delete Budget
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Add animations
+        container.querySelectorAll('.card').forEach((card, index) => {
             setTimeout(() => {
-                renderComparisonChart();
-                renderChangeAnalysis();
-            }, 100);
+                card.classList.add('animate__fadeInUp');
+            }, index * 100);
         });
     }
-    
-    if (comparisonPeriod1 && comparisonPeriod2) {
-        comparisonPeriod1.addEventListener('change', function() {
-            renderComparisonChart();
-            renderChangeAnalysis();
+
+    loadReports() {
+        // Reports are generated on-demand
+        document.getElementById('reportOutput').innerHTML = document.getElementById('reportsEmpty').outerHTML;
+    }
+
+    addTransaction() {
+        const form = document.getElementById('addTransactionForm');
+        const validation = this.validateForm(form);
+        
+        if (!validation.isValid) {
+            this.showToast('Please fix the errors in the form', 'error');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const transaction = {
+            id: Date.now(),
+            description: formData.get('description'),
+            amount: parseFloat(formData.get('amount')),
+            type: formData.get('type'),
+            category: formData.get('category'),
+            date: formData.get('date')
+        };
+
+        this.transactions.push(transaction);
+        this.saveData();
+        
+        // Close modal and reset form
+        bootstrap.Modal.getInstance(document.getElementById('addTransactionModal')).hide();
+        form.reset();
+        
+        // Show success animation
+        this.showToast('Transaction added successfully!', 'success');
+        
+        // Reload current view
+        const activeTab = document.querySelector('.nav-link.active').getAttribute('data-tab');
+        this.switchTab(activeTab);
+    }
+
+    deleteTransaction(id) {
+        if (confirm('Are you sure you want to delete this transaction?')) {
+            this.transactions = this.transactions.filter(t => t.id !== id);
+            this.saveData();
+            this.showToast('Transaction deleted!', 'success');
+            this.loadTransactions();
+        }
+    }
+
+    addBudget() {
+        const form = document.getElementById('addBudgetForm');
+        const formData = new FormData(form);
+        
+        const budget = {
+            id: Date.now().toString(),
+            category: formData.get('category'),
+            amount: parseFloat(formData.get('amount')),
+            period: formData.get('period')
+        };
+
+        // Check if budget already exists for this category
+        if (this.budgets.some(b => b.category === budget.category)) {
+            this.showToast('Budget already exists for this category!', 'error');
+            return;
+        }
+
+        this.budgets.push(budget);
+        this.saveData();
+        
+        bootstrap.Modal.getInstance(document.getElementById('addBudgetModal')).hide();
+        form.reset();
+        
+        this.showToast('Budget created successfully!', 'success');
+        this.loadBudgets();
+    }
+
+    deleteBudget(id) {
+        if (confirm('Are you sure you want to delete this budget?')) {
+            this.budgets = this.budgets.filter(b => b.id !== id);
+            this.saveData();
+            this.showToast('Budget deleted!', 'success');
+            this.loadBudgets();
+        }
+    }
+
+    updateRecentCategories() {
+        const container = document.getElementById('recentCategories');
+        const recent = this.getRecentCategories();
+        
+        if (recent.length === 0) {
+            container.innerHTML = '<small class="text-muted">No recent categories</small>';
+            return;
+        }
+
+        container.innerHTML = recent.map(category => `
+            <span class="recent-category" onclick="app.selectRecentCategory('${category}')">
+                ${category}
+            </span>
+        `).join('');
+    }
+
+    getRecentCategories() {
+        const categoryCounts = {};
+        
+        this.transactions.forEach(transaction => {
+            categoryCounts[transaction.category] = (categoryCounts[transaction.category] || 0) + 1;
+        });
+
+        return Object.entries(categoryCounts)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, this.recentCategoryLimit)
+            .map(([category]) => category);
+    }
+
+    selectRecentCategory(category) {
+        document.getElementById('transactionCategory').value = category;
+        this.validateField(document.getElementById('transactionCategory'));
+    }
+
+    getLastNDays(n) {
+        const days = [];
+        for (let i = n - 1; i >= 0; i--) {
+            days.push(dateFns.subDays(new Date(), i));
+        }
+        return days;
+    }
+
+    getDailyAmounts(dates, type) {
+        return dates.map(date => {
+            return this.transactions
+                .filter(t => {
+                    const transDate = new Date(t.date);
+                    return dateFns.isSameDay(transDate, date) && t.type === type;
+                })
+                .reduce((sum, t) => sum + t.amount, 0);
+        });
+    }
+
+    formatCurrency(amount) {
+        return numeral(amount).format('$0,0.00');
+    }
+
+    saveData() {
+        localStorage.setItem('transactions', JSON.stringify(this.transactions));
+        localStorage.setItem('budgets', JSON.stringify(this.budgets));
+    }
+
+    showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastId = 'toast-' + Date.now();
+        
+        const bgClass = {
+            success: 'bg-success',
+            error: 'bg-danger',
+            warning: 'bg-warning',
+            info: 'bg-info'
+        }[type] || 'bg-info';
+
+        const icon = {
+            success: 'bi-check-circle',
+            error: 'bi-exclamation-circle',
+            warning: 'bi-exclamation-triangle',
+            info: 'bi-info-circle'
+        }[type] || 'bi-info-circle';
+
+        const toastHTML = `
+            <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${icon} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 3000
         });
         
-        comparisonPeriod2.addEventListener('change', function() {
-            renderComparisonChart();
-            renderChangeAnalysis();
+        toast.show();
+        
+        // Remove toast from DOM after hide
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
         });
     }
-    
-    // Analytics tab navigation
-    const analyticsTabs = document.querySelectorAll('#analyticsTabs button');
-    analyticsTabs.forEach(tab => {
-        tab.addEventListener('shown.bs.tab', function() {
-            const target = this.getAttribute('data-bs-target');
-            if (target === '#trends') {
-                renderTrendsTab();
-            } else if (target === '#comparison') {
-                renderComparisonTab();
-            }
-        });
-    });
-    
-    // Planner form submissions
-    document.getElementById('futureIncomeForm').addEventListener('submit', saveFutureIncome);
-    document.getElementById('futureExpenseForm').addEventListener('submit', saveFutureExpense);
-    document.getElementById('loanForm').addEventListener('submit', saveLoan);
-    
-    // Planner timeframe buttons
-    document.querySelectorAll('.planner-timeframe-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            changePlannerTimeframe(this.dataset.timeframe);
-        });
-    });
-});
 
-// Import/Export
-document.getElementById('exportBtn').onclick = function() {
-    const data = {
-        transactions,
-        categories,
-        currency,
-        monthlyBudgets,
-        futureTransactions,
-        loans
-    };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:"application/json"}));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "wealth-command-backup.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showToast('Data exported successfully', 'success');
-};
+    // Report Generation Methods
+    async generateIncomeExpenseReport() {
+        const reportLoading = document.getElementById('reportLoading');
+        const reportOutput = document.getElementById('reportOutput');
+        
+        reportLoading.classList.remove('d-none');
+        reportOutput.innerHTML = '';
 
-document.getElementById('importBtn').onclick = function() {
-    document.getElementById('importFile').click();
-};
+        // Simulate report generation
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-document.getElementById('importFile').onchange = function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-        try {
-            const data = JSON.parse(ev.target.result);
-            if (Array.isArray(data.transactions)) transactions = data.transactions;
-            if (Array.isArray(data.categories)) categories = data.categories;
-            if (typeof data.currency === "string") currency = data.currency;
-            if (data.monthlyBudgets) monthlyBudgets = data.monthlyBudgets;
-            if (data.futureTransactions) futureTransactions = data.futureTransactions;
-            if (data.loans) loans = data.loans;
+        const monthlyData = this.getMonthlyData();
+        const ctx = document.createElement('canvas');
+        ctx.height = 400;
+        
+        reportOutput.innerHTML = `
+            <div class="report-header mb-4">
+                <h4>Income vs Expenses Report</h4>
+                <p class="text-muted">Monthly comparison for the last 6 months</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="incomeExpenseReportChart"></canvas>
+            </div>
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>Key Insights</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="bi bi-arrow-up-right text-success me-2"></i>Average Monthly Income: ${this.formatCurrency(monthlyData.avgIncome)}</li>
+                                <li class="mb-2"><i class="bi bi-arrow-down-left text-danger me-2"></i>Average Monthly Expenses: ${this.formatCurrency(monthlyData.avgExpenses)}</li>
+                                <li class="mb-2"><i class="bi bi-piggy-bank text-primary me-2"></i>Average Savings Rate: ${monthlyData.avgSavingsRate}%</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>Recommendations</h6>
+                            <ul class="list-unstyled">
+                                ${this.generateSpendingRecommendations(monthlyData)}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this.renderIncomeExpenseReportChart(monthlyData);
+        reportLoading.classList.add('d-none');
+    }
+
+    getMonthlyData() {
+        const months = [];
+        const incomeData = [];
+        const expenseData = [];
+        
+        for (let i = 5; i >= 0; i--) {
+            const date = dateFns.subMonths(new Date(), i);
+            const monthStart = dateFns.startOfMonth(date);
+            const monthEnd = dateFns.endOfMonth(date);
             
-            saveTransactions(transactions);
-            saveCategories(categories);
-            saveCurrency(currency);
-            saveMonthlyBudgets(monthlyBudgets);
-            saveFutureTransactions(futureTransactions);
-            saveLoans(loans);
+            const monthTransactions = this.transactions.filter(t => {
+                const transDate = new Date(t.date);
+                return transDate >= monthStart && transDate <= monthEnd;
+            });
             
-            renderCategoryList();
-            populateSummaryFilters();
-            updateUI();
-            renderPlannerProjections();
-            renderDebtManagement();
-            showToast("Import successful!", "success");
-        } catch {
-            showToast("Import failed: Invalid file.", "danger");
-        }
-    };
-    reader.readAsText(file);
-};
-
-// LocalStorage handlers with auto-sync
-function loadTransactions() {
-    try {
-        return JSON.parse(localStorage.getItem('transactions')) || [];
-    } catch {
-        return [];
-    }
-}
-
-function saveTransactions(arr) {
-    transactions = arr;
-    localStorage.setItem('transactions', JSON.stringify(arr));
-    calculateMonthlyRollover();
-    autoSyncToDrive();
-}
-
-function loadCategories() {
-    try {
-        const cats = JSON.parse(localStorage.getItem('categories'));
-        if (Array.isArray(cats) && cats.length > 0) {
-            if (typeof cats[0] === 'string') {
-                const migratedCats = cats.map(name => ({
-                    name: name,
-                    type: 'expense'
-                }));
-                saveCategories(migratedCats);
-                return migratedCats;
-            }
-            return cats;
-        }
-        return [
-            { name: "Salary", type: "income" },
-            { name: "Food", type: "expense" },
-            { name: "Shopping", type: "expense" },
-            { name: "Utilities", type: "expense" }
-        ];
-    } catch {
-        return [
-            { name: "Salary", type: "income" },
-            { name: "Food", type: "expense" },
-            { name: "Shopping", type: "expense" },
-            { name: "Utilities", type: "expense" }
-        ];
-    }
-}
-
-function saveCategories(arr) {
-    categories = arr;
-    localStorage.setItem('categories', JSON.stringify(arr));
-    autoSyncToDrive();
-}
-
-function loadCurrency() {
-    return localStorage.getItem("currency");
-}
-
-function saveCurrency(val) {
-    currency = val;
-    localStorage.setItem("currency", val);
-    autoSyncToDrive();
-}
-
-// Overview chart type change
-const overviewChartType = document.getElementById('overviewChartType');
-if (overviewChartType) {
-    overviewChartType.addEventListener('change', renderOverviewChart);
-}
-
-// Enhanced Dark Mode Toggle
-document.getElementById('darkModeToggle').addEventListener('click', function() {
-    document.body.classList.toggle('dark-mode');
-    this.checked = document.body.classList.contains('dark-mode');
-    
-    if (document.body.classList.contains('dark-mode')) {
-        localStorage.setItem('theme', 'dark');
-        showToast('Dark mode enabled', 'info');
-    } else {
-        localStorage.setItem('theme', 'light');
-        showToast('Light mode enabled', 'info');
-    }
-});
-
-// Initialize dark mode from system preference or saved setting
-(function () {
-    const savedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    if (darkModeToggle) {
-        if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-            document.body.classList.add('dark-mode');
-            darkModeToggle.checked = true;
-        } else {
-            document.body.classList.remove('dark-mode');
-            darkModeToggle.checked = false;
-        }
-    }
-})();
-
-// Service Worker Registration
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/Wealth-Command/service-worker.js')
-            .then(registration => {
-                console.log('SW registered successfully: ', registration);
-            })
-            .catch(registrationError => {
-                console.log('SW registration failed: ', registrationError);
-            });
-    });
-}
-
-// Final Initialization
-document.addEventListener('DOMContentLoaded', function() {
-    function initializeApplicationData() {
-        if (categories.length === 0) {
-            categories = loadCategories();
-            saveCategories(categories);
+            const income = monthTransactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+                
+            const expenses = monthTransactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            months.push(dateFns.format(date, 'MMM yyyy'));
+            incomeData.push(income);
+            expenseData.push(expenses);
         }
         
-        if (transactions.length === 0) {
-            transactions = loadTransactions();
-        }
+        const totalIncome = incomeData.reduce((a, b) => a + b, 0);
+        const totalExpenses = expenseData.reduce((a, b) => a + b, 0);
+        const avgIncome = totalIncome / 6;
+        const avgExpenses = totalExpenses / 6;
+        const avgSavingsRate = avgIncome > 0 ? ((avgIncome - avgExpenses) / avgIncome * 100) : 0;
         
-        currency = loadCurrency() || "PKR";
-        monthlyBudgets = loadMonthlyBudgets();
-        futureTransactions = loadFutureTransactions();
-        loans = loadLoans();
-        
-        calculateMonthlyRollover();
-        
-        updateUI();
-        populateSummaryFilters();
-        renderCategoryList();
-        renderPlannerProjections();
-        renderDebtManagement();
-        
-        const autoRolloverToggle = document.getElementById('autoRolloverToggle');
-        const allowNegativeToggle = document.getElementById('allowNegativeRollover');
-        
-        if (autoRolloverToggle) {
-            const currentMonth = getCurrentMonthKey();
-            autoRolloverToggle.checked = monthlyBudgets[currentMonth]?.autoRollover !== false;
-            autoRolloverToggle.addEventListener('change', function() {
-                Object.keys(monthlyBudgets).forEach(month => {
-                    monthlyBudgets[month].autoRollover = this.checked;
-                });
-                saveMonthlyBudgets(monthlyBudgets);
-                calculateMonthlyRollover();
-                updateUI();
-            });
-        }
-        
-        if (allowNegativeToggle) {
-            const currentMonth = getCurrentMonthKey();
-            allowNegativeToggle.checked = monthlyBudgets[currentMonth]?.allowNegative === true;
-            allowNegativeToggle.addEventListener('change', function() {
-                Object.keys(monthlyBudgets).forEach(month => {
-                    monthlyBudgets[month].allowNegative = this.checked;
-                });
-                saveMonthlyBudgets(monthlyBudgets);
-                calculateMonthlyRollover();
-                updateUI();
-            });
-        }
+        return { months, incomeData, expenseData, avgIncome, avgExpenses, avgSavingsRate };
     }
 
-    initializeApplicationData();
-    
-    // Initialize tab state
-    initTabState();
-    
-    // Initialize Google Auth and sync
-    const savedUser = localStorage.getItem('googleUser');
-    if (savedUser) {
-        try {
-            googleUser = JSON.parse(savedUser);
-            const tokenAge = Date.now() - googleUser.acquired_at;
-            if (tokenAge > (googleUser.expires_in - 60) * 1000) {
-                localStorage.removeItem('googleUser');
-                googleUser = null;
-                showSyncStatus('offline', 'Session expired. Please sign in again.');
-            } else {
-                showSyncStatus('success', 'Google Drive connected');
-                loadDataFromDrive().then(success => {
-                    if (!success) {
-                        initializeApplicationData();
+    renderIncomeExpenseReportChart(monthlyData) {
+        const ctx = document.getElementById('incomeExpenseReportChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: monthlyData.months,
+                datasets: [
+                    {
+                        label: 'Income',
+                        data: monthlyData.incomeData,
+                        backgroundColor: 'rgba(39, 174, 96, 0.8)',
+                        borderColor: '#27ae60',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Expenses',
+                        data: monthlyData.expenseData,
+                        backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                        borderColor: '#e74c3c',
+                        borderWidth: 1
                     }
-                });
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                return `${context.dataset.label}: ${this.formatCurrency(context.parsed.y)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (value) => this.formatCurrency(value)
+                        }
+                    }
+                }
             }
-        } catch (error) {
-            console.error('Error parsing saved user:', error);
-            localStorage.removeItem('googleUser');
-            googleUser = null;
-            showSyncStatus('offline', 'Error loading saved session');
-        }
-    } else {
-        showSyncStatus('offline', 'Sign in to sync with Google Drive');
+        });
     }
-    
-    setTimeout(() => {
-        initGoogleAuth();
-        updateProfileUI();
-    }, 100);
-    
-    setTimeout(() => {
-        const manualSyncBtn = document.getElementById('manualSyncSettings');
-        if (manualSyncBtn) {
-            manualSyncBtn.addEventListener('click', manualSync);
+
+    generateSpendingRecommendations(monthlyData) {
+        const recommendations = [];
+        const savingsRate = monthlyData.avgSavingsRate;
+        
+        if (savingsRate < 10) {
+            recommendations.push('<li class="mb-2"><i class="bi bi-lightbulb text-warning me-2"></i>Consider reducing discretionary spending to increase savings rate</li>');
         }
-    }, 200);
-    
-    // Start periodic sync
-    startPeriodicSync();
-    
-    console.log('Wealth Command initialized successfully');
-});
+        if (savingsRate > 20) {
+            recommendations.push('<li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Great savings rate! Consider investment opportunities</li>');
+        }
+        if (monthlyData.avgExpenses > monthlyData.avgIncome * 0.8) {
+            recommendations.push('<li class="mb-2"><i class="bi bi-exclamation-triangle text-danger me-2"></i>High expense-to-income ratio. Review recurring expenses</li>');
+        }
+        
+        if (recommendations.length === 0) {
+            recommendations.push('<li class="mb-2"><i class="bi bi-info-circle text-primary me-2"></i>Your financial health appears stable. Continue monitoring</li>');
+        }
+        
+        return recommendations.join('');
+    }
+
+    generateCategoryReport() {
+        // Similar implementation for category report
+        this.showToast('Category report generation would be implemented here', 'info');
+    }
+
+    generateTrendReport() {
+        // Similar implementation for trend report
+        this.showToast('Trend report generation would be implemented here', 'info');
+    }
+
+    // Spending pattern recognition
+    analyzeSpendingPatterns() {
+        const patterns = {
+            highSpendingCategories: [],
+            frequentTransactions: [],
+            monthlyTrends: []
+        };
+
+        // Analyze category spending
+        const categorySpending = {};
+        this.transactions
+            .filter(t => t.type === 'expense')
+            .forEach(t => {
+                categorySpending[t.category] = (categorySpending[t.category] || 0) + t.amount;
+            });
+
+        patterns.highSpendingCategories = Object.entries(categorySpending)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 3)
+            .map(([category, amount]) => ({ category, amount }));
+
+        return patterns;
+    }
+}
+
+// Initialize the app
+const app = new WealthCommand();
+
+// Global function for Google Sign-In callback
+function handleGoogleSignIn(response) {
+    app.handleGoogleSignIn(response);
+}
+
+// Add transaction global function
+function addTransaction() {
+    app.addTransaction();
+}
+
+// Add budget global function
+function addBudget() {
+    app.addBudget();
+}
+
+// Report generation functions
+function generateIncomeExpenseReport() {
+    app.generateIncomeExpenseReport();
+}
+
+function generateCategoryReport() {
+    app.generateCategoryReport();
+}
+
+function generateTrendReport() {
+    app.generateTrendReport();
+}
