@@ -1266,6 +1266,74 @@ body.dark-mode .chart-placeholder {
   color: #a0aec0;
 }
 
+/* Debt Management Card Consistency */
+#tab-debt .card .card-body .row .col-6 .card,
+#tab-debt .card .card-body .row .col-md-3 .card {
+    height: 100%;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+}
+
+#tab-debt .card .card-body .row .col-6 .card .card-body,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+#tab-debt .card .card-body .row .col-6 .card .card-body > div,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body > div {
+    width: 100%;
+    text-align: center;
+}
+
+/* Ensure consistent icon sizing */
+#tab-debt .card .card-body .row .col-6 .card .card-body i,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body i {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Ensure consistent text sizing */
+#tab-debt .card .card-body .row .col-6 .card .card-body .fw-bold,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold {
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+}
+
+#tab-debt .card .card-body .row .col-6 .card .card-body small,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body small {
+    font-size: 0.85rem;
+}
+
+/* Specific fix for the Net Position card */
+#netDebtPosition {
+    font-size: 1.4rem !important;
+    margin-bottom: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #tab-debt .card .card-body .row .col-6 .card,
+    #tab-debt .card .card-body .row .col-md-3 .card {
+        min-height: 100px;
+    }
+    
+    #tab-debt .card .card-body .row .col-6 .card .card-body i,
+    #tab-debt .card .card-body .row .col-md-3 .card .card-body i {
+        font-size: 1.5rem;
+    }
+    
+    #tab-debt .card .card-body .row .col-6 .card .card-body .fw-bold,
+    #tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold {
+        font-size: 1.2rem;
+    }
+}
+
 /* Planner Dark Mode */
 body.dark-mode .planner-month-item,
 body.dark-mode .planner-item,
