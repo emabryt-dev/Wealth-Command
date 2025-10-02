@@ -1291,17 +1291,22 @@ body.dark-mode .chart-placeholder {
     text-align: center;
 }
 
-/* Ensure consistent icon sizing */
-#tab-debt .card .card-body .row .col-6 .card .card-body i,
-#tab-debt .card .card-body .row .col-md-3 .card .card-body i {
-    font-size: 1.8rem;
+/* Fix icon visibility and sizing */
+#tab-debt .card .card-body .row .col-6 .card .card-body i.bi,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body i.bi {
+    font-size: 1.8rem !important;
     margin-bottom: 0.5rem;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
-/* Ensure consistent text sizing */
+/* Fix text sizing and boldness */
 #tab-debt .card .card-body .row .col-6 .card .card-body .fw-bold,
-#tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold {
-    font-size: 1.4rem;
+#tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold,
+#netDebtPosition {
+    font-size: 1.4rem !important;
+    font-weight: bold !important;
     margin-bottom: 0.25rem;
 }
 
@@ -1310,10 +1315,27 @@ body.dark-mode .chart-placeholder {
     font-size: 0.85rem;
 }
 
-/* Specific fix for the Net Position card */
-#netDebtPosition {
-    font-size: 1.4rem !important;
-    margin-bottom: 0.25rem;
+/* Specific fix for the scale icon */
+#tab-debt .card .card-body .row .col-md-3 .card .card-body .text-primary i.bi-scale {
+    font-size: 1.8rem !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure all cards have equal height */
+#tab-debt .card .card-body .row {
+    align-items: stretch;
+}
+
+#tab-debt .card .card-body .row .col-6,
+#tab-debt .card .card-body .row .col-md-3 {
+    display: flex;
+}
+
+#tab-debt .card .card-body .row .col-6 .card,
+#tab-debt .card .card-body .row .col-md-3 .card {
+    flex: 1;
 }
 
 /* Responsive adjustments */
@@ -1323,14 +1345,15 @@ body.dark-mode .chart-placeholder {
         min-height: 100px;
     }
     
-    #tab-debt .card .card-body .row .col-6 .card .card-body i,
-    #tab-debt .card .card-body .row .col-md-3 .card .card-body i {
-        font-size: 1.5rem;
+    #tab-debt .card .card-body .row .col-6 .card .card-body i.bi,
+    #tab-debt .card .card-body .row .col-md-3 .card .card-body i.bi {
+        font-size: 1.5rem !important;
     }
     
     #tab-debt .card .card-body .row .col-6 .card .card-body .fw-bold,
-    #tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold {
-        font-size: 1.2rem;
+    #tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold,
+    #netDebtPosition {
+        font-size: 1.2rem !important;
     }
 }
 
