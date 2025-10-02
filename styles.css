@@ -1310,12 +1310,6 @@ body.dark-mode .chart-placeholder {
     font-size: 0.85rem;
 }
 
-/* Specific fix for the Net Position card */
-#netDebtPosition {
-    font-size: 1.4rem !important;
-    margin-bottom: 0.25rem;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
     #tab-debt .card .card-body .row .col-6 .card,
