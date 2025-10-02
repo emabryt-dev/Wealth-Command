@@ -217,12 +217,12 @@ body {
 }
 
 .income-card {
-  border-left: 4px solid #198754;
+  border-left: 4px solid #65cd94;
   background: linear-gradient(135deg, #f8fff8 0%, #ffffff 100%);
 }
 
 .expense-card {
-  border-left: 4px solid #dc3545;
+  border-left: 4px solid #ff8484;
   background: linear-gradient(135deg, #fff8f8 0%, #ffffff 100%);
 }
 
