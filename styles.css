@@ -1270,7 +1270,7 @@ body.dark-mode .chart-placeholder {
 #tab-debt .card .card-body .row .col-6 .card,
 #tab-debt .card .card-body .row .col-md-3 .card {
     height: 100%;
-    min-height: 120px;
+    min-height: 75px;
     display: flex;
     flex-direction: column;
 }
@@ -1320,7 +1320,7 @@ body.dark-mode .chart-placeholder {
 @media (max-width: 768px) {
     #tab-debt .card .card-body .row .col-6 .card,
     #tab-debt .card .card-body .row .col-md-3 .card {
-        min-height: 100px;
+        min-height: 75px;
     }
     
     #tab-debt .card .card-body .row .col-6 .card .card-body i,
