@@ -1269,8 +1269,8 @@ body.dark-mode .chart-placeholder {
 /* Debt Management Card Consistency */
 #tab-debt .card .card-body .row .col-6 .card,
 #tab-debt .card .card-body .row .col-md-3 .card {
-    height: 80%;
-    min-height: 75px;
+    height: 100%;
+    min-height: 120px;
     display: flex;
     flex-direction: column;
 }
@@ -1310,11 +1310,17 @@ body.dark-mode .chart-placeholder {
     font-size: 0.85rem;
 }
 
+/* Specific fix for the Net Position card */
+#netDebtPosition {
+    font-size: 1.4rem !important;
+    margin-bottom: 0.25rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     #tab-debt .card .card-body .row .col-6 .card,
     #tab-debt .card .card-body .row .col-md-3 .card {
-        min-height: 75px;
+        min-height: 100px;
     }
     
     #tab-debt .card .card-body .row .col-6 .card .card-body i,
