@@ -1308,6 +1308,7 @@ body.dark-mode .chart-placeholder {
     font-size: 1.4rem !important;
     font-weight: bold !important;
     margin-bottom: 0.25rem;
+    color: #0d6efd !important;
 }
 
 #tab-debt .card .card-body .row .col-6 .card .card-body small,
