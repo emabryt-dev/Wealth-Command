@@ -64,7 +64,7 @@ body {
 
 /* Override primary button for Add Transaction */
 .btn-primary {
-    background: linear-gradient(135deg, #20B2AA 0%, #1E9C96 100%) !important;
+    background: linear-gradient(135deg, #5ccafd 0%, #0090d7 100%) !important;
     border-color: #20B2AA !important;
     color: white;
     font-weight: 600;
