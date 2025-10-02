@@ -1315,14 +1315,6 @@ body.dark-mode .chart-placeholder {
     font-size: 0.85rem;
 }
 
-/* Specific fix for the scale icon */
-#tab-debt .card .card-body .row .col-md-3 .card .card-body .text-primary i.bi-wallet {
-    font-size: 1.8rem !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
 /* Ensure all cards have equal height */
 #tab-debt .card .card-body .row {
     align-items: stretch;
