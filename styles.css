@@ -1316,7 +1316,7 @@ body.dark-mode .chart-placeholder {
 }
 
 /* Specific fix for the scale icon */
-#tab-debt .card .card-body .row .col-md-3 .card .card-body .text-primary i.bi-scale {
+#tab-debt .card .card-body .row .col-md-3 .card .card-body .text-primary i.bi-balance-scale {
     font-size: 1.8rem !important;
     display: block !important;
     visibility: visible !important;
