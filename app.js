@@ -3591,8 +3591,19 @@ function renderDebtManagement() {
 function updateDebtSummary(summary) {
     document.getElementById('totalLoansGiven').textContent = summary.totalGiven.toLocaleString() + ' ' + currency;
     document.getElementById('totalLoansTaken').textContent = summary.totalTaken.toLocaleString() + ' ' + currency;
-    document.getElementById('netDebtPosition').textContent = summary.netPosition.toLocaleString() + ' ' + currency;
-    document.getElementById('netDebtPosition').className = summary.netPosition >= 0 ? 'text-success' : 'text-danger';
+    
+    const netPositionElement = document.getElementById('netDebtPosition');
+    netPositionElement.textContent = summary.netPosition.toLocaleString() + ' ' + currency;
+    
+    // Remove existing classes
+    netPositionElement.classList.remove('text-success', 'text-danger');
+    
+    // Add appropriate color class
+    if (summary.netPosition >= 0) {
+        netPositionElement.classList.add('text-success');
+    } else {
+        netPositionElement.classList.add('text-danger');
+    }
 }
 
 function renderLoansGivenList() {
