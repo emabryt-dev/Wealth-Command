@@ -19,11 +19,6 @@ body {
   font-weight: 500;
 }
 
-/* Profile picture border adjustment for light background */
-.navbar .profile-pic-container {
-  border: 2px solid rgba(255, 255, 255, 0.8);
-}
-
 .card {
   border-radius: 0.6rem;
   padding: 0.6rem 0.8rem;
@@ -95,14 +90,14 @@ body {
 
 /* Enhanced Bottom Navigation */
 #fixedNavBar {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  width: 95%; /* Changed from max-width: 500px */
-  left: 2.5%; /* Changed from left: 50% */
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  width: 95%; 
+  left: 2.5%; 
   border-radius: 20px 20px 20px 20px;
-  transform: none; /* Remove the transform */
+  transform: none;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
   height: 70px;
   position: fixed;
