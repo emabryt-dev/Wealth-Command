@@ -62,6 +62,20 @@ body {
   display: none !important;
 }
 
+/* Override primary button for Add Transaction */
+.btn-primary {
+    background: linear-gradient(135deg, #20B2AA 0%, #1E9C96 100%) !important;
+    border-color: #20B2AA !important;
+    color: white;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1E9C96 0%, #1B8B85 100%) !important;
+    border-color: #1E9C96 !important;
+    transform: translateY(-1px);
+}
+
 /* Profile Picture */
 .profile-pic-container {
   width: 32px;
