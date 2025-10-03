@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wealth-command-cache-v7';
+const CACHE_NAME = 'wealth-command-cache-v8';
 const API_CACHE_NAME = 'wealth-command-api-cache-v2';
 const MAX_CACHE_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MAX_CACHE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -16,13 +16,6 @@ const urlsToCache = [
   '/Wealth-Command/manifest.json',
   '/Wealth-Command/icons/icon-192.png',
   '/Wealth-Command/icons/icon-512.png',
-  // SPA routes fallback
-  '/Wealth-Command/dashboard',
-  '/Wealth-Command/transactions',
-  '/Wealth-Command/planner',
-  '/Wealth-Command/debt',
-  '/Wealth-Command/analytics',
-  '/Wealth-Command/settings',
   // External resources
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css',
@@ -38,6 +31,12 @@ self.addEventListener('install', event => {
         console.log('Caching app shell');
         return cache.addAll(urlsToCache).catch(error => {
           console.log('Cache addAll failed:', error);
+          // Cache essential files individually if batch fails
+          return cache.add('/Wealth-Command/index.html')
+            .then(() => cache.add('/Wealth-Command/app.js'))
+            .then(() => cache.add('/Wealth-Command/styles.css'))
+            .then(() => cache.add('/Wealth-Command/manifest.json'))
+            .catch(err => console.log('Essential caching failed:', err));
         });
       })
       .then(() => self.skipWaiting())
@@ -85,7 +84,6 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const { request } = event;
-  const startTime = performance.now();
   
   // Skip non-GET requests
   if (request.method !== 'GET') return;
@@ -110,7 +108,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Strategy 4: Navigation requests - Cache first, special handling for SPA
+  // Strategy 4: Navigation requests - Always serve the app
   if (request.mode === 'navigate') {
     event.respondWith(navigationStrategy(request));
     return;
@@ -118,12 +116,6 @@ self.addEventListener('fetch', event => {
 
   // Strategy 5: Static assets - Cache first
   event.respondWith(staticAssetsStrategy(request));
-
-  // Performance monitoring
-  const duration = performance.now() - startTime;
-  if (duration > 1000) {
-    console.log(`Slow fetch: ${request.url} took ${duration.toFixed(2)}ms`);
-  }
 });
 
 // Strategy functions
@@ -205,7 +197,11 @@ async function cacheFirstStrategy(request) {
         headers: { 'Content-Type': 'application/javascript' } 
       });
     }
-    throw error;
+    
+    // For other CDN resources, return empty responses
+    return new Response('', { 
+      headers: { 'Content-Type': 'text/plain' } 
+    });
   }
 }
 
@@ -213,23 +209,27 @@ async function navigationStrategy(request) {
   const cache = await caches.open(CACHE_NAME);
   const url = new URL(request.url);
   
-  // For SPA, always serve index.html for same-origin navigation
+  // Always return the main app for same-origin navigation
   if (url.origin === self.location.origin) {
     const cachedIndex = await cache.match('/Wealth-Command/index.html');
     if (cachedIndex) {
-      // Background update
-      fetch(request).then(networkResponse => {
-        if (networkResponse.status === 200) {
-          cache.put(request, networkResponse);
-          enforceCacheSizeLimit(CACHE_NAME);
-        }
-      }).catch(() => {});
+      console.log('Serving app from cache for navigation');
+      
+      // Background update when online
+      if (navigator.onLine) {
+        fetch(request).then(networkResponse => {
+          if (networkResponse.status === 200) {
+            cache.put(request, networkResponse);
+            enforceCacheSizeLimit(CACHE_NAME);
+          }
+        }).catch(() => {}); // Silent fail for background update
+      }
       
       return cachedIndex;
     }
   }
   
-  // For external navigation or if cache fails, try network
+  // If app not in cache, try to fetch it from network
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.status === 200) {
@@ -238,20 +238,35 @@ async function navigationStrategy(request) {
     }
     return networkResponse;
   } catch (error) {
-    // If everything fails, return the main app instead of offline page
+    // Final fallback - try to get the main app from cache again
+    console.log('Network failed, trying cache fallback');
     const cachedIndex = await cache.match('/Wealth-Command/index.html');
-    return cachedIndex || new Response('Wealth Command - Loading...');
+    if (cachedIndex) {
+      return cachedIndex;
+    }
+    
+    // Ultimate fallback - redirect to main app
+    return Response.redirect('/Wealth-Command/');
   }
 }
 
 async function staticAssetsStrategy(request) {
   const cache = await caches.open(CACHE_NAME);
-  const cachedResponse = await cache.match(request);
+  const url = new URL(request.url);
   
+  // Check cache first
+  const cachedResponse = await cache.match(request);
   if (cachedResponse) {
     return cachedResponse;
   }
   
+  // For main app files, try to serve from cache even if not matched exactly
+  if (url.pathname === '/Wealth-Command/' || url.pathname === '/Wealth-Command/index.html') {
+    const cachedIndex = await cache.match('/Wealth-Command/index.html');
+    if (cachedIndex) return cachedIndex;
+  }
+  
+  // Try network
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.status === 200) {
@@ -260,35 +275,31 @@ async function staticAssetsStrategy(request) {
     }
     return networkResponse;
   } catch (error) {
-    // If all else fails, return the main app for HTML requests
+    // Fallbacks for specific file types
+    if (request.destination === 'style' || url.pathname.endsWith('.css')) {
+      return new Response('', { headers: { 'Content-Type': 'text/css' } });
+    }
+    
+    if (request.destination === 'script' || url.pathname.endsWith('.js')) {
+      return new Response('', { headers: { 'Content-Type': 'application/javascript' } });
+    }
+    
+    // For images, return transparent pixel
+    if (request.destination === 'image') {
+      const transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+      return fetch(transparentPixel);
+    }
+    
+    // For HTML/document requests, return the main app
     if (request.destination === 'document' || request.mode === 'navigate') {
-      const fallback = await cache.match('/Wealth-Command/index.html');
-      if (fallback) return fallback;
+      const cachedIndex = await cache.match('/Wealth-Command/index.html');
+      if (cachedIndex) return cachedIndex;
     }
     
-    // For CSS/JS assets, return basic fallbacks
-    if (request.destination === 'style' || request.url.endsWith('.css')) {
-      return new Response('', { 
-        headers: { 'Content-Type': 'text/css' } 
-      });
-    }
-    
-    if (request.destination === 'script' || request.url.endsWith('.js')) {
-      return new Response('', { 
-        headers: { 'Content-Type': 'application/javascript' } 
-      });
-    }
-    
-    // Final fallback - return the main app
-    const fallback = await cache.match('/Wealth-Command/index.html');
-    return fallback || new Response('Wealth Command');
+    // Ultimate fallback - return the main app
+    const cachedIndex = await cache.match('/Wealth-Command/index.html');
+    return cachedIndex || new Response('Wealth Command');
   }
-}
-
-async function serveAppAlways() {
-  const cache = await caches.open(CACHE_NAME);
-  const cachedIndex = await cache.match('/Wealth-Command/index.html');
-  return cachedIndex || new Response('Wealth Command');
 }
 
 // Cache size management
@@ -313,7 +324,6 @@ self.addEventListener('sync', event => {
   if (event.tag === 'background-sync') {
     console.log('Background sync triggered');
     event.waitUntil(
-      // Implement offline transaction queuing here
       syncOfflineTransactions().catch(error => {
         console.error('Background sync failed:', error);
       })
@@ -323,9 +333,7 @@ self.addEventListener('sync', event => {
 
 // Future: Sync offline transactions when back online
 async function syncOfflineTransactions() {
-  // This would sync any transactions made while offline
   console.log('Syncing offline transactions...');
-  // Implementation would go here
   return Promise.resolve();
 }
 
@@ -355,17 +363,7 @@ self.addEventListener('push', event => {
     data: { 
       url: data.url || '/Wealth-Command/',
       timestamp: Date.now()
-    },
-    actions: [
-      {
-        action: 'open',
-        title: 'Open App'
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss'
-      }
-    ]
+    }
   };
   
   event.waitUntil(
@@ -375,25 +373,8 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  
-  if (event.action === 'dismiss') {
-    return;
-  }
-
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then(windowClients => {
-      // Check if app is already open
-      for (let client of windowClients) {
-        if (client.url.includes('/Wealth-Command/') && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      
-      // Open new window if app not open
-      if (clients.openWindow) {
-        return clients.openWindow(event.notification.data.url);
-      }
-    })
+    clients.openWindow(event.notification.data.url)
   );
 });
 
@@ -401,13 +382,6 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
-  }
-  
-  if (event.data && event.data.type === 'GET_VERSION') {
-    event.ports[0].postMessage({
-      version: CACHE_NAME,
-      timestamp: new Date().toISOString()
-    });
   }
 });
 
