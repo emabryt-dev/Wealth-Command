@@ -745,7 +745,7 @@ function showToast(message, type = 'info', duration = 4000) {
     };
     
     const toastHTML = `
-        <div id="${toastId}" class="toast toast-${type} animate__animated animate__fadeInRight" role="alert">
+        <div id="${toastId}" class="toast toast-${type}" role="alert">
             <div class="toast-body">
                 <div class="d-flex align-items-center">
                     <i class="bi ${icons[type]} me-2 text-${type}"></i>
@@ -762,10 +762,7 @@ function showToast(message, type = 'info', duration = 4000) {
     const bsToast = new bootstrap.Toast(toastElement, { delay: duration });
     
     toastElement.addEventListener('hidden.bs.toast', () => {
-        toastElement.classList.add('animate__fadeOutRight');
-        setTimeout(() => {
-            toastElement.remove();
-        }, 300);
+        toastElement.remove();
     });
     
     bsToast.show();
@@ -1409,56 +1406,33 @@ function showTab(tab) {
     updateUrlHash(tab);
     localStorage.setItem('lastActiveTab', tab);
     
-    // Hide all tabs with animation
-    tabs.forEach(t => {
-        const tabElement = document.getElementById(`tab-${t}`);
-        if (!tabElement.classList.contains('d-none')) {
-            tabElement.classList.add('animate__fadeOut');
-            setTimeout(() => {
-                tabElement.classList.add('d-none');
-                tabElement.classList.remove('animate__fadeOut');
-            }, 300);
-        }
-    });
-    
     // Update UI
     tabs.forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle("d-none", t !== tab);
         const btn = document.querySelector(`[data-tab='${t}']`);
         if (btn) {
             btn.classList.toggle("active", t === tab);
         }
     });
     
-    // Show selected tab with animation
     setTimeout(() => {
-        const targetTab = document.getElementById(`tab-${tab}`);
-        targetTab.classList.remove('d-none');
-        targetTab.classList.add('animate__fadeIn');
-        
-        setTimeout(() => {
-            targetTab.classList.remove('animate__fadeIn');
-        }, 500);
-        
-        // Tab-specific initialization
-        setTimeout(() => {
-            if (tab === "transactions") {
-                adjustTransactionsTable();
-            }
-        }, 50);
-        
-        if (tab === "analytics") {
-            renderEnhancedAnalytics();
-            populateChartFilters();
+        if (tab === "transactions") {
+            adjustTransactionsTable();
         }
-        
-        if (tab === "planner") {
-            renderPlannerProjections();
-        }
-        
-        if (tab === "debt") {
-            renderDebtManagement();
-        }
-    }, 300);
+    }, 50);
+    
+    if (tab === "analytics") {
+        renderEnhancedAnalytics();
+        populateChartFilters();
+    }
+    
+    if (tab === "planner") {
+        renderPlannerProjections();
+    }
+    
+    if (tab === "debt") {
+        renderDebtManagement();
+    }
     
     console.log(`Switched to tab: ${tab}`);
 }
@@ -1965,20 +1939,11 @@ document.getElementById('transactionForm').addEventListener('submit', function(e
     saveTransactions(transactions);
     calculateMonthlyRollover();
     updateUI();
+    addTxModal.hide();
+    this.reset();
     
-    // Add animation to the modal close
-    const addTxModal = bootstrap.Modal.getInstance(document.getElementById('addTransactionModal'));
-    const modalElement = document.getElementById('addTransactionModal');
-    modalElement.classList.add('animate__zoomOut');
-    
-    setTimeout(() => {
-        addTxModal.hide();
-        modalElement.classList.remove('animate__zoomOut');
-        this.reset();
-        
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('dateInput').value = today;
-    }, 300);
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
 });
 
 // Update UI: Dashboard, Breakdown, Transactions
@@ -3948,49 +3913,8 @@ function addLoanPayment(type, index) {
     }
 }
 
-// Enhanced function to add items with animation
-function addItemWithAnimation(container, itemHTML, animation = 'animate__fadeInUp') {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = itemHTML;
-    const newItem = tempDiv.firstElementChild;
-    
-    if (newItem) {
-        newItem.classList.add('animate__animated', animation);
-        container.appendChild(newItem);
-        
-        // Remove animation class after animation completes
-        setTimeout(() => {
-            newItem.classList.remove('animate__animated', animation);
-        }, 500);
-    }
-}
-
-// Enhanced modal show function
-function showModalWithAnimation(modalId, animationIn = 'animate__zoomIn', animationOut = 'animate__zoomOut') {
-    const modalElement = document.getElementById(modalId);
-    const modal = new bootstrap.Modal(modalElement);
-    
-    modalElement.classList.add('animate__animated', animationIn);
-    modal.show();
-    
-    modalElement.addEventListener('hidden.bs.modal', function() {
-        modalElement.classList.remove('animate__animated', animationIn);
-        modalElement.classList.add('animate__animated', animationOut);
-        
-        setTimeout(() => {
-            modalElement.classList.remove('animate__animated', animationOut);
-        }, 300);
-    });
-}
-
 // Add event listeners for analytics
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize with fade in animation
-    document.body.classList.add('animate__animated', 'animate__fadeIn');
-    
-    setTimeout(() => {
-        document.body.classList.remove('animate__animated', 'animate__fadeIn');
-    }, 1000);
     // Overview chart type change
     const overviewChartType = document.getElementById('overviewChartType');
     if (overviewChartType) {
