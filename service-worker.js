@@ -1,5 +1,3 @@
-[file name]: service-worker.js
-[file content begin]
 const CACHE_NAME = 'wealth-command-cache-v10';
 const urlsToCache = [
   '/Wealth-Command/',
@@ -115,4 +113,3 @@ self.addEventListener('message', event => {
     self.skipWaiting();
   }
 });
-[file content end]
