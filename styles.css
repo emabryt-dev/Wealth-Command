@@ -1,3 +1,5 @@
+[file name]: styles.css
+[file content begin]
 body {
   background-color: #f8f9fa;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -1034,7 +1036,539 @@ footer {
   font-weight: bold;
 }
 
+/* Enhanced Dark Mode with Better Readability */
+body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
 
+body.dark-mode .navbar {
+  background-color: #1e1e1e !important;
+  border-bottom: 1px solid #2d2d2d;
+}
+
+body.dark-mode .card {
+  background-color: #1e1e1e;
+  border-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .breakdown-card {
+  background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+  border-color: #2d2d2d;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+body.dark-mode .income-card {
+  border-left: 4px solid #4caf50;
+  background: linear-gradient(135deg, #1e1e1e, #1b5e20);
+}
+
+body.dark-mode .expense-card {
+  border-left: 4px solid #f44336;
+  background: linear-gradient(135deg, #1e1e1e, #b71c1c);
+}
+
+body.dark-mode #fixedNavBar {
+  background: rgba(30, 30, 30, 0.95);
+  border-top: 1px solid #2d2d2d;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .nav-btn {
+  color: #b0b0b0;
+}
+
+body.dark-mode .nav-btn.active {
+  color: #64b5f6;
+}
+
+body.dark-mode .nav-btn.active small {
+  color: #64b5f6;
+}
+
+body.dark-mode .table-container thead th {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-bottom: 2px solid #3d3d3d;
+}
+
+body.dark-mode .table-hover tbody tr:hover {
+  background-color: rgba(255,255,255,0.05);
+}
+
+body.dark-mode .table-hover tbody tr:hover td {
+  background-color: rgba(255,255,255,0.05);
+}
+
+body.dark-mode .toast {
+  background: rgba(30, 30, 30, 0.95);
+  color: #e0e0e0;
+  border: 1px solid #2d2d2d;
+}
+
+body.dark-mode .rollover-balance {
+  background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+  border-left: 4px solid #64b5f6;
+}
+
+body.dark-mode .category-transaction-item:hover {
+  background-color: #2d2d2d;
+}
+
+body.dark-mode #transactionsTable td {
+  border-bottom: 1px solid #2d2d2d;
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-mode .table-container {
+  border-color: #2d2d2d;
+}
+
+body.dark-mode .category-income {
+  background-color: #1b5e20;
+  color: #a5d6a7;
+}
+
+body.dark-mode .category-expense {
+  background-color: #b71c1c;
+  color: #ef9a9a;
+}
+
+body.dark-mode #transactionsTable th:nth-child(1),
+body.dark-mode #transactionsTable td:nth-child(1) {
+  background: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .chart-card {
+  background: #1e1e1e;
+  border-color: #2d2d2d;
+}
+
+body.dark-mode .chart-header {
+  background: #2d2d2d;
+  border-color: #3d3d3d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .distribution-card {
+  background: #1e1e1e;
+  border-color: #2d2d2d;
+}
+
+body.dark-mode .distribution-card .card-header {
+  background: linear-gradient(135deg, #2d2d2d, #1e1e1e);
+  color: #e0e0e0;
+}
+
+body.dark-mode .distribution-card.income .card-header {
+  background: linear-gradient(135deg, #1b5e20, #2e7d32);
+  color: #e0e0e0;
+}
+
+body.dark-mode .distribution-card.expense .card-header {
+  background: linear-gradient(135deg, #b71c1c, #c62828);
+  color: #e0e0e0;
+}
+
+body.dark-mode .health-score-card,
+body.dark-mode .savings-rate-card,
+body.dark-mode .ai-recommendations-card {
+  background: #1e1e1e;
+  border-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .analytics-nav .nav-link {
+  color: #b0b0b0;
+  background: #2d2d2d;
+}
+
+body.dark-mode .analytics-nav .nav-link.active {
+  background: #64b5f6;
+  color: #121212;
+}
+
+body.dark-mode .risk-alert {
+  background: rgba(255,255,255,0.05);
+  color: #e0e0e0;
+}
+
+body.dark-mode .projection-item {
+  background: linear-gradient(135deg, #2d2d2d, #1e1e1e);
+}
+
+body.dark-mode .heat-map-day {
+  border-color: #3d3d3d;
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .heat-map-day:hover {
+  background-color: #3d3d3d;
+}
+
+body.dark-mode .comparison-controls {
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-mode .change-item {
+  background: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .ai-analysis-header {
+  background: linear-gradient(135deg, #2d2d2d, #1e1e1e);
+  color: #e0e0e0;
+}
+
+body.dark-mode .prediction-card {
+  background: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode footer {
+  background: #1e1e1e;
+  border-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background-color: #2d2d2d;
+  border-color: #3d3d3d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+  background-color: #2d2d2d;
+  border-color: #64b5f6;
+  color: #e0e0e0;
+  box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.25);
+}
+
+body.dark-mode .input-group-text {
+  background-color: #3d3d3d;
+  border-color: #3d3d3d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .modal-content {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: #2d2d2d;
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: #2d2d2d;
+}
+
+body.dark-mode .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+body.dark-mode .dropdown-menu {
+  background-color: #1e1e1e;
+  border-color: #2d2d2d;
+}
+
+body.dark-mode .dropdown-item {
+  color: #e0e0e0;
+}
+
+body.dark-mode .dropdown-item:hover {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .alert-info {
+  background-color: #01579b;
+  border-color: #0277bd;
+  color: #e1f5fe;
+}
+
+body.dark-mode .chart-placeholder {
+  color: #b0b0b0;
+}
+
+body.dark-mode .text-muted {
+  color: #9e9e9e !important;
+}
+
+body.dark-mode .planner-month-item,
+body.dark-mode .planner-item,
+body.dark-mode .debt-item,
+body.dark-mode .repayment-item {
+  background: #1e1e1e;
+  border-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .planner-month-item {
+  border-left-color: #64b5f6;
+}
+
+body.dark-mode .planner-item {
+  border-left-color: #757575;
+}
+
+body.dark-mode .debt-item {
+  border-left-color: #757575;
+}
+
+body.dark-mode .repayment-item {
+  border-left-color: #ffb300;
+}
+
+body.dark-mode .month-details-income-item,
+body.dark-mode .month-details-expense-item {
+  background: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .month-details-summary {
+  background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
+  color: #e0e0e0;
+}
+
+body.dark-mode .btn {
+  color: #e0e0e0;
+}
+
+body.dark-mode .btn-primary {
+  background: linear-gradient(135deg, #1976d2, #1565c0) !important;
+  border-color: #1976d2 !important;
+  color: white;
+}
+
+body.dark-mode .btn-secondary {
+  background-color: #424242;
+  border-color: #424242;
+  color: #e0e0e0;
+}
+
+body.dark-mode .btn-outline-primary {
+  color: #64b5f6;
+  border-color: #64b5f6;
+}
+
+body.dark-mode .btn-outline-primary:hover {
+  background-color: #64b5f6;
+  color: #121212;
+}
+
+body.dark-mode .btn-outline-secondary {
+  color: #9e9e9e;
+  border-color: #9e9e9e;
+}
+
+body.dark-mode .btn-outline-secondary:hover {
+  background-color: #9e9e9e;
+  color: #121212;
+}
+
+body.dark-mode .progress {
+  background-color: #2d2d2d;
+}
+
+body.dark-mode .progress-bar {
+  background-color: #64b5f6;
+}
+
+/* Enhanced text readability for dark mode */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6 {
+  color: #f5f5f5;
+}
+
+body.dark-mode .card-title {
+  color: #f5f5f5;
+}
+
+body.dark-mode .fw-bold {
+  color: #f5f5f5;
+}
+
+body.dark-mode .text-success {
+  color: #81c784 !important;
+}
+
+body.dark-mode .text-danger {
+  color: #e57373 !important;
+}
+
+body.dark-mode .text-warning {
+  color: #ffb74d !important;
+}
+
+body.dark-mode .text-info {
+  color: #4fc3f7 !important;
+}
+
+body.dark-mode .text-primary {
+  color: #64b5f6 !important;
+}
+
+/* Enhanced form readability */
+body.dark-mode .form-label {
+  color: #e0e0e0;
+}
+
+body.dark-mode .form-text {
+  color: #9e9e9e;
+}
+
+/* Enhanced table readability */
+body.dark-mode .table {
+  --bs-table-color: #e0e0e0;
+  --bs-table-bg: transparent;
+  --bs-table-border-color: #2d2d2d;
+}
+
+body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-accent-bg: rgba(255, 255, 255, 0.02);
+  color: var(--bs-table-color);
+}
+
+body.dark-mode .table-hover > tbody > tr:hover > * {
+  --bs-table-accent-bg: rgba(255, 255, 255, 0.05);
+  color: var(--bs-table-color);
+}
+
+/* Enhanced modal backdrop */
+body.dark-mode .modal-backdrop {
+  background-color: #000000;
+}
+
+body.dark-mode .modal-backdrop.show {
+  opacity: 0.7;
+}
+
+/* Enhanced dropdown readability */
+body.dark-mode .dropdown-divider {
+  border-color: #2d2d2d;
+}
+
+/* Enhanced list group items */
+body.dark-mode .list-group-item {
+  background-color: #1e1e1e;
+  border-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .list-group-item:hover {
+  background-color: #2d2d2d;
+}
+
+/* Enhanced alert colors for dark mode */
+body.dark-mode .alert-success {
+  background-color: #1b5e20;
+  border-color: #2e7d32;
+  color: #a5d6a7;
+}
+
+body.dark-mode .alert-danger {
+  background-color: #b71c1c;
+  border-color: #c62828;
+  color: #ef9a9a;
+}
+
+body.dark-mode .alert-warning {
+  background-color: #e65100;
+  border-color: #ef6c00;
+  color: #ffcc80;
+}
+
+/* Enhanced chart tooltips for dark mode */
+body.dark-mode .chartjs-tooltip {
+  background-color: #1e1e1e !important;
+  border: 1px solid #2d2d2d !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .chartjs-tooltip-key {
+  background-color: #e0e0e0 !important;
+}
+
+/* Debt Management Card Consistency */
+#tab-debt .card .card-body .row .col-6 .card,
+#tab-debt .card .card-body .row .col-md-3 .card {
+    height: 100%;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+}
+
+#tab-debt .card .card-body .row .col-6 .card .card-body,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+#tab-debt .card .card-body .row .col-6 .card .card-body > div,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body > div {
+    width: 100%;
+    text-align: center;
+}
+
+/* Ensure consistent icon sizing */
+#tab-debt .card .card-body .row .col-6 .card .card-body i,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body i {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Ensure consistent text sizing */
+#tab-debt .card .card-body .row .col-6 .card .card-body .fw-bold,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold {
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+}
+
+#tab-debt .card .card-body .row .col-6 .card .card-body small,
+#tab-debt .card .card-body .row .col-md-3 .card .card-body small {
+    font-size: 0.85rem;
+}
+
+/* Specific fix for the Net Position card */
+#netDebtPosition {
+    font-size: 1.4rem !important;
+    margin-bottom: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #tab-debt .card .card-body .row .col-6 .card,
+    #tab-debt .card .card-body .row .col-md-3 .card {
+        min-height: 100px;
+    }
+    
+    #tab-debt .card .card-body .row .col-6 .card .card-body i,
+    #tab-debt .card .card-body .row .col-md-3 .card .card-body i {
+        font-size: 1.5rem;
+    }
+    
+    #tab-debt .card .card-body .row .col-6 .card .card-body .fw-bold,
+    #tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold {
+        font-size: 1.2rem;
+    }
+}
 
 /* Responsive design */
 @media (max-width: 768px) {
@@ -1317,19 +1851,20 @@ footer {
 
 /* Dark mode support */
 body.dark-mode .planner-month-item {
-  background: #2d3748;
-  border-left-color: #63b3ed;
+  background: #1e1e1e;
+  border-left-color: #64b5f6;
 }
 
 body.dark-mode .planner-month-item:hover {
-  background: #4a5568;
+  background: #2d2d2d;
 }
 
 body.dark-mode .month-details-income-item,
 body.dark-mode .month-details-expense-item {
-  background: #4a5568;
+  background: #2d2d2d;
 }
 
 body.dark-mode .month-details-summary {
-  background: linear-gradient(135deg, #2d3748, #4a5568);
+  background: linear-gradient(135deg, #1e1e1e, #2d2d2d);
 }
+[file content end]
