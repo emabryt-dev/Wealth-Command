@@ -161,9 +161,9 @@ async function apiFirstStrategy(request) {
       return cachedResponse;
     }
     
-    // Return offline response
-    return new Response(JSON.stringify({ error: 'You are offline', code: 'OFFLINE' }), {
-      status: 503,
+    // Return empty success response instead of error
+    return new Response(JSON.stringify({ offline: true }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }
@@ -229,7 +229,7 @@ async function navigationStrategy(request) {
     }
   }
   
-  // For external navigation or if cache fails
+  // For external navigation or if cache fails, try network
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.status === 200) {
@@ -238,7 +238,9 @@ async function navigationStrategy(request) {
     }
     return networkResponse;
   } catch (error) {
-    return offlineFallback();
+    // If everything fails, return the main app instead of offline page
+    const cachedIndex = await cache.match('/Wealth-Command/index.html');
+    return cachedIndex || new Response('Wealth Command - Loading...');
   }
 }
 
@@ -258,101 +260,35 @@ async function staticAssetsStrategy(request) {
     }
     return networkResponse;
   } catch (error) {
-    // If all else fails, try to return index.html for HTML requests
-    if (request.destination === 'document') {
+    // If all else fails, return the main app for HTML requests
+    if (request.destination === 'document' || request.mode === 'navigate') {
       const fallback = await cache.match('/Wealth-Command/index.html');
       if (fallback) return fallback;
     }
     
     // For CSS/JS assets, return basic fallbacks
-    if (request.destination === 'style') {
-      return new Response('/* Fallback styles */', { 
+    if (request.destination === 'style' || request.url.endsWith('.css')) {
+      return new Response('', { 
         headers: { 'Content-Type': 'text/css' } 
       });
     }
     
-    if (request.destination === 'script') {
-      return new Response('// Fallback script', { 
+    if (request.destination === 'script' || request.url.endsWith('.js')) {
+      return new Response('', { 
         headers: { 'Content-Type': 'application/javascript' } 
       });
     }
     
-    throw error;
+    // Final fallback - return the main app
+    const fallback = await cache.match('/Wealth-Command/index.html');
+    return fallback || new Response('Wealth Command');
   }
 }
 
-async function offlineFallback() {
+async function serveAppAlways() {
   const cache = await caches.open(CACHE_NAME);
   const cachedIndex = await cache.match('/Wealth-Command/index.html');
-  
-  if (cachedIndex) {
-    return cachedIndex;
-  }
-  
-  return new Response(
-    `<!DOCTYPE html>
-    <html>
-      <head>
-        <title>Wealth Command - Offline</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            text-align: center; 
-            padding: 50px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-          }
-          .offline-container {
-            background: rgba(255,255,255,0.1);
-            padding: 2rem;
-            border-radius: 1rem;
-            backdrop-filter: blur(10px);
-            max-width: 400px;
-            width: 100%;
-          }
-          h1 { 
-            margin-bottom: 1rem; 
-            font-size: 1.5rem; 
-            font-weight: 600;
-          }
-          p { 
-            margin-bottom: 1.5rem; 
-            opacity: 0.9; 
-            line-height: 1.5;
-          }
-          .icon { 
-            font-size: 3rem; 
-            margin-bottom: 1rem; 
-          }
-          small {
-            opacity: 0.7;
-            font-size: 0.9rem;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="offline-container">
-          <div class="icon">📱</div>
-          <h1>You are offline</h1>
-          <p>Wealth Command will be available when you're back online.</p>
-          <small>Your financial data is safe and will sync automatically when connected.</small>
-        </div>
-      </body>
-    </html>`,
-    { 
-      headers: { 
-        'Content-Type': 'text/html',
-        'Cache-Control': 'no-cache'
-      } 
-    }
-  );
+  return cachedIndex || new Response('Wealth Command');
 }
 
 // Cache size management
