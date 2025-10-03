@@ -535,7 +535,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 300px;
+  max-height: 250px;
   overflow-y: auto;
 }
 
