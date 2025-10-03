@@ -818,40 +818,17 @@ function showSyncStatus(message, type) {
     }
 }
 
-// Enhanced Google API initialization with better error handling
-let googleAPIRetryCount = 0;
-const MAX_GOOGLE_RETRIES = 10;
-
-function initializeGoogleAPI() {
-    if (window.google && google.accounts && google.accounts.oauth2) {
-        console.log('Google API loaded successfully');
-        initGoogleAuth();
-        updateProfileUI();
-        return true;
-    } else {
-        googleAPIRetryCount++;
-        
-        if (googleAPIRetryCount <= MAX_GOOGLE_RETRIES) {
-            console.log(`Google API not loaded yet, retry ${googleAPIRetryCount}/${MAX_GOOGLE_RETRIES}`);
-            setTimeout(initializeGoogleAPI, 1000); // Increased to 1 second
-        } else {
-            console.error('Google API failed to load after maximum retries');
-            showSyncStatus('offline', 'Google Drive unavailable - working offline');
-            // Don't show error to user, just work offline gracefully
-        }
-        return false;
-    }
-}
-
-// Enhanced initGoogleAuth with better error recovery
+// Enhanced Google Auth initialization with better token handling
 function initGoogleAuth() {
     if (!window.google) {
         console.error('Google API not loaded');
+        showSyncStatus('error', 'Google authentication not available');
         return false;
     }
     
     if (!google.accounts || !google.accounts.oauth2) {
         console.error('Google OAuth2 not available');
+        showSyncStatus('error', 'Google authentication not available');
         return false;
     }
     
@@ -878,34 +855,25 @@ function initGoogleAuth() {
                     }
                     
                     // Auto-load data from Drive after sign-in
-                    try {
-                        const success = await loadDataFromDrive();
-                        if (!success) {
-                            // If load fails, sync local data to Drive
-                            await syncDataToDrive();
-                        }
-                    } catch (error) {
-                        console.error('Error during post-login sync:', error);
+                    const success = await loadDataFromDrive();
+                    if (!success) {
+                        // If load fails, sync local data to Drive
+                        await syncDataToDrive();
                     }
                 }
             },
             error_callback: (error) => {
                 console.error('Google Auth error:', error);
-                if (error.type === 'user_logged_out' || error.type === 'no_session_found') {
+                if (error.type === 'user_logged_out') {
                     googleUser = null;
                     localStorage.removeItem('googleUser');
                     updateProfileUI();
                     showSyncStatus('offline', 'Signed out from Google Drive');
-                } else if (error.type === 'access_denied') {
-                    // User cancelled the login
-                    showSyncStatus('offline', 'Google Drive sign-in cancelled');
                 } else {
-                    console.error('Google Sign-In failed:', error);
                     showSyncStatus('error', 'Google Sign-In failed');
                 }
             }
         });
-        console.log('Google Auth initialized successfully');
         return true;
     } catch (error) {
         console.error('Error initializing Google Auth:', error);
@@ -914,51 +882,17 @@ function initGoogleAuth() {
     }
 }
 
-// Enhanced showGoogleSignIn with better error handling
+// Profile Picture and Google Sign-In Functions
 function showGoogleSignIn() {
-    // Reset retry count when manually triggering sign-in
-    googleAPIRetryCount = 0;
-    
-    if (!window.google) {
-        console.log('Google API not loaded, initializing...');
-        initializeGoogleAPI();
-        
-        // Try again after initialization
-        setTimeout(() => {
-            if (window.google && googleAuth) {
-                googleAuth.requestAccessToken();
-            } else {
-                showSyncStatus('error', 'Google authentication not available');
-                console.error('Google authentication failed to initialize');
-            }
-        }, 2000);
-        return;
-    }
-    
-    if (!googleAuth) {
-        console.log('Google Auth not initialized, initializing...');
-        if (initGoogleAuth()) {
-            setTimeout(() => {
-                if (googleAuth) {
-                    googleAuth.requestAccessToken();
-                }
-            }, 500);
-        }
-        return;
-    }
-    
-    try {
+    if (googleAuth) {
         googleAuth.requestAccessToken();
-    } catch (error) {
-        console.error('Error requesting Google access token:', error);
-        showSyncStatus('error', 'Google sign-in failed');
-        
-        // Try to reinitialize on error
+    } else {
+        initGoogleAuth();
         setTimeout(() => {
-            if (initGoogleAuth() && googleAuth) {
+            if (googleAuth) {
                 googleAuth.requestAccessToken();
             }
-        }, 1000);
+        }, 500);
     }
 }
 
@@ -4437,28 +4371,15 @@ if (savedUser) {
     initializeApplicationData(); // Load from local storage
 }
 
-// Enhanced Google API initialization with better error handling
-let googleAPIRetryCount = 0;
-const MAX_GOOGLE_RETRIES = 10;
-
+// Enhanced Google API initialization that waits for the library
 function initializeGoogleAPI() {
     if (window.google && google.accounts && google.accounts.oauth2) {
-        console.log('Google API loaded successfully');
-        if (initGoogleAuth()) {
-            updateProfileUI();
-        }
-        return true;
+        initGoogleAuth();
+        updateProfileUI();
     } else {
-        googleAPIRetryCount++;
-        
-        if (googleAPIRetryCount <= MAX_GOOGLE_RETRIES) {
-            console.log(`Google API not loaded yet, retry ${googleAPIRetryCount}/${MAX_GOOGLE_RETRIES}`);
-            setTimeout(initializeGoogleAPI, 1000); // Increased to 1 second
-        } else {
-            console.log('Google API failed to load after maximum retries - working offline');
-            // Don't show error to user, just work offline gracefully
-        }
-        return false;
+        // Google API not loaded yet, try again
+        console.log('Google API not loaded yet, retrying...');
+        setTimeout(initializeGoogleAPI, 500);
     }
 }
 
