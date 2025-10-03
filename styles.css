@@ -1607,6 +1607,12 @@ body.dark-mode #tab-transactions .table-container {
 #netDebtPosition {
     font-size: 1.4rem !important;
     margin-bottom: 0.25rem;
+    color: #0d6efd !important;
+}
+
+/* Dark mode support */
+body.dark-mode #netDebtPosition {
+    color: #64b5f6 !important; /* Match dark mode primary color */
 }
 
 /* Responsive adjustments */
