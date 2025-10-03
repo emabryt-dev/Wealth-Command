@@ -85,40 +85,45 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const { request } = event;
+  const startTime = performance.now();
   
-  // Skip non-GET requests and browser extensions
+  // Skip non-GET requests
   if (request.method !== 'GET') return;
-  if (request.url.startsWith('chrome-extension://')) return;
-  if (request.url.startsWith('moz-extension://')) return;
-  
+
   const url = new URL(request.url);
 
-  // Strategy 1: Navigation requests - Network first with cache fallback
-  if (request.mode === 'navigate') {
-    event.respondWith(navigationStrategy(request));
-    return;
-  }
-
-  // Strategy 2: Google APIs - Network only (sensitive data)
+  // Strategy 1: Google APIs - Network only (sensitive data)
   if (url.origin.includes('googleapis.com') || url.origin.includes('accounts.google.com')) {
     event.respondWith(networkOnlyStrategy(request));
     return;
   }
 
-  // Strategy 3: API calls - Network first, then cache
+  // Strategy 2: API calls - Network first, then cache
   if (url.pathname.includes('/api/')) {
     event.respondWith(apiFirstStrategy(request));
     return;
   }
 
-  // Strategy 4: External CDN resources - Cache first, with update
+  // Strategy 3: External CDN resources - Cache first, with update
   if (url.origin.includes('cdn.jsdelivr.net')) {
     event.respondWith(cacheFirstStrategy(request));
     return;
   }
 
+  // Strategy 4: Navigation requests - Cache first, special handling for SPA
+  if (request.mode === 'navigate') {
+    event.respondWith(navigationStrategy(request));
+    return;
+  }
+
   // Strategy 5: Static assets - Cache first
   event.respondWith(staticAssetsStrategy(request));
+
+  // Performance monitoring
+  const duration = performance.now() - startTime;
+  if (duration > 1000) {
+    console.log(`Slow fetch: ${request.url} took ${duration.toFixed(2)}ms`);
+  }
 });
 
 // Strategy functions
@@ -166,25 +171,22 @@ async function apiFirstStrategy(request) {
 
 async function cacheFirstStrategy(request) {
   const cache = await caches.open(CACHE_NAME);
+  const cachedResponse = await cache.match(request);
   
+  if (cachedResponse) {
+    // Update cache in background
+    fetch(request).then(networkResponse => {
+      if (networkResponse.status === 200) {
+        cache.put(request, networkResponse);
+        enforceCacheSizeLimit(CACHE_NAME);
+      }
+    }).catch(() => {}); // Silent fail for background update
+    
+    return cachedResponse;
+  }
+  
+  // Not in cache, fetch from network
   try {
-    const cachedResponse = await cache.match(request);
-    
-    if (cachedResponse) {
-      // Update cache in background (silently fail if network fails)
-      fetch(request).then(networkResponse => {
-        if (networkResponse.status === 200) {
-          cache.put(request, networkResponse);
-          enforceCacheSizeLimit(CACHE_NAME);
-        }
-      }).catch(() => {
-        // Silent fail for background updates
-      });
-      
-      return cachedResponse;
-    }
-    
-    // Not in cache, fetch from network
     const networkResponse = await fetch(request);
     if (networkResponse.status === 200) {
       await cache.put(request, networkResponse.clone());
@@ -192,34 +194,17 @@ async function cacheFirstStrategy(request) {
     }
     return networkResponse;
   } catch (error) {
-    console.log('Cache first strategy failed:', request.url, error);
-    
-    // Return appropriate fallbacks for CDN resources
+    // Return generic fallback for CDN resources
     if (request.url.includes('bootstrap.min.css')) {
-      return new Response('/* Bootstrap CSS Fallback */', { 
+      return new Response('/* Fallback CSS - Bootstrap */', { 
         headers: { 'Content-Type': 'text/css' } 
       });
     }
-    
     if (request.url.includes('bootstrap.bundle.min.js')) {
-      return new Response('// Bootstrap JS Fallback', { 
+      return new Response('// Fallback JS - Bootstrap', { 
         headers: { 'Content-Type': 'application/javascript' } 
       });
     }
-    
-    if (request.url.includes('bootstrap-icons.css')) {
-      return new Response('/* Bootstrap Icons Fallback */', { 
-        headers: { 'Content-Type': 'text/css' } 
-      });
-    }
-    
-    if (request.url.includes('chart.js')) {
-      return new Response('// Chart.js Fallback', { 
-        headers: { 'Content-Type': 'application/javascript' } 
-      });
-    }
-    
-    // Re-throw for other errors
     throw error;
   }
 }
@@ -228,45 +213,23 @@ async function navigationStrategy(request) {
   const cache = await caches.open(CACHE_NAME);
   const url = new URL(request.url);
   
-  // Check if we're online first
-  try {
-    // Quick network check - try to fetch with short timeout
-    const networkTest = await Promise.race([
-      fetch(request, { signal: AbortSignal.timeout(2000) }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
-    ]);
-    
-    // If network is available, use network first
-    if (networkTest.status === 200) {
-      console.log('Online - serving fresh content');
-      return networkTest;
-    }
-  } catch (error) {
-    console.log('Offline or slow connection, using cache:', error.message);
-    // Continue to cache fallback
-  }
-  
-  // For SPA, serve index.html from cache for same-origin navigation
+  // For SPA, always serve index.html for same-origin navigation
   if (url.origin === self.location.origin) {
     const cachedIndex = await cache.match('/Wealth-Command/index.html');
     if (cachedIndex) {
-      console.log('Serving SPA from cache');
-      
-      // Background update when online
-      if (navigator.onLine) {
-        fetch(request).then(networkResponse => {
-          if (networkResponse.status === 200) {
-            cache.put(request, networkResponse);
-            enforceCacheSizeLimit(CACHE_NAME);
-          }
-        }).catch(() => {}); // Silent fail for background update
-      }
+      // Background update
+      fetch(request).then(networkResponse => {
+        if (networkResponse.status === 200) {
+          cache.put(request, networkResponse);
+          enforceCacheSizeLimit(CACHE_NAME);
+        }
+      }).catch(() => {});
       
       return cachedIndex;
     }
   }
   
-  // Final fallback - try network or offline page
+  // For external navigation or if cache fails
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.status === 200) {
@@ -275,166 +238,121 @@ async function navigationStrategy(request) {
     }
     return networkResponse;
   } catch (error) {
-    console.log('Final fallback to offline page');
     return offlineFallback();
   }
 }
 
 async function staticAssetsStrategy(request) {
   const cache = await caches.open(CACHE_NAME);
+  const cachedResponse = await cache.match(request);
+  
+  if (cachedResponse) {
+    return cachedResponse;
+  }
   
   try {
-    // Try cache first
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // Not in cache, try network
     const networkResponse = await fetch(request);
-    
-    // Only cache successful responses
     if (networkResponse.status === 200) {
       await cache.put(request, networkResponse.clone());
       await enforceCacheSizeLimit(CACHE_NAME);
     }
-    
     return networkResponse;
   } catch (error) {
-    console.log('Static asset fetch failed:', request.url, error);
-    
-    // Provide appropriate fallbacks based on request type
-    const url = new URL(request.url);
-    
-    // For same-origin requests, try index.html as fallback
-    if (url.origin === self.location.origin) {
+    // If all else fails, try to return index.html for HTML requests
+    if (request.destination === 'document') {
       const fallback = await cache.match('/Wealth-Command/index.html');
-      if (fallback) {
-        return fallback;
-      }
+      if (fallback) return fallback;
     }
     
-    // For CSS files, return empty stylesheet
-    if (request.destination === 'style' || request.url.endsWith('.css')) {
-      return new Response('/* Fallback CSS */', { 
-        headers: { 
-          'Content-Type': 'text/css',
-          'Cache-Control': 'no-cache'
-        } 
+    // For CSS/JS assets, return basic fallbacks
+    if (request.destination === 'style') {
+      return new Response('/* Fallback styles */', { 
+        headers: { 'Content-Type': 'text/css' } 
       });
     }
     
-    // For JS files, return empty script
-    if (request.destination === 'script' || request.url.endsWith('.js')) {
-      return new Response('// Fallback JavaScript', { 
-        headers: { 
-          'Content-Type': 'application/javascript',
-          'Cache-Control': 'no-cache'
-        } 
+    if (request.destination === 'script') {
+      return new Response('// Fallback script', { 
+        headers: { 'Content-Type': 'application/javascript' } 
       });
     }
     
-    // For images, return a transparent pixel
-    if (request.destination === 'image') {
-      const transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-      return fetch(transparentPixel);
-    }
-    
-    // For everything else, return a generic error response
-    return new Response('Resource not available offline', {
-      status: 404,
-      headers: { 'Content-Type': 'text/plain' }
-    });
+    throw error;
   }
 }
 
 async function offlineFallback() {
-  // Only show offline page if we're actually offline
-  if (!navigator.onLine) {
-    const cache = await caches.open(CACHE_NAME);
-    const cachedIndex = await cache.match('/Wealth-Command/index.html');
-    
-    if (cachedIndex) {
-      console.log('Truly offline - serving cached app');
-      return cachedIndex;
-    }
-    
-    // Only show the "You are offline" page as last resort
-    return new Response(
-      `<!DOCTYPE html>
-      <html>
-        <head>
-          <title>Wealth Command - Offline</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-              text-align: center; 
-              padding: 50px 20px;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              color: white;
-              min-height: 100vh;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: center;
-              margin: 0;
-            }
-            .offline-container {
-              background: rgba(255,255,255,0.1);
-              padding: 2rem;
-              border-radius: 1rem;
-              backdrop-filter: blur(10px);
-              max-width: 400px;
-              width: 100%;
-            }
-            h1 { 
-              margin-bottom: 1rem; 
-              font-size: 1.5rem; 
-              font-weight: 600;
-            }
-            p { 
-              margin-bottom: 1.5rem; 
-              opacity: 0.9; 
-              line-height: 1.5;
-            }
-            .icon { 
-              font-size: 3rem; 
-              margin-bottom: 1rem; 
-            }
-            small {
-              opacity: 0.7;
-              font-size: 0.9rem;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="offline-container">
-            <div class="icon">📱</div>
-            <h1>You are offline</h1>
-            <p>Wealth Command will be available when you're back online.</p>
-            <small>Your financial data is safe and will sync automatically when connected.</small>
-          </div>
-        </body>
-      </html>`,
-      { 
-        headers: { 
-          'Content-Type': 'text/html',
-          'Cache-Control': 'no-cache'
-        } 
-      }
-    );
-  } else {
-    // If we're online but something went wrong, try to fetch the main app
-    try {
-      return await fetch('/Wealth-Command/index.html');
-    } catch (error) {
-      // Last resort - return a simple error
-      return new Response('Application loading...', {
-        headers: { 'Content-Type': 'text/html' }
-      });
-    }
+  const cache = await caches.open(CACHE_NAME);
+  const cachedIndex = await cache.match('/Wealth-Command/index.html');
+  
+  if (cachedIndex) {
+    return cachedIndex;
   }
+  
+  return new Response(
+    `<!DOCTYPE html>
+    <html>
+      <head>
+        <title>Wealth Command - Offline</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            text-align: center; 
+            padding: 50px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+          }
+          .offline-container {
+            background: rgba(255,255,255,0.1);
+            padding: 2rem;
+            border-radius: 1rem;
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+            width: 100%;
+          }
+          h1 { 
+            margin-bottom: 1rem; 
+            font-size: 1.5rem; 
+            font-weight: 600;
+          }
+          p { 
+            margin-bottom: 1.5rem; 
+            opacity: 0.9; 
+            line-height: 1.5;
+          }
+          .icon { 
+            font-size: 3rem; 
+            margin-bottom: 1rem; 
+          }
+          small {
+            opacity: 0.7;
+            font-size: 0.9rem;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="offline-container">
+          <div class="icon">📱</div>
+          <h1>You are offline</h1>
+          <p>Wealth Command will be available when you're back online.</p>
+          <small>Your financial data is safe and will sync automatically when connected.</small>
+        </div>
+      </body>
+    </html>`,
+    { 
+      headers: { 
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache'
+      } 
+    }
+  );
 }
 
 // Cache size management
