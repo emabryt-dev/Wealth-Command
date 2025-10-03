@@ -1381,6 +1381,29 @@ body.dark-mode .progress-bar {
   background-color: #64b5f6;
 }
 
+/* Fix for calendar icon in Net Wealth card in dark mode */
+body.dark-mode .input-group-text {
+  background-color: #3d3d3d;
+  border-color: #3d3d3d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .input-group-text .bi-calendar {
+  color: #e0e0e0 !important;
+}
+
+/* Specifically target the calendar icon in the summary filter */
+body.dark-mode #summaryMonth + .input-group-text .bi,
+body.dark-mode #summaryYear + .input-group-text .bi {
+  color: #e0e0e0 !important;
+}
+
+/* Ensure all icons in input groups are visible in dark mode */
+body.dark-mode .input-group-text i,
+body.dark-mode .input-group-text .bi {
+  color: #e0e0e0 !important;
+}
+
 /* Enhanced text readability for dark mode */
 body.dark-mode h1,
 body.dark-mode h2,
