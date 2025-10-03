@@ -705,14 +705,19 @@ body {
 }
 
 /* Optimized Column Widths */
-#transactionsTable th:nth-child(1),
-#transactionsTable td:nth-child(1) {
-  width: 12%;
-  min-width: 80px;
+#transactionsTable thead th:nth-child(1) {
   position: sticky;
   left: 0;
+  z-index: 15; /* Higher z-index than the body cells */
   background: #f8f9fa;
+  border-right: 2px solid #dee2e6;
+}
+
+#transactionsTable td:nth-child(1) {
+  position: sticky;
+  left: 0;
   z-index: 5;
+  background: white;
   border-right: 2px solid #dee2e6;
 }
 
@@ -1141,10 +1146,15 @@ body.dark-mode .category-expense {
   color: #ef9a9a;
 }
 
-body.dark-mode #transactionsTable th:nth-child(1),
-body.dark-mode #transactionsTable td:nth-child(1) {
+body.dark-mode #transactionsTable thead th:nth-child(1) {
   background: #2d2d2d;
   color: #e0e0e0;
+  border-right: 2px solid #3d3d3d;
+}
+
+body.dark-mode #transactionsTable td:nth-child(1) {
+  background: #1e1e1e;
+  border-right: 2px solid #3d3d3d;
 }
 
 body.dark-mode .chart-card {
