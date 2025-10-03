@@ -13,7 +13,7 @@
   "display_override": ["window-controls-overlay", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
-  "orientation": "any",
+  "orientation": "portrait",
   "launch_handler": {
     "client_mode": "focus-existing"
   },
