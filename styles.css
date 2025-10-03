@@ -1540,6 +1540,15 @@ body.dark-mode .chartjs-tooltip-key {
   background-color: #e0e0e0 !important;
 }
 
+/* Fix for transactions card border in dark mode */
+body.dark-mode #tab-transactions .card {
+  border-color: #2d2d2d !important;
+}
+
+body.dark-mode #tab-transactions .table-container {
+  border-color: #2d2d2d !important;
+}
+
 /* Debt Management Card Consistency */
 #tab-debt .card .card-body .row .col-6 .card,
 #tab-debt .card .card-body .row .col-md-3 .card {
