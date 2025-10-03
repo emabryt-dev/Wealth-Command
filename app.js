@@ -4437,15 +4437,28 @@ if (savedUser) {
     initializeApplicationData(); // Load from local storage
 }
 
-// Enhanced Google API initialization that waits for the library
+// Enhanced Google API initialization with better error handling
+let googleAPIRetryCount = 0;
+const MAX_GOOGLE_RETRIES = 10;
+
 function initializeGoogleAPI() {
     if (window.google && google.accounts && google.accounts.oauth2) {
-        initGoogleAuth();
-        updateProfileUI();
+        console.log('Google API loaded successfully');
+        if (initGoogleAuth()) {
+            updateProfileUI();
+        }
+        return true;
     } else {
-        // Google API not loaded yet, try again
-        console.log('Google API not loaded yet, retrying...');
-        setTimeout(initializeGoogleAPI, 500);
+        googleAPIRetryCount++;
+        
+        if (googleAPIRetryCount <= MAX_GOOGLE_RETRIES) {
+            console.log(`Google API not loaded yet, retry ${googleAPIRetryCount}/${MAX_GOOGLE_RETRIES}`);
+            setTimeout(initializeGoogleAPI, 1000); // Increased to 1 second
+        } else {
+            console.log('Google API failed to load after maximum retries - working offline');
+            // Don't show error to user, just work offline gracefully
+        }
+        return false;
     }
 }
 
