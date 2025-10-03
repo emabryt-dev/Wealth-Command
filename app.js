@@ -818,7 +818,7 @@ function showSyncStatus(message, type) {
     }
 }
 
-// Enhanced Google Auth with better error handling
+// Enhanced Google Auth initialization with better token handling
 function initGoogleAuth() {
     if (!window.google) {
         console.error('Google API not loaded');
@@ -835,12 +835,16 @@ function initGoogleAuth() {
                     googleUser = {
                         access_token: tokenResponse.access_token,
                         expires_in: tokenResponse.expires_in,
-                        acquired_at: Date.now()
+                        acquired_at: Date.now(),
+                        scope: tokenResponse.scope
                     };
                     
                     localStorage.setItem('googleUser', JSON.stringify(googleUser));
                     showSyncStatus('success', 'Google Drive connected!');
                     updateProfileUI();
+
+                    // Setup auto-refresh for the token
+                    setupTokenAutoRefresh();
                     
                     // Auto-load data from Drive after sign-in
                     const success = await loadDataFromDrive();
@@ -1248,7 +1252,7 @@ function isTokenExpired(user) {
     
     const elapsed = Date.now() - user.acquired_at;
     const expiresIn = user.expires_in * 1000; // Convert to milliseconds
-    const buffer = 5 * 60 * 1000; // 5 minutes buffer
+    const buffer = 2 * 60 * 1000; // 2 minutes buffer
     
     return elapsed > (expiresIn - buffer);
 }
@@ -4201,33 +4205,48 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize tab state
     initTabState();
     
-    // Initialize Google Auth and sync
-    const savedUser = localStorage.getItem('googleUser');
-    if (savedUser) {
-        try {
-            googleUser = JSON.parse(savedUser);
-            const tokenAge = Date.now() - googleUser.acquired_at;
-            if (tokenAge > (googleUser.expires_in - 60) * 1000) {
-                localStorage.removeItem('googleUser');
-                googleUser = null;
-                showSyncStatus('offline', 'Session expired. Please sign in again.');
-            } else {
-                showSyncStatus('success', 'Google Drive connected');
-                loadDataFromDrive().then(success => {
-                    if (!success) {
-                        initializeApplicationData();
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error parsing saved user:', error);
+    // Enhanced saved user validation
+const savedUser = localStorage.getItem('googleUser');
+if (savedUser) {
+    try {
+        googleUser = JSON.parse(savedUser);
+        const tokenAge = Date.now() - googleUser.acquired_at;
+        const tokenLifetime = googleUser.expires_in * 1000;
+        
+        // Check if token is expired (with 2 minute buffer)
+        if (tokenAge > (tokenLifetime - (2 * 60 * 1000))) {
+            console.log('Token expired, clearing saved session');
             localStorage.removeItem('googleUser');
             googleUser = null;
-            showSyncStatus('offline', 'Error loading saved session');
+            showSyncStatus('offline', 'Session expired. Please sign in again.');
+        } else {
+            showSyncStatus('success', 'Google Drive connected');
+            // Calculate remaining time and set up auto-refresh
+            const remainingTime = tokenLifetime - tokenAge - (1 * 60 * 1000); // Refresh 1 min before expiry
+            if (remainingTime > 0) {
+                setTimeout(() => {
+                    if (googleUser && isOnline) {
+                        console.log('Auto-refreshing Google token');
+                        showGoogleSignIn();
+                    }
+                }, remainingTime);
+            }
+            
+            loadDataFromDrive().then(success => {
+                if (!success) {
+                    initializeApplicationData();
+                }
+            });
         }
-    } else {
-        showSyncStatus('offline', 'Sign in to sync with Google Drive');
+    } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('googleUser');
+        googleUser = null;
+        showSyncStatus('offline', 'Error loading saved session');
     }
+} else {
+    showSyncStatus('offline', 'Sign in to sync with Google Drive');
+}
     
     setTimeout(() => {
         initGoogleAuth();
@@ -4240,6 +4259,21 @@ document.addEventListener('DOMContentLoaded', function() {
             manualSyncBtn.addEventListener('click', manualSync);
         }
     }, 200);
+
+// Auto-refresh token before expiry
+function setupTokenAutoRefresh() {
+    if (googleUser && googleUser.expires_in) {
+        const refreshTime = (googleUser.expires_in - 300) * 1000; // Refresh 5 minutes before expiry
+        if (refreshTime > 0) {
+            setTimeout(() => {
+                if (googleUser && isOnline) {
+                    console.log('Refreshing Google token before expiry');
+                    showGoogleSignIn();
+                }
+            }, refreshTime);
+        }
+    }
+}
     
     // Start periodic sync
     startPeriodicSync();
