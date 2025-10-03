@@ -1257,7 +1257,7 @@ function isTokenExpired(user) {
     return elapsed > (expiresIn - buffer);
 }
 
-// Enhanced manual sync with better feedback
+// Enhanced manual sync with offline support
 async function manualSync() {
     if (!googleUser) {
         showGoogleSignIn();
@@ -1269,9 +1269,13 @@ async function manualSync() {
         return;
     }
     
-    const success = await syncDataToDrive();
-    if (success) {
-        showSyncStatus('success', 'Manual sync completed!');
+    try {
+        const success = await syncDataToDrive();
+        if (success) {
+            showSyncStatus('success', 'Manual sync completed!');
+        }
+    } catch (error) {
+        showSyncStatus('error', 'Sync failed - working offline');
     }
 }
 
@@ -1299,9 +1303,17 @@ window.addEventListener('online', () => {
     if (googleUser) {
         // Sync when coming back online
         setTimeout(() => {
-            syncDataToDrive();
+            syncDataToDrive().catch(error => {
+                console.log('Sync after reconnect failed:', error);
+                showSyncStatus('warning', 'Working offline - Sync failed');
+            });
         }, 2000);
     }
+});
+
+window.addEventListener('offline', () => {
+    isOnline = false;
+    showSyncStatus('warning', 'You are offline. Changes saved locally.');
 });
 
 window.addEventListener('offline', () => {
@@ -1309,15 +1321,56 @@ window.addEventListener('offline', () => {
     showSyncStatus('warning', 'You are offline. Changes will sync when back online.');
 });
 
-// Auto-sync function (debounced)
+// Enhanced auto-sync function - don't block if offline
 function autoSyncToDrive() {
     if (googleUser && isOnline) {
         // Debounce sync to avoid too many requests
         clearTimeout(window.syncTimeout);
         window.syncTimeout = setTimeout(() => {
-            syncDataToDrive();
-        }, 2000); // Sync after 2 seconds of inactivity
+            syncDataToDrive().catch(error => {
+                console.log('Sync failed, continuing offline:', error);
+            });
+        }, 2000);
     }
+    // If no Google user or offline, just continue - data is saved locally
+}
+
+// Modify all save functions to work offline first
+function saveTransactions(arr) {
+    transactions = arr;
+    localStorage.setItem('transactions', JSON.stringify(arr));
+    calculateMonthlyRollover();
+    autoSyncToDrive(); // Try to sync, but don't depend on it
+}
+
+function saveCategories(arr) {
+    categories = arr;
+    localStorage.setItem('categories', JSON.stringify(arr));
+    autoSyncToDrive();
+}
+
+function saveCurrency(val) {
+    currency = val;
+    localStorage.setItem("currency", val);
+    autoSyncToDrive();
+}
+
+function saveMonthlyBudgets(budgets) {
+    monthlyBudgets = ensureAllMonthsHaveBudgets(budgets);
+    localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
+    autoSyncToDrive();
+}
+
+function saveFutureTransactions(data) {
+    futureTransactions = data;
+    localStorage.setItem('futureTransactions', JSON.stringify(data));
+    autoSyncToDrive();
+}
+
+function saveLoans(data) {
+    loans = data;
+    localStorage.setItem('loans', JSON.stringify(data));
+    autoSyncToDrive();
 }
 
 // Periodic sync (every 5 minutes when online and authenticated)
@@ -4038,7 +4091,8 @@ document.getElementById('importFile').onchange = function(e) {
 // LocalStorage handlers with auto-sync
 function loadTransactions() {
     try {
-        return JSON.parse(localStorage.getItem('transactions')) || [];
+        const data = JSON.parse(localStorage.getItem('transactions'));
+        return Array.isArray(data) ? data : [];
     } catch {
         return [];
     }
@@ -4053,32 +4107,21 @@ function saveTransactions(arr) {
 
 function loadCategories() {
     try {
-        const cats = JSON.parse(localStorage.getItem('categories'));
-        if (Array.isArray(cats) && cats.length > 0) {
-            if (typeof cats[0] === 'string') {
-                const migratedCats = cats.map(name => ({
-                    name: name,
-                    type: 'expense'
-                }));
-                saveCategories(migratedCats);
-                return migratedCats;
-            }
-            return cats;
+        const data = JSON.parse(localStorage.getItem('categories'));
+        if (Array.isArray(data) && data.length > 0) {
+            return data;
         }
-        return [
-            { name: "Salary", type: "income" },
-            { name: "Food", type: "expense" },
-            { name: "Shopping", type: "expense" },
-            { name: "Utilities", type: "expense" }
-        ];
-    } catch {
-        return [
-            { name: "Salary", type: "income" },
-            { name: "Food", type: "expense" },
-            { name: "Shopping", type: "expense" },
-            { name: "Utilities", type: "expense" }
-        ];
+    } catch (error) {
+        console.error('Error loading categories:', error);
     }
+    
+    // Return default categories if none exist
+    return [
+        { name: "Salary", type: "income" },
+        { name: "Food", type: "expense" },
+        { name: "Shopping", type: "expense" },
+        { name: "Utilities", type: "expense" }
+    ];
 }
 
 function saveCategories(arr) {
@@ -4088,7 +4131,52 @@ function saveCategories(arr) {
 }
 
 function loadCurrency() {
-    return localStorage.getItem("currency");
+    return localStorage.getItem("currency") || "PKR";
+}
+
+function loadMonthlyBudgets() {
+    try {
+        const budgets = JSON.parse(localStorage.getItem('monthlyBudgets')) || {};
+        return ensureAllMonthsHaveBudgets(budgets);
+    } catch {
+        const budgets = {};
+        return ensureAllMonthsHaveBudgets(budgets);
+    }
+}
+
+function loadFutureTransactions() {
+    try {
+        const data = JSON.parse(localStorage.getItem('futureTransactions'));
+        if (data && data.income && data.expenses) {
+            return data;
+        }
+    } catch (error) {
+        console.error('Error loading future transactions:', error);
+    }
+    
+    return {
+        income: [],
+        expenses: []
+    };
+}
+
+function loadLoans() {
+    try {
+        const data = JSON.parse(localStorage.getItem('loans'));
+        if (data && data.given && data.taken) {
+            // Update loan statuses
+            data.given.forEach(loan => loan.status = DebtEngine.getLoanStatus(loan));
+            data.taken.forEach(loan => loan.status = DebtEngine.getLoanStatus(loan));
+            return data;
+        }
+    } catch (error) {
+        console.error('Error loading loans:', error);
+    }
+    
+    return {
+        given: [],
+        taken: []
+    };
 }
 
 function saveCurrency(val) {
@@ -4206,6 +4294,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initTabState();
     
     // Enhanced saved user validation
+// Enhanced initialization - Offline First approach
 const savedUser = localStorage.getItem('googleUser');
 if (savedUser) {
     try {
@@ -4215,10 +4304,11 @@ if (savedUser) {
         
         // Check if token is expired (with 2 minute buffer)
         if (tokenAge > (tokenLifetime - (2 * 60 * 1000))) {
-            console.log('Token expired, clearing saved session');
+            console.log('Token expired, working offline');
             localStorage.removeItem('googleUser');
             googleUser = null;
-            showSyncStatus('offline', 'Session expired. Please sign in again.');
+            showSyncStatus('warning', 'Working offline - Sign in to sync');
+            initializeApplicationData(); // Load from local storage
         } else {
             showSyncStatus('success', 'Google Drive connected');
             // Calculate remaining time and set up auto-refresh
@@ -4232,33 +4322,41 @@ if (savedUser) {
                 }, remainingTime);
             }
             
+            // Try to load from Drive, but fall back to local storage
             loadDataFromDrive().then(success => {
                 if (!success) {
+                    console.log('Failed to load from Drive, using local data');
                     initializeApplicationData();
                 }
+            }).catch(error => {
+                console.log('Error loading from Drive, using local data', error);
+                initializeApplicationData();
             });
         }
     } catch (error) {
         console.error('Error parsing saved user:', error);
         localStorage.removeItem('googleUser');
         googleUser = null;
-        showSyncStatus('offline', 'Error loading saved session');
+        showSyncStatus('warning', 'Working offline');
+        initializeApplicationData(); // Load from local storage
     }
 } else {
-    showSyncStatus('offline', 'Sign in to sync with Google Drive');
+    // No Google auth - work offline with local storage
+    showSyncStatus('offline', 'Working offline - Sign in to sync');
+    initializeApplicationData(); // Load from local storage
 }
-    
-    setTimeout(() => {
-        initGoogleAuth();
-        updateProfileUI();
-    }, 100);
-    
-    setTimeout(() => {
-        const manualSyncBtn = document.getElementById('manualSyncSettings');
-        if (manualSyncBtn) {
-            manualSyncBtn.addEventListener('click', manualSync);
-        }
-    }, 200);
+
+setTimeout(() => {
+    initGoogleAuth();
+    updateProfileUI();
+}, 100);
+
+setTimeout(() => {
+    const manualSyncBtn = document.getElementById('manualSyncSettings');
+    if (manualSyncBtn) {
+        manualSyncBtn.addEventListener('click', manualSync);
+    }
+}, 200);
 
 // Auto-refresh token before expiry
 function setupTokenAutoRefresh() {
