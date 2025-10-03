@@ -1257,6 +1257,21 @@ function isTokenExpired(user) {
     return elapsed > (expiresIn - buffer);
 }
 
+// Auto-refresh token before expiry
+function setupTokenAutoRefresh() {
+    if (googleUser && googleUser.expires_in) {
+        const refreshTime = (googleUser.expires_in - 300) * 1000; // Refresh 5 minutes before expiry
+        if (refreshTime > 0) {
+            setTimeout(() => {
+                if (googleUser && isOnline) {
+                    console.log('Refreshing Google token before expiry');
+                    showGoogleSignIn();
+                }
+            }, refreshTime);
+        }
+    }
+}
+
 // Enhanced manual sync with offline support
 async function manualSync() {
     if (!googleUser) {
