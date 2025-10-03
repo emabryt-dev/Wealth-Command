@@ -1,4 +1,3 @@
-service-worker.js
 const CACHE_NAME = 'wealth-command-cache-v7';
 const API_CACHE_NAME = 'wealth-command-api-cache-v2';
 const MAX_CACHE_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
