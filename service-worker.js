@@ -85,7 +85,6 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const { request } = event;
-  const startTime = performance.now();
   
   // Skip non-GET requests and browser extensions
   if (request.method !== 'GET') return;
@@ -94,43 +93,32 @@ self.addEventListener('fetch', event => {
   
   const url = new URL(request.url);
 
-  try {
-    // Strategy 1: Google APIs - Network only (sensitive data)
-    if (url.origin.includes('googleapis.com') || url.origin.includes('accounts.google.com')) {
-      event.respondWith(networkOnlyStrategy(request));
-      return;
-    }
-
-    // Strategy 2: API calls - Network first, then cache
-    if (url.pathname.includes('/api/')) {
-      event.respondWith(apiFirstStrategy(request));
-      return;
-    }
-
-    // Strategy 3: External CDN resources - Cache first, with update
-    if (url.origin.includes('cdn.jsdelivr.net')) {
-      event.respondWith(cacheFirstStrategy(request));
-      return;
-    }
-
-    // Strategy 4: Navigation requests - Cache first, special handling for SPA
-    if (request.mode === 'navigate') {
-      event.respondWith(navigationStrategy(request));
-      return;
-    }
-
-    // Strategy 5: Static assets - Cache first
-    event.respondWith(staticAssetsStrategy(request));
-
-    // Performance monitoring
-    const duration = performance.now() - startTime;
-    if (duration > 1000) {
-      console.log(`Slow fetch: ${request.url} took ${duration.toFixed(2)}ms`);
-    }
-  } catch (error) {
-    console.error('Fetch event error:', error);
-    // Let the browser handle the request normally
+  // Strategy 1: Navigation requests - Network first with cache fallback
+  if (request.mode === 'navigate') {
+    event.respondWith(navigationStrategy(request));
+    return;
   }
+
+  // Strategy 2: Google APIs - Network only (sensitive data)
+  if (url.origin.includes('googleapis.com') || url.origin.includes('accounts.google.com')) {
+    event.respondWith(networkOnlyStrategy(request));
+    return;
+  }
+
+  // Strategy 3: API calls - Network first, then cache
+  if (url.pathname.includes('/api/')) {
+    event.respondWith(apiFirstStrategy(request));
+    return;
+  }
+
+  // Strategy 4: External CDN resources - Cache first, with update
+  if (url.origin.includes('cdn.jsdelivr.net')) {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+
+  // Strategy 5: Static assets - Cache first
+  event.respondWith(staticAssetsStrategy(request));
 });
 
 // Strategy functions
@@ -240,23 +228,45 @@ async function navigationStrategy(request) {
   const cache = await caches.open(CACHE_NAME);
   const url = new URL(request.url);
   
-  // For SPA, always serve index.html for same-origin navigation
+  // Check if we're online first
+  try {
+    // Quick network check - try to fetch with short timeout
+    const networkTest = await Promise.race([
+      fetch(request, { signal: AbortSignal.timeout(2000) }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+    ]);
+    
+    // If network is available, use network first
+    if (networkTest.status === 200) {
+      console.log('Online - serving fresh content');
+      return networkTest;
+    }
+  } catch (error) {
+    console.log('Offline or slow connection, using cache:', error.message);
+    // Continue to cache fallback
+  }
+  
+  // For SPA, serve index.html from cache for same-origin navigation
   if (url.origin === self.location.origin) {
     const cachedIndex = await cache.match('/Wealth-Command/index.html');
     if (cachedIndex) {
-      // Background update
-      fetch(request).then(networkResponse => {
-        if (networkResponse.status === 200) {
-          cache.put(request, networkResponse);
-          enforceCacheSizeLimit(CACHE_NAME);
-        }
-      }).catch(() => {});
+      console.log('Serving SPA from cache');
+      
+      // Background update when online
+      if (navigator.onLine) {
+        fetch(request).then(networkResponse => {
+          if (networkResponse.status === 200) {
+            cache.put(request, networkResponse);
+            enforceCacheSizeLimit(CACHE_NAME);
+          }
+        }).catch(() => {}); // Silent fail for background update
+      }
       
       return cachedIndex;
     }
   }
   
-  // For external navigation or if cache fails
+  // Final fallback - try network or offline page
   try {
     const networkResponse = await fetch(request);
     if (networkResponse.status === 200) {
@@ -265,6 +275,7 @@ async function navigationStrategy(request) {
     }
     return networkResponse;
   } catch (error) {
+    console.log('Final fallback to offline page');
     return offlineFallback();
   }
 }
@@ -338,77 +349,92 @@ async function staticAssetsStrategy(request) {
 }
 
 async function offlineFallback() {
-  const cache = await caches.open(CACHE_NAME);
-  const cachedIndex = await cache.match('/Wealth-Command/index.html');
-  
-  if (cachedIndex) {
-    return cachedIndex;
-  }
-  
-  return new Response(
-    `<!DOCTYPE html>
-    <html>
-      <head>
-        <title>Wealth Command - Offline</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            text-align: center; 
-            padding: 50px 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-          }
-          .offline-container {
-            background: rgba(255,255,255,0.1);
-            padding: 2rem;
-            border-radius: 1rem;
-            backdrop-filter: blur(10px);
-            max-width: 400px;
-            width: 100%;
-          }
-          h1 { 
-            margin-bottom: 1rem; 
-            font-size: 1.5rem; 
-            font-weight: 600;
-          }
-          p { 
-            margin-bottom: 1.5rem; 
-            opacity: 0.9; 
-            line-height: 1.5;
-          }
-          .icon { 
-            font-size: 3rem; 
-            margin-bottom: 1rem; 
-          }
-          small {
-            opacity: 0.7;
-            font-size: 0.9rem;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="offline-container">
-          <div class="icon">📱</div>
-          <h1>You are offline</h1>
-          <p>Wealth Command will be available when you're back online.</p>
-          <small>Your financial data is safe and will sync automatically when connected.</small>
-        </div>
-      </body>
-    </html>`,
-    { 
-      headers: { 
-        'Content-Type': 'text/html',
-        'Cache-Control': 'no-cache'
-      } 
+  // Only show offline page if we're actually offline
+  if (!navigator.onLine) {
+    const cache = await caches.open(CACHE_NAME);
+    const cachedIndex = await cache.match('/Wealth-Command/index.html');
+    
+    if (cachedIndex) {
+      console.log('Truly offline - serving cached app');
+      return cachedIndex;
     }
-  );
+    
+    // Only show the "You are offline" page as last resort
+    return new Response(
+      `<!DOCTYPE html>
+      <html>
+        <head>
+          <title>Wealth Command - Offline</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+              text-align: center; 
+              padding: 50px 20px;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              min-height: 100vh;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              margin: 0;
+            }
+            .offline-container {
+              background: rgba(255,255,255,0.1);
+              padding: 2rem;
+              border-radius: 1rem;
+              backdrop-filter: blur(10px);
+              max-width: 400px;
+              width: 100%;
+            }
+            h1 { 
+              margin-bottom: 1rem; 
+              font-size: 1.5rem; 
+              font-weight: 600;
+            }
+            p { 
+              margin-bottom: 1.5rem; 
+              opacity: 0.9; 
+              line-height: 1.5;
+            }
+            .icon { 
+              font-size: 3rem; 
+              margin-bottom: 1rem; 
+            }
+            small {
+              opacity: 0.7;
+              font-size: 0.9rem;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="offline-container">
+            <div class="icon">📱</div>
+            <h1>You are offline</h1>
+            <p>Wealth Command will be available when you're back online.</p>
+            <small>Your financial data is safe and will sync automatically when connected.</small>
+          </div>
+        </body>
+      </html>`,
+      { 
+        headers: { 
+          'Content-Type': 'text/html',
+          'Cache-Control': 'no-cache'
+        } 
+      }
+    );
+  } else {
+    // If we're online but something went wrong, try to fetch the main app
+    try {
+      return await fetch('/Wealth-Command/index.html');
+    } catch (error) {
+      // Last resort - return a simple error
+      return new Response('Application loading...', {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+  }
 }
 
 // Cache size management
