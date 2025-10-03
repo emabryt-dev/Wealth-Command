@@ -823,7 +823,13 @@ function initGoogleAuth() {
     if (!window.google) {
         console.error('Google API not loaded');
         showSyncStatus('error', 'Google authentication not available');
-        return;
+        return false;
+    }
+    
+    if (!google.accounts || !google.accounts.oauth2) {
+        console.error('Google OAuth2 not available');
+        showSyncStatus('error', 'Google authentication not available');
+        return false;
     }
     
     try {
@@ -842,9 +848,11 @@ function initGoogleAuth() {
                     localStorage.setItem('googleUser', JSON.stringify(googleUser));
                     showSyncStatus('success', 'Google Drive connected!');
                     updateProfileUI();
-
+                    
                     // Setup auto-refresh for the token
-                    setupTokenAutoRefresh();
+                    if (typeof setupTokenAutoRefresh === 'function') {
+                        setupTokenAutoRefresh();
+                    }
                     
                     // Auto-load data from Drive after sign-in
                     const success = await loadDataFromDrive();
@@ -866,9 +874,11 @@ function initGoogleAuth() {
                 }
             }
         });
+        return true;
     } catch (error) {
         console.error('Error initializing Google Auth:', error);
         showSyncStatus('error', 'Failed to initialize Google authentication');
+        return false;
     }
 }
 
@@ -4361,10 +4371,20 @@ if (savedUser) {
     initializeApplicationData(); // Load from local storage
 }
 
-setTimeout(() => {
-    initGoogleAuth();
-    updateProfileUI();
-}, 100);
+// Enhanced Google API initialization that waits for the library
+function initializeGoogleAPI() {
+    if (window.google && google.accounts && google.accounts.oauth2) {
+        initGoogleAuth();
+        updateProfileUI();
+    } else {
+        // Google API not loaded yet, try again
+        console.log('Google API not loaded yet, retrying...');
+        setTimeout(initializeGoogleAPI, 500);
+    }
+}
+
+// Start the initialization
+setTimeout(initializeGoogleAPI, 100);
 
 setTimeout(() => {
     const manualSyncBtn = document.getElementById('manualSyncSettings');
