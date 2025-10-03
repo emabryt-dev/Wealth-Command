@@ -1472,6 +1472,30 @@ body.dark-mode .list-group-item:hover {
   background-color: #2d2d2d;
 }
 
+/* Fix for dark mode table headers in transactions tab */
+body.dark-mode #transactionsTable thead th {
+  background-color: #2d2d2d !important;
+  color: #e0e0e0 !important;
+  border-bottom: 2px solid #3d3d3d !important;
+}
+
+body.dark-mode #transactionsTable th:nth-child(1),
+body.dark-mode #transactionsTable td:nth-child(1) {
+  background: #2d2d2d;
+  color: #e0e0e0;
+  border-right: 2px solid #3d3d3d;
+}
+
+/* Ensure all table headers in dark mode have consistent styling */
+body.dark-mode #transactionsTable th:nth-child(2),
+body.dark-mode #transactionsTable th:nth-child(3),
+body.dark-mode #transactionsTable th:nth-child(4),
+body.dark-mode #transactionsTable th:nth-child(5),
+body.dark-mode #transactionsTable th:nth-child(6) {
+  background-color: #2d2d2d !important;
+  color: #e0e0e0 !important;
+}
+
 /* Enhanced alert colors for dark mode */
 body.dark-mode .alert-success {
   background-color: #1b5e20;
