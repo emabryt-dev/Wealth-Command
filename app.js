@@ -4106,10 +4106,8 @@ document.getElementById('darkModeToggle').addEventListener('click', function() {
     
     if (document.body.classList.contains('dark-mode')) {
         localStorage.setItem('theme', 'dark');
-        showToast('Dark mode enabled', 'info');
     } else {
         localStorage.setItem('theme', 'light');
-        showToast('Light mode enabled', 'info');
     }
 });
 
