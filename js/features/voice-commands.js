@@ -18,7 +18,7 @@ class VoiceCommandManager {
 
         this.setupSpeechRecognition();
         this.registerDefaultCommands();
-        this.setupVoiceInterface();
+        // The setupVoiceInterface() is no longer needed as the HTML is static
     }
 
     setupSpeechRecognition() {
@@ -29,7 +29,6 @@ class VoiceCommandManager {
         this.recognition.interimResults = true;
         this.recognition.lang = 'en-US';
         this.recognition.maxAlternatives = 1;
-
         this.recognition.onstart = () => {
             this.isListening = true;
             this.onListeningStart();
@@ -38,15 +37,42 @@ class VoiceCommandManager {
         this.recognition.onresult = (event) => {
             this.handleRecognitionResult(event);
         };
-
         this.recognition.onerror = (event) => {
             this.handleRecognitionError(event);
         };
-
         this.recognition.onend = () => {
             this.isListening = false;
             this.onListeningEnd();
         };
+    }
+
+    // --- REMOVED SECTION ---
+    // The setupVoiceInterface() and createVoiceInterface() methods were removed
+    // because the HTML is now part of the main index.html file.
+
+    // Public methods
+    showInterface() {
+        const interfaceEl = document.getElementById('voiceInterface');
+        if (interfaceEl) {
+            interfaceEl.classList.remove('d-none');
+            // Assuming an animation manager exists for a smooth entry
+            window.animationManager?.animateToastShow(interfaceEl);
+        }
+    }
+
+    hideInterface() {
+        const interfaceEl = document.getElementById('voiceInterface');
+        if (interfaceEl) {
+            // Assuming an animation manager exists for a smooth exit
+            window.animationManager?.animateToastHide(interfaceEl);
+            setTimeout(() => {
+                interfaceEl.classList.add('d-none');
+            }, 300);
+        }
+        
+        if (this.isListening) {
+            this.stopListening();
+        }
     }
 
     registerDefaultCommands() {
