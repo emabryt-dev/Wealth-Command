@@ -122,18 +122,18 @@ class AnalyticsEngine {
     }
 
     calculateDebtToIncomeRatio(transactions) {
-        const totalIncome = transactions
-            .filter(tx => tx.type === 'income')
-            .reduce((sum, tx) => sum + tx.amount, 0);
+    const totalIncome = transactions
+        .filter(tx => tx.type === 'income')
+        .reduce((sum, tx) => sum + tx.amount, 0);
 
-        const debtPayments = transactions
-            .filter(tx => tx.type === 'expense' && 
-                         tx.category.toLowerCase().includes('loan') ||
-                         tx.category.toLowerCase().includes('debt'))
-            .reduce((sum, tx) => sum + tx.amount, 0);
+    // Ensure correct precedence: treat both category checks under expense
+    const debtPayments = transactions
+        .filter(tx => tx.type === 'expense' &&
+            (tx.category && (tx.category.toLowerCase().includes('loan') || tx.category.toLowerCase().includes('debt'))))
+        .reduce((sum, tx) => sum + tx.amount, 0);
 
-        return totalIncome > 0 ? debtPayments / totalIncome : 0;
-    }
+    return totalIncome > 0 ? debtPayments / totalIncome : 0;
+}
 
     // Advanced Analytics Methods
     analyzeSpendingPatterns(transactions, timeframe = '1m') {
