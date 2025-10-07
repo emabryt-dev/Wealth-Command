@@ -12,6 +12,68 @@ class PlannerManager {
         this.renderFutureTransactions();
     }
 
+    // --- REFACTORED MODAL METHOD ---
+    showFutureTransactionModal(transactionData, title) {
+        const modalId = 'futureTransactionModal';
+        const formId = 'futureTransactionForm';
+
+        const formHTML = `
+            <form id="${formId}" autocomplete="off">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="future-desc" class="form-label">Description</label>
+                        <input type="text" name="description" id="future-desc" class="form-control" value="${this.escapeHTML(transactionData.description || '')}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="future-type" class="form-label">Type</label>
+                        <select name="type" id="future-type" class="form-select" required>
+                            ${this.getTypeOptions(this.editType, transactionData.type)}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="future-amount" class="form-label">Amount</label>
+                        <input type="number" name="amount" id="future-amount" class="form-control" step="0.01" min="0.01" value="${transactionData.amount || ''}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="future-frequency" class="form-label">Frequency</label>
+                        <select name="frequency" id="future-frequency" class="form-select" required>
+                            <option value="one-time" ${transactionData.frequency === 'one-time' ? 'selected' : ''}>One-time</option>
+                            <option value="monthly" ${transactionData.frequency === 'monthly' ? 'selected' : ''}>Monthly</option>
+                            <option value="quarterly" ${transactionData.frequency === 'quarterly' ? 'selected' : ''}>Quarterly</option>
+                            <option value="yearly" ${transactionData.frequency === 'yearly' ? 'selected' : ''}>Yearly</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="future-start-date" class="form-label">Start Date</label>
+                        <input type="date" name="startDate" id="future-start-date" class="form-control" value="${transactionData.startDate || new Date().toISOString().split('T')[0]}" required>
+                    </div>
+                    <div class="col-12">
+                        <label for="future-end-date" class="form-label">End Date (Optional)</label>
+                        <input type="date" name="endDate" id="future-end-date" class="form-control" value="${transactionData.endDate || ''}">
+                        <div class="form-text">Leave empty for ongoing transactions</div>
+                    </div>
+                    <div class="col-12">
+                        <div id="futureTransactionFormAlert" class="alert alert-danger d-none"></div>
+                    </div>
+                </div>
+            </form>
+        `;
+
+        const modal = window.modalManager.showCustomModal(modalId, formHTML, { title });
+        
+        const footer = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="save-future-transaction-btn">
+                ${this.currentEditId ? 'Update' : 'Add'}
+            </button>
+        `;
+        modal.element.querySelector('.modal-body').insertAdjacentHTML('afterend', `<div class="modal-footer">${footer}</div>`);
+        
+        modal.element.querySelector('#save-future-transaction-btn').addEventListener('click', () => {
+            this.saveFutureTransaction();
+        });
+    }
+
     setupEventListeners() {
         // Timeframe buttons
         document.querySelectorAll('.planner-timeframe-btn').forEach(btn => {
