@@ -443,7 +443,8 @@ class ModalManager {
             this.currentModal.instance.hide();
         }
     }
-
+)
+    
     // Create global modal manager instance
 window.modalManager = new ModalManager();
 
