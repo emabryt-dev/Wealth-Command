@@ -88,7 +88,7 @@ class SyncEngine {
 
     async loadGoogleAuth() {
         if (!window.google) {
-            console.warn('Google API not loaded');
+            if (window.debugMode) console.warn("Google API not loaded");
             return false;
         }
 
