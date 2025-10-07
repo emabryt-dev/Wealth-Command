@@ -157,13 +157,13 @@ class VoiceCommandManager {
     }
 
     // Public methods
-    showInterface() {
-        const interface = document.getElementById('voiceInterface');
-        if (interface) {
-            interface.classList.remove('d-none');
-            window.animationManager?.animateToastShow(interface);
-        }
+showInterface() {
+    const voiceUI = document.getElementById('voiceInterface');
+    if (voiceUI) {
+        voiceUI.classList.remove('d-none');
+        window.animationManager?.animateToastShow(voiceUI);
     }
+}
 
     hideInterface() {
         const interface = document.getElementById('voiceInterface');
