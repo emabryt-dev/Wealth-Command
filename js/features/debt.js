@@ -6,9 +6,98 @@ class DebtManager {
 
     async init() {
         if (this.initialized) return;
-
         this.setupEventListeners();
         this.initialized = true;
+    }
+
+    // --- REFACTORED MODAL METHODS ---
+
+    async showAddDebtModal(type) {
+        const title = type === 'given' ? 'Add Loan Given' : 'Add Loan Taken';
+        const formId = 'debtForm';
+        const formHTML = `
+            <form id="${formId}">
+                <input type="hidden" name="type" value="${type}">
+                <div class="mb-3">
+                    <label class="form-label">${type === 'given' ? 'Borrower Name' : 'Lender Name'}</label>
+                    <input type="text" class="form-control" name="${type === 'given' ? 'borrower' : 'lender'}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Amount</label>
+                    <input type="number" class="form-control" name="amount" step="0.01" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description (Optional)</label>
+                    <textarea class="form-control" name="description" rows="2"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-6">
+                        <label class="form-label">${type === 'given' ? 'Date Given' : 'Date Taken'}</label>
+                        <input type="date" class="form-control" name="${type === 'given' ? 'dateGiven' : 'dateTaken'}" value="${new Date().toISOString().split('T')[0]}" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">${type === 'given' ? 'Expected Return' : 'Due Date'}</label>
+                        <input type="date" class="form-control" name="${type === 'given' ? 'expectedReturn' : 'dueDate'}">
+                    </div>
+                </div>
+            </form>
+        `;
+        
+        const modal = window.modalManager.showCustomModal('addDebtModal', formHTML, { title });
+        
+        const footer = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="saveDebtBtn">Save</button>
+        `;
+        modal.element.querySelector('.modal-body').insertAdjacentHTML('afterend', `<div class="modal-footer">${footer}</div>`);
+
+        modal.element.querySelector('#saveDebtBtn').addEventListener('click', () => {
+            this.submitDebtForm();
+            window.modalManager.hideCustomModal('addDebtModal');
+        });
+    }
+
+    async showAddPaymentModal(debtId) {
+        const result = this.findLoanById(debtId);
+        if (!result) return;
+
+        const { loan } = result;
+        const remaining = this.getRemainingAmount(loan);
+        const currency = window.stateManager?.state.currency || 'PKR';
+        const formId = 'paymentForm';
+        const formHTML = `
+             <div class="alert alert-info">
+                <strong>Remaining:</strong> ${remaining.toLocaleString()} ${currency}
+            </div>
+            <form id="${formId}">
+                <input type="hidden" name="debtId" value="${debtId}">
+                <div class="mb-3">
+                    <label class="form-label">Payment Amount</label>
+                    <input type="number" class="form-control" name="amount" step="0.01" max="${remaining}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Payment Date</label>
+                    <input type="date" class="form-control" name="date" value="${new Date().toISOString().split('T')[0]}" required>
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Note (Optional)</label>
+                    <textarea class="form-control" name="note" rows="2"></textarea>
+                </div>
+            </form>
+        `;
+        
+        const modal = window.modalManager.showCustomModal('addPaymentModal', formHTML, { title: 'Add Payment' });
+
+        const footer = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="savePaymentBtn">Add Payment</button>
+        `;
+        modal.element.querySelector('.modal-body').insertAdjacentHTML('afterend', `<div class="modal-footer">${footer}</div>`);
+
+        modal.element.querySelector('#savePaymentBtn').addEventListener('click', () => {
+            this.submitPaymentForm();
+            window.modalManager.hideCustomModal('addPaymentModal');
+        });
     }
 
     setupEventListeners() {
