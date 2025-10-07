@@ -449,7 +449,7 @@ window.modalManager = new ModalManager();
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.modalManager.init();
-});
+};
 
 // Global helper functions
 window.showConfirmationModal = (title, message, onConfirm, confirmText = 'Confirm', confirmType = 'danger') => {
