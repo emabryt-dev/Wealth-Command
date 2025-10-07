@@ -6,28 +6,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#4361EE">
   <meta name="description" content="Advanced personal finance management with AI insights">
-  
+
+  <!-- ✅ Google OAuth Client -->
   <meta name="google-signin-client_id" content="86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com">
-  
+
+  <!-- ✅ Favicon -->
+  <link rel="icon" type="image/png" href="assets/icons/favicon.png">
+
+  <!-- ✅ Preloads -->
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" as="style">
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" as="style">
   <link rel="preload" href="styles.css" as="style">
-  
+
+  <!-- ✅ Styles -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-  
-  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-  
   <link rel="stylesheet" href="styles.css">
+
+  <!-- ✅ PWA Manifest -->
   <link rel="manifest" href="manifest.json">
-  
+
+  <!-- ✅ Lottie Player -->
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" defer></script>
+
+  <!-- ✅ Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- ✅ iOS / PWA support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
+  <!-- ===================== -->
+  <!-- Loading Screen -->
+  <!-- ===================== -->
   <div id="loadingScreen" class="loading-screen">
     <div class="loading-content">
       <lottie-player 
-        src="https://assets1.lottiefiles.com/packages/lf20_tsjcpq4z.json" 
+        src="https://lottie.host/eaecb896-5b4e-49b5-8a06-11e66c0a9462/UPO99XDNab.json" 
         background="transparent" 
         speed="1" 
         style="width: 120px; height: 120px;" 
@@ -39,6 +55,9 @@
     </div>
   </div>
 
+  <!-- ===================== -->
+  <!-- Voice Interface -->
+  <!-- ===================== -->
   <div id="voiceInterface" class="voice-interface d-none">
     <div class="voice-modal">
       <div class="voice-header">
@@ -65,6 +84,9 @@
     </div>
   </div>
 
+  <!-- ===================== -->
+  <!-- Navbar -->
+  <!-- ===================== -->
   <nav class="navbar navbar-glass">
     <div class="container-fluid">
       <a class="navbar-brand" href="#">
@@ -80,8 +102,7 @@
           <i class="bi bi-mic"></i>
         </button>
         
-        <div class="sync-status" data-bs-toggle="tooltip" data-bs-placement="bottom" 
-             title="Sync status" id="syncStatusTooltip">
+        <div class="sync-status" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Sync status" id="syncStatusTooltip">
           <i class="bi" id="syncStatusIcon"></i>
         </div>
         
@@ -129,166 +150,166 @@
               </a>
             </li>
             <li><hr class="dropdown-divider"></li>
-            <li>
-              <a class="dropdown-item" href="#" onclick="showAchievements()">
-                <i class="bi bi-trophy me-2"></i>Achievements
-              </a>
-            </li>
-            <li>
-              <a class="dropdown-item" href="#" onclick="exportFinancialReport()">
-                <i class="bi bi-file-earmark-pdf me-2"></i>Export Report
-              </a>
-            </li>
+            <li><a class="dropdown-item" href="#" onclick="showAchievements()">
+              <i class="bi bi-trophy me-2"></i>Achievements
+            </a></li>
+            <li><a class="dropdown-item" href="#" onclick="exportFinancialReport()">
+              <i class="bi bi-file-earmark-pdf me-2"></i>Export Report
+            </a></li>
           </ul>
         </div>
       </div>
     </div>
   </nav>
 
+  <!-- Toasts + Confetti -->
   <div class="toast-container" id="toastContainer"></div>
-
   <div id="confettiContainer" class="confetti-container"></div>
 
+  <!-- ===================== -->
+  <!-- Main App Tabs -->
+  <!-- ===================== -->
   <div class="main-content container-fluid">
     <div class="tab-system">
+      <!-- Dashboard -->
       <div id="tab-dashboard" class="tab-page active">
         <div class="row g-4">
-            <div class="col-md-4">
-                <div class="summary-card">
-                    <div class="summary-icon" style="background-color: #4361EE20; color: #4361EE;"><i class="bi bi-wallet2"></i></div>
-                    <div class="summary-content">
-                        <div class="summary-label">Net Wealth</div>
-                        <div class="summary-value" id="netWealth">PKR 0</div>
-                    </div>
-                </div>
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="summary-icon" style="background-color: #4361EE20; color: #4361EE;"><i class="bi bi-wallet2"></i></div>
+              <div class="summary-content">
+                <div class="summary-label">Net Wealth</div>
+                <div class="summary-value" id="netWealth">PKR 0</div>
+              </div>
             </div>
-            <div class="col-md-4">
-                <div class="summary-card">
-                    <div class="summary-icon" style="background-color: #10B98120; color: #10B981;"><i class="bi bi-arrow-down-circle"></i></div>
-                    <div class="summary-content">
-                        <div class="summary-label">Monthly Income</div>
-                        <div class="summary-value" id="totalIncome">PKR 0</div>
-                    </div>
-                </div>
+          </div>
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="summary-icon" style="background-color: #10B98120; color: #10B981;"><i class="bi bi-arrow-down-circle"></i></div>
+              <div class="summary-content">
+                <div class="summary-label">Monthly Income</div>
+                <div class="summary-value" id="totalIncome">PKR 0</div>
+              </div>
             </div>
-            <div class="col-md-4">
-                <div class="summary-card">
-                    <div class="summary-icon" style="background-color: #EF476F20; color: #EF476F;"><i class="bi bi-arrow-up-circle"></i></div>
-                    <div class="summary-content">
-                        <div class="summary-label">Monthly Expenses</div>
-                        <div class="summary-value" id="totalExpense">PKR 0</div>
-                    </div>
-                </div>
+          </div>
+          <div class="col-md-4">
+            <div class="summary-card">
+              <div class="summary-icon" style="background-color: #EF476F20; color: #EF476F;"><i class="bi bi-arrow-up-circle"></i></div>
+              <div class="summary-content">
+                <div class="summary-label">Monthly Expenses</div>
+                <div class="summary-value" id="totalExpense">PKR 0</div>
+              </div>
             </div>
+          </div>
 
-            <div class="col-lg-7">
-                <div class="chart-card">
-                    <h5 class="card-title">Income vs. Expense Trend</h5>
-                    <canvas id="trendChart"></canvas>
-                </div>
+          <div class="col-lg-7">
+            <div class="chart-card">
+              <h5 class="card-title">Income vs. Expense Trend</h5>
+              <canvas id="trendChart"></canvas>
             </div>
-            <div class="col-lg-5">
-                <div class="chart-card">
-                    <h5 class="card-title">Spending Categories</h5>
-                    <canvas id="spendingChart"></canvas>
-                </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="chart-card">
+              <h5 class="card-title">Spending Categories</h5>
+              <canvas id="spendingChart"></canvas>
             </div>
+          </div>
 
-            <div class="col-12">
-                <div class="ai-insights-card">
-                    <h5 class="card-title"><i class="bi bi-robot"></i> AI Insights</h5>
-                    <div id="aiInsightsContainer">
-                        <div class="text-center text-muted p-3">Analyzing your data for insights...</div>
-                    </div>
-                </div>
+          <div class="col-12">
+            <div class="ai-insights-card">
+              <h5 class="card-title"><i class="bi bi-robot"></i> AI Insights</h5>
+              <div id="aiInsightsContainer">
+                <div class="text-center text-muted p-3">Analyzing your data for insights...</div>
+              </div>
             </div>
+          </div>
         </div>
       </div>
 
+      <!-- Transactions -->
       <div id="tab-transactions" class="tab-page">
         <div class="transactions-header">
-            <h3>Transactions</h3>
-            <div class="filters">
-                <input type="text" id="transactionSearch" class="form-control" placeholder="Search...">
-                <select id="transactionTypeFilter" class="form-select">
-                    <option value="all">All Types</option>
-                    <option value="income">Income</option>
-                    <option value="expense">Expense</option>
-                </select>
-                <select id="transactionCategoryFilter" class="form-select">
-                    <option value="all">All Categories</option>
-                    </select>
-            </div>
+          <h3>Transactions</h3>
+          <div class="filters">
+            <input type="text" id="transactionSearch" class="form-control" placeholder="Search...">
+            <select id="transactionTypeFilter" class="form-select">
+              <option value="all">All Types</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+            <select id="transactionCategoryFilter" class="form-select">
+              <option value="all">All Categories</option>
+            </select>
+          </div>
         </div>
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th>Category</th>
-                        <th>Type</th>
-                        <th>Amount</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="transactionsBody">
-                    </tbody>
-            </table>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsBody"></tbody>
+          </table>
         </div>
       </div>
 
-      <div id="tab-planner" class="tab-page">
-        </div>
+      <!-- Planner -->
+      <div id="tab-planner" class="tab-page"></div>
 
-      <div id="tab-debt" class="tab-page">
-        </div>
+      <!-- Debt -->
+      <div id="tab-debt" class="tab-page"></div>
 
+      <!-- Analytics -->
       <div id="tab-analytics" class="tab-page">
         <div class="row g-4">
-            <div class="col-12">
-                <h3>Financial Analytics</h3>
+          <div class="col-12"><h3>Financial Analytics</h3></div>
+          <div class="col-lg-6">
+            <div class="chart-card">
+              <h5 class="card-title">Financial Health Trend</h5>
+              <canvas id="healthTrendChart"></canvas>
             </div>
-            <div class="col-lg-6">
-                <div class="chart-card">
-                    <h5 class="card-title">Financial Health Trend</h5>
-                    <canvas id="healthTrendChart"></canvas>
-                </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="chart-card">
+              <h5 class="card-title">Category Breakdown (All Time)</h5>
+              <canvas id="categoryBreakdownChart"></canvas>
             </div>
-            <div class="col-lg-6">
-                 <div class="chart-card">
-                    <h5 class="card-title">Category Breakdown (All Time)</h5>
-                    <canvas id="categoryBreakdownChart"></canvas>
-                </div>
-            </div>
+          </div>
         </div>
       </div>
 
+      <!-- Settings -->
       <div id="tab-settings" class="tab-page">
         <div class="settings-container">
-            <h3>Settings</h3>
-            <div class="settings-card">
-                <h5>Appearance</h5>
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="themeSwitch">
-                  <label class="form-check-label" for="themeSwitch">Dark Mode</label>
-                </div>
+          <h3>Settings</h3>
+          <div class="settings-card">
+            <h5>Appearance</h5>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="themeSwitch">
+              <label class="form-check-label" for="themeSwitch">Dark Mode</label>
             </div>
-             <div class="settings-card">
-                <h5>Data Management</h5>
-                <button class="btn btn-outline-primary" onclick="exportFinancialReport()">Export Report (PDF)</button>
-                <button class="btn btn-outline-secondary" onclick="manualSync()">Sync Data Now</button>
-            </div>
-            <div class="settings-card">
-                <h5>Categories</h5>
-                <div id="categoriesList">
-                    </div>
-            </div>
+          </div>
+          <div class="settings-card">
+            <h5>Data Management</h5>
+            <button class="btn btn-outline-primary" onclick="exportFinancialReport()">Export Report (PDF)</button>
+            <button class="btn btn-outline-secondary" onclick="manualSync()">Sync Data Now</button>
+          </div>
+          <div class="settings-card">
+            <h5>Categories</h5>
+            <div id="categoriesList"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Floating Action Button -->
   <button class="fab btn-fab-primary" id="mainFAB" onclick="showQuickActionMenu()">
     <i class="bi bi-plus-lg"></i>
   </button>
@@ -308,50 +329,40 @@
     </button>
   </div>
 
+  <!-- Bottom Navigation -->
   <nav class="bottom-nav navbar-glass">
     <div class="nav-container">
       <button class="nav-btn active" data-tab="dashboard" onclick="showTab('dashboard')">
-        <div class="nav-icon">
-          <i class="bi bi-house-door"></i>
-        </div>
+        <div class="nav-icon"><i class="bi bi-house-door"></i></div>
         <span class="nav-label">Dashboard</span>
         <div class="nav-indicator"></div>
       </button>
-
       <button class="nav-btn" data-tab="transactions" onclick="showTab('transactions')">
-        <div class="nav-icon">
-          <i class="bi bi-list-ul"></i>
-        </div>
+        <div class="nav-icon"><i class="bi bi-list-ul"></i></div>
         <span class="nav-label">Transactions</span>
         <div class="nav-indicator"></div>
       </button>
-
       <button class="nav-btn" data-tab="planner" onclick="showTab('planner')">
-        <div class="nav-icon">
-          <i class="bi bi-calendar-check"></i>
-        </div>
+        <div class="nav-icon"><i class="bi bi-calendar-check"></i></div>
         <span class="nav-label">Planner</span>
         <div class="nav-indicator"></div>
       </button>
-
       <button class="nav-btn" data-tab="debt" onclick="showTab('debt')">
-        <div class="nav-icon">
-          <i class="bi bi-cash-coin"></i>
-        </div>
+        <div class="nav-icon"><i class="bi bi-cash-coin"></i></div>
         <span class="nav-label">Debt</span>
         <div class="nav-indicator"></div>
       </button>
-
       <button class="nav-btn" data-tab="analytics" onclick="showTab('analytics')">
-        <div class="nav-icon">
-          <i class="bi bi-bar-chart"></i>
-        </div>
+        <div class="nav-icon"><i class="bi bi-bar-chart"></i></div>
         <span class="nav-label">Analytics</span>
         <div class="nav-indicator"></div>
       </button>
     </div>
   </nav>
 
+  <!-- ===================== -->
+  <!-- Scripts -->
+  <!-- ===================== -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
@@ -375,5 +386,20 @@
   <script src="js/fallback-shims.js"></script>
   
   <script src="js/app.js"></script>
+
+  <!-- ✅ Ensure Google API loads before app init -->
+  <script>
+    window.addEventListener("load", () => {
+      const waitForGoogle = () => {
+        if (window.google && window.google.accounts) {
+          console.log("✅ Google API loaded, initializing SyncEngine...");
+          window.syncEngine = new SyncEngine();
+        } else {
+          setTimeout(waitForGoogle, 200);
+        }
+      };
+      waitForGoogle();
+    });
+  </script>
 </body>
 </html>
