@@ -427,13 +427,21 @@ formatCurrency(amount) {
     }
 
     processShowBalance() {
-        const summary = window.stateManager.getMonthlySummary();
-        return {
-            success: true,
-            message: `Your current balance is ${summary.endingBalance}. This month you've earned ${summary.income} and spent ${summary.expenses}.`,
-            data: summary
-        };
+    if (!window.stateManager || typeof window.stateManager.getMonthlySummary !== 'function') {
+        return { success: false, message: "Balance not available yet." };
     }
+
+    const summary = window.stateManager.getMonthlySummary();
+    const formattedEnding = window.wealthCommandApp?.formatCurrency(summary.endingBalance) ?? summary.endingBalance;
+    const formattedIncome = window.wealthCommandApp?.formatCurrency(summary.income) ?? summary.income;
+    const formattedExpenses = window.wealthCommandApp?.formatCurrency(summary.expenses) ?? summary.expenses;
+
+    return {
+        success: true,
+        message: `Your current balance is ${formattedEnding}. This month you've earned ${formattedIncome} and spent ${formattedExpenses}.`,
+        data: summary
+    };
+}
 
     processSpendingReport() {
         const transactions = window.stateManager.getFilteredTransactions();
