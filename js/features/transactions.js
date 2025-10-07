@@ -12,11 +12,92 @@ class TransactionManager {
         this.sortOrder = 'desc';
     }
 
-    // Initialize transactions module
     init() {
         this.setupEventListeners();
         this.renderTransactionList();
         this.setupQuickAdd();
+    }
+
+    // --- CORRECTED METHOD ---
+    renderTransactionList() {
+        // Targets the 'tbody' element now
+        const container = document.getElementById('transactionsBody'); 
+        if (!container) return;
+
+        const transactions = this.getFilteredTransactions();
+        
+        if (transactions.length === 0) {
+            this.showEmptyState(container);
+            return;
+        }
+
+        const sortedTransactions = this.sortTransactions(transactions);
+        container.innerHTML = this.generateTransactionHTML(sortedTransactions);
+        this.attachTransactionEventListeners();
+    }
+    
+    // --- CORRECTED METHOD ---
+    generateTransactionHTML(transactions) {
+        // Generates 'tr' elements instead of 'div's
+        return transactions.map(transaction => `
+            <tr class="transaction-item" data-transaction-id="${transaction.id}">
+                <td>${this.formatDate(transaction.date)}</td>
+                <td>
+                    <div class="transaction-description">${this.escapeHTML(transaction.desc)}</div>
+                </td>
+                <td>${this.escapeHTML(transaction.category)}</td>
+                <td>
+                    <span class="badge ${transaction.type === 'income' ? 'bg-success' : 'bg-danger'}">
+                        ${transaction.type}
+                    </span>
+                </td>
+                <td class="transaction-amount ${transaction.type}">
+                    ${transaction.type === 'income' ? '+' : '-'}${this.formatCurrency(transaction.amount)}
+                </td>
+                <td class="transaction-actions">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="transactionManager.editTransaction('${transaction.id}')">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="transactionManager.deleteTransaction('${transaction.id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // --- CORRECTED METHOD ---
+    getTransactionIcon(transaction) {
+        // Fetches icon from state manager instead of hardcoded list
+        const category = window.stateManager?.state.categories.find(
+            cat => cat.name === transaction.category && cat.type === transaction.type
+        );
+        
+        if (category && category.icon) {
+            return category.icon;
+        }
+
+        // Fallback icon
+        return transaction.type === 'income' ? 'bi-currency-dollar' : 'bi-cart';
+    }
+
+    // --- CORRECTED METHOD ---
+    showEmptyState(container) {
+        // Generates a table row for the empty state message
+        container.innerHTML = `
+            <tr>
+                <td colspan="6">
+                    <div class="empty-state text-center p-5">
+                        <div class="empty-state-icon fs-1"><i class="bi bi-receipt"></i></div>
+                        <h4>No Transactions Found</h4>
+                        <p>Try adjusting your filters or add a new transaction.</p>
+                        <button class="btn btn-primary" onclick="transactionManager.showAddModal()">
+                            <i class="bi bi-plus-lg"></i> Add First Transaction
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
     }
 
     setupEventListeners() {
