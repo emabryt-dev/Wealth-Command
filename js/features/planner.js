@@ -150,16 +150,19 @@ class PlannerManager {
         }
     }
 
-    updateProjectionSummary(summary) {
-        document.getElementById('plannerNetWealth')?.textContent = 
-            this.formatCurrency(summary.netWealth);
-        document.getElementById('plannerTotalIncome')?.textContent = 
-            this.formatCurrency(summary.totalIncome);
-        document.getElementById('plannerTotalExpenses')?.textContent = 
-            this.formatCurrency(summary.totalExpenses);
-        document.getElementById('plannerEndingBalance')?.textContent = 
-            this.formatCurrency(summary.endingBalance);
-    }
+updateProjectionSummary(summary) {
+    const elNet = document.getElementById('plannerNetWealth');
+    if (elNet) elNet.textContent = this.formatCurrency(summary.netWealth);
+
+    const elInc = document.getElementById('plannerTotalIncome');
+    if (elInc) elInc.textContent = this.formatCurrency(summary.totalIncome);
+
+    const elExp = document.getElementById('plannerTotalExpenses');
+    if (elExp) elExp.textContent = this.formatCurrency(summary.totalExpenses);
+
+    const elEnd = document.getElementById('plannerEndingBalance');
+    if (elEnd) elEnd.textContent = this.formatCurrency(summary.endingBalance);
+}
 
     renderProjectionTimeline(months) {
         const container = document.getElementById('plannerTimeline');
