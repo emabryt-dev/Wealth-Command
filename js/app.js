@@ -844,6 +844,10 @@ function safeGet(obj, path, defaultValue = undefined) {
         });
     }
 
+renderIncomeBreakdown() {
+    console.warn('renderIncomeBreakdown() not implemented yet');
+}
+
     renderAnalyticsCharts() {
         const transactions = window.stateManager?.state.transactions || [];
         
