@@ -90,6 +90,15 @@ class WealthCommandApp {
         window.dataPersistence = fallback;
     }
 
+// small helper to safely read nested properties
+function safeGet(obj, path, defaultValue = undefined) {
+    try {
+        return path.split('.').reduce((o, p) => (o && o[p] !== undefined) ? o[p] : undefined, obj) ?? defaultValue;
+    } catch (e) {
+        return defaultValue;
+    }
+}
+       
     // stateManager (guarded)
     if (window.stateManager) {
         this.modules.set('stateManager', window.stateManager);
