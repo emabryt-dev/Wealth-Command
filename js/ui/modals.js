@@ -7,13 +7,109 @@ class ModalManager {
         this.initialized = false;
     }
 
-    async init() {
+    init() {
         if (this.initialized) return;
-
         this.setupGlobalEventListeners();
         this.createBaseModals();
         this.initialized = true;
     }
+
+    // --- NEW, IMPLEMENTED METHODS START HERE ---
+
+    showAddTransactionModal(type = 'expense') {
+        const title = type === 'income' ? 'Add Income' : 'Add Expense';
+        this.showTransactionFormModal({ type }, title);
+    }
+
+    showEditTransactionModal(transaction, index) {
+        // Pass index for the update operation
+        this.showTransactionFormModal({ ...transaction, index }, 'Edit Transaction');
+    }
+
+    showTransactionFormModal(data = {}, title) {
+        const isEditing = data.index !== undefined;
+        const modalId = 'transactionFormModal';
+        const formHTML = `
+            <form id="transaction-form">
+                <div class="mb-3">
+                    <label for="transaction-desc" class="form-label">Description</label>
+                    <input type="text" id="transaction-desc" class="form-control" value="${data.desc || ''}" required>
+                </div>
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="transaction-amount" class="form-label">Amount</label>
+                        <input type="number" id="transaction-amount" class="form-control" value="${data.amount || ''}" step="0.01" required>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="transaction-date" class="form-label">Date</label>
+                        <input type="date" id="transaction-date" class="form-control" value="${data.date || new Date().toISOString().split('T')[0]}" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label for="transaction-type" class="form-label">Type</label>
+                        <select id="transaction-type" class="form-select">
+                            <option value="income" ${data.type === 'income' ? 'selected' : ''}>Income</option>
+                            <option value="expense" ${data.type !== 'income' ? 'selected' : ''}>Expense</option>
+                        </select>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label for="transaction-category" class="form-label">Category</label>
+                        <select id="transaction-category" class="form-select" required></select>
+                    </div>
+                </div>
+            </form>
+        `;
+
+        this.showCustomModal(modalId, formHTML, { title });
+        const modalElement = this.getModal(modalId).element;
+
+        const typeSelect = modalElement.querySelector('#transaction-type');
+        const categorySelect = modalElement.querySelector('#transaction-category');
+
+        const populateCategories = () => {
+            const selectedType = typeSelect.value;
+            const categories = window.stateManager.state.categories.filter(c => c.type === selectedType);
+            categorySelect.innerHTML = categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            if (data.category) {
+                categorySelect.value = data.category;
+            }
+        };
+
+        typeSelect.addEventListener('change', populateCategories);
+        populateCategories();
+
+        const footer = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="save-transaction-btn">${isEditing ? 'Update' : 'Save'}</button>
+        `;
+        modalElement.querySelector('.modal-body').insertAdjacentHTML('afterend', `<div class="modal-footer">${footer}</div>`);
+        
+        modalElement.querySelector('#save-transaction-btn').addEventListener('click', () => {
+            const transactionData = {
+                desc: modalElement.querySelector('#transaction-desc').value,
+                amount: parseFloat(modalElement.querySelector('#transaction-amount').value),
+                date: modalElement.querySelector('#transaction-date').value,
+                type: modalElement.querySelector('#transaction-type').value,
+                category: modalElement.querySelector('#transaction-category').value,
+            };
+
+            // Basic validation
+            if (!transactionData.desc || !transactionData.amount || !transactionData.category) {
+                window.showToast('Please fill all required fields.', 'error');
+                return;
+            }
+
+            if (isEditing) {
+                window.stateManager.updateTransaction(data.id, transactionData);
+            } else {
+                window.stateManager.addTransaction(transactionData);
+            }
+            this.hideCustomModal(modalId);
+        });
+    }
+
+    // --- END OF NEW METHODS ---
 
     setupGlobalEventListeners() {
         // Escape key to close modal
@@ -348,235 +444,24 @@ class ModalManager {
         }
     }
 
-    // Form Modal Helpers
-    showFormModal(formId, options = {}) {
-        const form = document.getElementById(formId);
-        if (!form) {
-            console.error(`Form with id ${formId} not found`);
-            return;
-        }
-
-        const modalId = `formModal_${formId}`;
-        const title = options.title || 'Form';
-        const size = options.size || 'modal-lg';
-
-        const modalContent = `
-            <form id="${formId}_modal">
-                ${form.innerHTML}
-            </form>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" form="${formId}_modal">Save</button>
-            </div>
-        `;
-
-        const modal = this.showCustomModal(modalId, modalContent, {
-            title,
-            size,
-            centered: true
-        });
-
-        // Handle form submission
-        const modalForm = document.getElementById(`${formId}_modal`);
-        if (modalForm) {
-            modalForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                if (options.onSubmit) {
-                    options.onSubmit(new FormData(modalForm));
-                }
-                this.hideCustomModal(modalId);
-            });
-        }
-
-        return modal;
-    }
-
-    // Quick Action Modals
-    showQuickAddTransaction(type) {
-        const modalId = 'quickAddTransactionModal';
-        const title = type === 'income' ? 'Quick Add Income' : 'Quick Add Expense';
-        
-        const formHTML = `
-            <div class="row g-3">
-                <div class="col-12">
-                    <label class="form-label">Description</label>
-                    <input type="text" class="form-control" name="description" required>
-                </div>
-                <div class="col-6">
-                    <label class="form-label">Amount</label>
-                    <input type="number" class="form-control" name="amount" step="0.01" required>
-                </div>
-                <div class="col-6">
-                    <label class="form-label">Category</label>
-                    <select class="form-select" name="category" required>
-                        <option value="">Select category</option>
-                        <!-- Categories will be populated dynamically -->
-                    </select>
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Date</label>
-                    <input type="date" class="form-control" name="date" required>
-                </div>
-            </div>
-        `;
-
-        const modal = this.showCustomModal(modalId, formHTML, {
-            title,
-            size: 'modal-sm'
-        });
-
-        // Set current date
-        const today = new Date().toISOString().split('T')[0];
-        modal.element.querySelector('input[name="date"]').value = today;
-
-        // Populate categories
-        this.populateCategorySelect(modal.element.querySelector('select[name="category"]'), type);
-
-        // Add footer with actions
-        const footer = document.createElement('div');
-        footer.className = 'modal-footer';
-        footer.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="saveQuickTransaction">Save</button>
-        `;
-
-        modal.element.querySelector('.modal-content').appendChild(footer);
-
-        // Handle save
-        modal.element.querySelector('#saveQuickTransaction').addEventListener('click', () => {
-            this.handleQuickTransactionSave(modal.element, type);
-        });
-
-        return modal;
-    }
-
-    populateCategorySelect(selectElement, type) {
-        if (!window.stateManager) return;
-
-        const categories = window.stateManager.state.categories.filter(cat => cat.type === type);
-        selectElement.innerHTML = '<option value="">Select category</option>';
-        
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.name;
-            option.textContent = category.name;
-            selectElement.appendChild(option);
-        });
-    }
-
-    async handleQuickTransactionSave(modalElement, type) {
-        const form = modalElement.querySelector('form');
-        const formData = new FormData(form);
-        
-        const transaction = {
-            date: formData.get('date'),
-            desc: formData.get('description'),
-            type: type,
-            category: formData.get('category'),
-            amount: parseFloat(formData.get('amount'))
-        };
-
-        try {
-            if (window.stateManager) {
-                window.stateManager.addTransaction(transaction);
-                this.hideCustomModal('quickAddTransactionModal');
-                this.showSuccess({
-                    title: 'Transaction Added',
-                    message: `${type.charAt(0).toUpperCase() + type.slice(1)} added successfully`,
-                    autoHide: 2000
-                });
-            }
-        } catch (error) {
-            this.showError({
-                title: 'Error',
-                message: 'Failed to add transaction',
-                details: error.message
-            });
-        }
-    }
-
-    // Utility Methods
-    getModal(id) {
-        return this.modals.get(id);
-    }
-
-    destroyModal(id) {
-        const modal = this.modals.get(id);
-        if (modal) {
-            modal.instance.dispose();
-            modal.element.remove();
-            this.modals.delete(id);
-        }
-    }
-
-    destroyAllModals() {
-        this.modals.forEach((modal, id) => {
-            this.destroyModal(id);
-        });
-    }
-
-    // Animation Helpers
-    animateModalShow(modalElement) {
-        if (window.animationManager) {
-            window.animationManager.animate({
-                element: modalElement.querySelector('.modal-content'),
-                duration: 300,
-                easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-                properties: {
-                    opacity: [0, 1],
-                    transform: ['scale(0.8)', 'scale(1)']
-                }
-            });
-        }
-    }
-
-    animateModalHide(modalElement) {
-        if (window.animationManager) {
-            return window.animationManager.animate({
-                element: modalElement.querySelector('.modal-content'),
-                duration: 200,
-                easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                properties: {
-                    opacity: [1, 0],
-                    transform: ['scale(1)', 'scale(0.8)']
-                }
-            });
-        }
-        return Promise.resolve();
-    }
-}
-
-// Create global modal manager instance
+    // Create global modal manager instance
 window.modalManager = new ModalManager();
-
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.modalManager.init();
 });
 
-// Global helper functions for common modal operations
+// Global helper functions
 window.showConfirmationModal = (title, message, onConfirm, confirmText = 'Confirm', confirmType = 'danger') => {
-    return window.modalManager.showConfirmation({
-        title,
-        message,
-        confirmText,
-        confirmType,
-        onConfirm
-    });
+    // This implementation now properly handles the callback
+    window.modalManager.showConfirmation({ title, message, confirmText, confirmType })
+      .then(confirmed => {
+          if (confirmed && onConfirm) {
+              onConfirm();
+          }
+      });
 };
-
-window.showLoadingModal = (title, message) => {
-    window.modalManager.showLoading({ title, message });
-};
-
-window.hideLoadingModal = () => {
-    window.modalManager.hideLoading();
-};
-
-window.showErrorModal = (title, message, details) => {
-    window.modalManager.showError({ title, message, details });
-};
-
-window.showSuccessModal = (title, message, autoHide) => {
-    window.modalManager.showSuccess({ title, message, autoHide });
-};
+window.showLoadingModal = (title, message) => window.modalManager.showLoading({ title, message });
+window.hideLoadingModal = () => window.modalManager.hideLoading();
+window.showErrorModal = (title, message, details) => window.modalManager.showError({ title, message, details });
+window.showSuccessModal = (title, message, autoHide) => window.modalManager.showSuccess({ title, message, autoHide });
