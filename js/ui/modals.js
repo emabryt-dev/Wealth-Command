@@ -446,21 +446,30 @@ class ModalManager {
 
     // Create global modal manager instance
 window.modalManager = new ModalManager();
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.modalManager.init();
-};
+});
 
 // Global helper functions
-window.showConfirmationModal = (title, message, onConfirm, confirmText = 'Confirm', confirmType = 'danger') => {
+window.showConfirmationModal = (
+    title,
+    message,
+    onConfirm,
+    confirmText = 'Confirm',
+    confirmType = 'danger'
+) => {
     // This implementation now properly handles the callback
-    window.modalManager.showConfirmation({ title, message, confirmText, confirmType })
-      .then(confirmed => {
-          if (confirmed && onConfirm) {
-              onConfirm();
-          }
-      });
+    window.modalManager
+        .showConfirmation({ title, message, confirmText, confirmType })
+        .then(confirmed => {
+            if (confirmed && onConfirm) {
+                onConfirm();
+            }
+        });
 };
+
 window.showLoadingModal = (title, message) => window.modalManager.showLoading({ title, message });
 window.hideLoadingModal = () => window.modalManager.hideLoading();
 window.showErrorModal = (title, message, details) => window.modalManager.showError({ title, message, details });
