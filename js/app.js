@@ -4,46 +4,35 @@ class WealthCommandApp {
         this.isInitialized = false;
         this.modules = new Map();
         this.currentView = 'dashboard';
-        this.init();
+        // The init() method is called at the bottom of this file
     }
 
     async init() {
         try {
             // Show loading screen
             this.showLoadingScreen();
-
             // Initialize core modules
             await this.initializeCoreModules();
-
             // Initialize feature modules
             await this.initializeFeatureModules();
-
             // Initialize UI modules
             await this.initializeUIModules();
-
             // Load application data
             await this.loadApplicationData();
-
             // Set up event listeners
             this.setupEventListeners();
-
             // Initialize UI
             this.initializeUI();
-
             // Hide loading screen
             this.hideLoadingScreen();
-
             // Mark as initialized
             this.isInitialized = true;
-
             // Start background processes
             this.startBackgroundProcesses();
-
             console.log('Wealth Command Pro initialized successfully');
             
             // Show welcome message
             window.showToast?.('Wealth Command Pro is ready!', 'success');
-
         } catch (error) {
             console.error('Failed to initialize app:', error);
             this.handleInitializationError(error);
@@ -884,7 +873,9 @@ class WealthCommandApp {
 // Create global app instance
 window.wealthCommandApp = new WealthCommandApp();
 
-// Global utility functions
+// --- CORRECTED SECTION: ADDED MISSING GLOBAL FUNCTIONS ---
+
+// Global utility functions that were missing
 window.showTab = (tabName) => {
     window.wealthCommandApp.showTab(tabName);
 };
@@ -895,6 +886,50 @@ window.quickAddTransaction = (type) => {
 
 window.formatCurrency = (amount) => {
     return window.wealthCommandApp.formatCurrency(amount);
+};
+
+window.manualSync = () => {
+    console.log("Manual sync triggered");
+    window.syncEngine?.manualSync();
+};
+
+window.showFullAIAnalysis = () => {
+    console.log("Show full AI analysis triggered");
+    // This assumes you have a modal manager that can show a specific AI modal
+    window.modalManager?.showCustomModal('aiAnalysisModal', '<h2>AI Analysis</h2><p>Detailed analysis would be rendered here.</p>', {title: "AI Financial Analysis"});
+};
+
+window.showGoogleSignIn = () => {
+    console.log("Show Google Sign In triggered");
+    window.syncEngine?.requestAuth();
+};
+
+window.googleSignOut = () => {
+    console.log("Google Sign Out triggered");
+    window.syncEngine?.signOut();
+    // Also update UI to reflect sign-out status
+    document.getElementById('signInOption').classList.remove('d-none');
+    document.getElementById('signOutOption').classList.add('d-none');
+    document.getElementById('signedInUser').classList.add('d-none');
+    document.getElementById('userEmail').textContent = '';
+};
+
+window.showAchievements = () => {
+    console.log("Show achievements triggered");
+    window.showToast("Achievements feature coming soon!", "info");
+};
+
+window.exportFinancialReport = () => {
+    console.log("Export financial report triggered");
+    window.showToast("PDF reports feature coming soon!", "info");
+};
+
+window.hideVoiceInterface = () => {
+    window.voiceCommandManager?.hideInterface();
+};
+
+window.toggleVoiceRecognition = () => {
+    window.voiceCommandManager?.toggleListening();
 };
 
 // Initialize when DOM is ready
