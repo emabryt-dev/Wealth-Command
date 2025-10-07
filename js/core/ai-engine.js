@@ -346,42 +346,65 @@ class AIEngine {
     }
 
     processAddTransaction(command, type) {
-        const amountMatch = command.match(/(\d+)/);
-        if (!amountMatch) {
-            return { success: false, message: "Please specify an amount." };
-        }
+    // match numbers with optional commas and decimals, e.g. "5,000.50" or "2000"
+    const amountMatch = command.match(/([0-9]+(?:[,\s][0-9]{3})*(?:\.[0-9]+)?)/);
+    if (!amountMatch) {
+        return { success: false, message: "Please specify an amount." };
+    }
 
-        const amount = parseFloat(amountMatch[1]);
-        const description = this.extractDescription(command);
-        const category = this.suggestCategory(description, amount, type);
+    // normalize number string: remove commas/spaces then parseFloat
+    const raw = amountMatch[1].replace(/[, ]/g, '');
+    const amount = parseFloat(raw);
+    if (Number.isNaN(amount)) {
+        return { success: false, message: "Couldn't parse the amount you said." };
+    }
 
-        // Create transaction
-        const transaction = {
-            date: new Date().toISOString().split('T')[0],
-            desc: description || `${type} transaction`,
-            type: type,
-            category: category,
-            amount: amount
-        };
+    const description = this.extractDescription(command);
+    const category = this.suggestCategory(description, amount, type);
 
+    // Create transaction
+    const transaction = {
+        id: `tx_${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        desc: description || `${type} transaction`,
+        type: type,
+        category: category,
+        amount: Number(Math.round(amount * 100) / 100) // round to 2 decimals
+    };
+
+    // ensure state manager exists
+    if (window.stateManager && typeof window.stateManager.addTransaction === 'function') {
         window.stateManager.addTransaction(transaction);
-
-        return {
-            success: true,
-            message: `Added ${type} of ${amount} for ${description}`,
-            transaction: transaction
-        };
+    } else {
+        console.warn('stateManager not available; transaction added to fallback state');
+        window.stateManager = window.stateManager || { state: { transactions: [] }, addTransaction(tx) { this.state.transactions.push(tx); } };
+        window.stateManager.addTransaction(transaction);
     }
 
-    extractDescription(command) {
-        // Remove common command words and numbers
-        const cleaned = command
-            .replace(/(add|record|log|income|salary|expense|spending|purchase|\d+)/gi, '')
-            .replace(/\s+/g, ' ')
-            .trim();
+    return {
+        success: true,
+        message: `Added ${type} of ${this.formatCurrency(amount)} for ${description}`,
+        transaction: transaction
+    };
+}
 
-        return cleaned || 'Voice transaction';
+extractDescription(command) {
+    // Remove numbers and known command words
+    const cleaned = command
+        .replace(/(add|record|log|income|salary|expense|spending|purchase|from|for|\d+|[0-9]+(?:[,\s][0-9]{3})*(?:\.[0-9]+)?)/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return cleaned || 'Voice transaction';
+}
+
+// helper to format currency using app's formatter if present
+formatCurrency(amount) {
+    if (window.wealthCommandApp && typeof window.wealthCommandApp.formatCurrency === 'function') {
+        return window.wealthCommandApp.formatCurrency(amount);
     }
+    return new Intl.NumberFormat('en', { style: 'currency', currency: 'PKR', minimumFractionDigits: 0 }).format(amount);
+}
 
     suggestCategory(description, amount, type) {
         const categories = window.stateManager.state.categories
