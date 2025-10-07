@@ -165,19 +165,19 @@ showInterface() {
     }
 }
 
-    hideInterface() {
-        const interface = document.getElementById('voiceInterface');
-        if (interface) {
-            window.animationManager?.animateToastHide(interface);
-            setTimeout(() => {
-                interface.classList.add('d-none');
-            }, 300);
-        }
-        
-        if (this.isListening) {
-            this.stopListening();
-        }
+hideInterface() {
+    const voiceUI = document.getElementById('voiceInterface');
+    if (voiceUI) {
+        window.animationManager?.animateToastHide(voiceUI);
+        setTimeout(() => {
+            voiceUI.classList.add('d-none');
+        }, 300);
     }
+
+    if (this.isListening) {
+        this.stopListening();
+    }
+}
 
     toggleListening() {
         if (this.isListening) {
