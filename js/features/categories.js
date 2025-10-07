@@ -2,31 +2,62 @@
 class CategoryManager {
     constructor() {
         this.currentEditId = null;
-        this.defaultCategories = {
-            income: [
-                { name: 'Salary', icon: 'bi-briefcase', color: '#10B981' },
-                { name: 'Freelance', icon: 'bi-laptop', color: '#3B82F6' },
-                { name: 'Investment', icon: 'bi-graph-up', color: '#8B5CF6' },
-                { name: 'Gift', icon: 'bi-gift', color: '#EC4899' },
-                { name: 'Bonus', icon: 'bi-star', color: '#F59E0B' }
-            ],
-            expense: [
-                { name: 'Food', icon: 'bi-cup-straw', color: '#EF4444' },
-                { name: 'Transportation', icon: 'bi-car-front', color: '#6366F1' },
-                { name: 'Shopping', icon: 'bi-bag', color: '#8B5CF6' },
-                { name: 'Entertainment', icon: 'bi-controller', color: '#EC4899' },
-                { name: 'Utilities', icon: 'bi-lightning', color: '#F59E0B' },
-                { name: 'Healthcare', icon: 'bi-heart-pulse', color: '#EF4444' },
-                { name: 'Education', icon: 'bi-book', color: '#3B82F6' },
-                { name: 'Travel', icon: 'bi-airplane', color: '#10B981' }
-            ]
-        };
+        // ... (rest of constructor is the same)
     }
 
     init() {
         this.ensureDefaultCategories();
         this.setupEventListeners();
         this.renderCategoryList();
+    }
+
+    // --- REFACTORED MODAL METHOD ---
+    showCategoryModal(categoryData, title) {
+        const modalId = 'categoryModal';
+        const formId = 'categoryForm';
+        const formHTML = `
+            <form id="${formId}" autocomplete="off">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="categoryName" class="form-label">Category Name</label>
+                        <input type="text" class="form-control" id="categoryName" name="name" value="${this.escapeHTML(categoryData.name || '')}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="categoryType" class="form-label">Type</label>
+                        <select class="form-select" id="categoryType" name="type" required>
+                            <option value="income" ${categoryData.type === 'income' ? 'selected' : ''}>Income</option>
+                            <option value="expense" ${categoryData.type === 'expense' ? 'selected' : ''}>Expense</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="categoryColor" class="form-label">Color</label>
+                        <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="${categoryData.color || this.generateRandomColor()}" title="Choose color">
+                    </div>
+                    <div class="col-12">
+                        <label for="categoryIcon" class="form-label">Icon</label>
+                        <select class="form-select" id="categoryIcon" name="icon" required>
+                            <option value="">Select an icon</option>
+                            ${this.generateIconOptions(categoryData.icon)}
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <div id="categoryFormAlert" class="alert alert-danger d-none"></div>
+                    </div>
+                </div>
+            </form>
+        `;
+
+        const modal = window.modalManager.showCustomModal(modalId, formHTML, { title });
+
+        const footer = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="save-category-btn">${this.currentEditId ? 'Update' : 'Add'} Category</button>
+        `;
+        modal.element.querySelector('.modal-body').insertAdjacentHTML('afterend', `<div class="modal-footer">${footer}</div>`);
+
+        modal.element.querySelector('#save-category-btn').addEventListener('click', () => {
+            this.saveCategory();
+        });
     }
 
     ensureDefaultCategories() {
