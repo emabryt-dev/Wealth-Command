@@ -187,23 +187,34 @@ class WealthCommandApp {
     setupEventListeners() {
     const safeBind = (fn) => (typeof fn === 'function' ? fn.bind(this) : () => {});
     
-    // Window events
     window.addEventListener('online', safeBind(this.handleOnline));
     window.addEventListener('offline', safeBind(this.handleOffline));
     window.addEventListener('beforeunload', safeBind(this.handleBeforeUnload));
 
-    // Custom transaction events
     document.addEventListener('transactionAdded', safeBind(this.handleTransactionAdded));
     document.addEventListener('transactionUpdated', safeBind(this.handleTransactionUpdated));
     document.addEventListener('transactionDeleted', safeBind(this.handleTransactionDeleted));
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', safeBind(this.handleKeyboardShortcuts));
 
-    // Service worker registration
-    this.setupServiceWorker();
+    this.setupServiceWorker();  // ✅ now safe to call
 
     console.log('Event listeners set up safely');
+}
+
+setupServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+                console.log('Service Worker registered:', registration);
+                this.modules.set('serviceWorker', registration);
+            })
+            .catch((err) => {
+                console.warn('Service Worker registration failed:', err);
+            });
+    } else {
+        console.log('Service Worker not supported in this browser.');
+    }
 }
 
     initializeUI() {
