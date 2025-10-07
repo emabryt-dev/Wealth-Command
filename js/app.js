@@ -1,67 +1,158 @@
-// Wealth Command Pro - Main Application
 class WealthCommandApp {
-    constructor() {
+    constructor(autoInit = true) {
         this.isInitialized = false;
+        this._initializing = false;
         this.modules = new Map();
         this.currentView = 'dashboard';
-        // The init() method is called at the bottom of this file
-    }
-
-    async init() {
-        try {
-            // Show loading screen
-            this.showLoadingScreen();
-            // Initialize core modules
-            await this.initializeCoreModules();
-            // Initialize feature modules
-            await this.initializeFeatureModules();
-            // Initialize UI modules
-            await this.initializeUIModules();
-            // Load application data
-            await this.loadApplicationData();
-            // Set up event listeners
-            this.setupEventListeners();
-            // Initialize UI
-            this.initializeUI();
-            // Hide loading screen
-            this.hideLoadingScreen();
-            // Mark as initialized
-            this.isInitialized = true;
-            // Start background processes
-            this.startBackgroundProcesses();
-            console.log('Wealth Command Pro initialized successfully');
-            
-            // Show welcome message
-            window.showToast?.('Wealth Command Pro is ready!', 'success');
-        } catch (error) {
-            console.error('Failed to initialize app:', error);
-            this.handleInitializationError(error);
+        // Do NOT auto-init synchronously to avoid race with DOM load / module scripts.
+        if (autoInit) {
+            // Defer init to DOMContentLoaded if possible
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => this.init());
+            } else {
+                // Use microtask to avoid immediate double-init
+                Promise.resolve().then(() => this.init());
+            }
         }
     }
 
-    async initializeCoreModules() {
-        // Initialize error handler first
+    async init() {
+        if (this.isInitialized || this._initializing) return;
+        this._initializing = true;
+
+        try {
+            // Show loading screen
+            this.showLoadingScreen();
+
+            // Initialize core modules
+            await this.initializeCoreModules();
+
+            // Initialize feature modules
+            await this.initializeFeatureModules();
+
+            // Initialize UI modules
+            await this.initializeUIModules();
+
+            // Load application data
+            await this.loadApplicationData();
+
+            // Set up event listeners
+            this.setupEventListeners();
+
+            // Initialize UI
+            this.initializeUI();
+
+            // Hide loading screen
+            this.hideLoadingScreen();
+
+            // Mark as initialized
+            this.isInitialized = true;
+
+            console.log('Wealth Command Pro initialized successfully');
+
+            // Show welcome message
+            window.showToast?.('Wealth Command Pro is ready!', 'success');
+
+        } catch (error) {
+            console.error('Failed to initialize app:', error);
+            this.handleInitializationError(error);
+        } finally {
+            this._initializing = false;
+        }
+    }
+
+
+   async initializeCoreModules() {
+    // Initialize error handler first (guarded)
+    if (window.errorHandler) {
         this.modules.set('errorHandler', window.errorHandler);
-        
-        // Initialize data persistence
+    } else {
+        // minimal fallback
+        this.modules.set('errorHandler', {
+            handleError: (err) => console.error('Unhandled error:', err),
+            validateTransaction: () => ({ isValid: true, errors: [] })
+        });
+    }
+
+    // dataPersistence (guarded)
+    if (window.dataPersistence && typeof window.dataPersistence.init === 'function') {
         this.modules.set('dataPersistence', window.dataPersistence);
         await window.dataPersistence.init();
-
-        // Initialize state manager
-        this.modules.set('stateManager', window.stateManager);
-        
-        // Initialize sync engine
-        this.modules.set('syncEngine', window.syncEngine);
-        
-        // Initialize AI engine
-        this.modules.set('aiEngine', window.aiEngine);
-        await window.aiEngine.initialize();
-        
-        // Initialize analytics engine
-        this.modules.set('analyticsEngine', window.analyticsEngine);
-
-        console.log('Core modules initialized');
+    } else {
+        // minimal localStorage fallback (non-persistent)
+        const fallback = {
+            async init() { return Promise.resolve(); },
+            async loadAppState() { return JSON.parse(localStorage.getItem('wc_state') || 'null'); },
+            async saveAppState(state) { localStorage.setItem('wc_state', JSON.stringify(state)); },
+            cleanupOldData() {}
+        };
+        this.modules.set('dataPersistence', fallback);
+        window.dataPersistence = fallback;
     }
+
+    // stateManager (guarded)
+    if (window.stateManager) {
+        this.modules.set('stateManager', window.stateManager);
+    } else {
+        // simple state manager fallback to avoid crashes
+        window.stateManager = {
+            state: { transactions: [], categories: [], monthlyBudgets: {}, currency: 'PKR' },
+            setState(s) { this.state = Object.assign({}, this.state, s); },
+            getMonthlySummary() {
+                const transactions = this.state.transactions || [];
+                const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+                const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+                return { income, expenses, endingBalance: income - expenses };
+            },
+            addTransaction(tx) {
+                tx.id = tx.id || `tx_${Date.now()}`;
+                this.state.transactions = this.state.transactions || [];
+                this.state.transactions.push(tx);
+            },
+            deleteTransaction(id) {
+                this.state.transactions = (this.state.transactions || []).filter(t => t.id !== id);
+            },
+            getCurrentMonthKey() {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            },
+            getFilteredTransactions() { return this.state.transactions || []; }
+        };
+        this.modules.set('stateManager', window.stateManager);
+    }
+
+    // syncEngine - optional
+    if (window.syncEngine) this.modules.set('syncEngine', window.syncEngine);
+
+    // aiEngine - if available initialize safely
+    if (window.aiEngine && typeof window.aiEngine.initialize === 'function') {
+        this.modules.set('aiEngine', window.aiEngine);
+        try { await window.aiEngine.initialize(); } catch(e){ console.warn('AI engine init failed', e); }
+    } else {
+        // Provide lightweight fallback
+        this.modules.set('aiEngine', {
+            initialize: async () => {},
+            generateInsights: async () => ({ insights: [], metrics: {} }),
+            categorizeTransaction: async () => 'General'
+        });
+        window.aiEngine = this.modules.get('aiEngine');
+    }
+
+    // analytics engine
+    if (window.analyticsEngine) {
+        this.modules.set('analyticsEngine', window.analyticsEngine);
+    } else {
+        // stub analytics to avoid crashes
+        window.analyticsEngine = {
+            prepareChartData: () => ({ labels: [], datasets: [] }),
+            clearCache: () => {},
+            calculateHealthScore: () => 50
+        };
+        this.modules.set('analyticsEngine', window.analyticsEngine);
+    }
+
+    console.log('Core modules initialized (safe mode)');
+}
 
     async initializeFeatureModules() {
         // Initialize voice commands
@@ -626,33 +717,34 @@ class WealthCommandApp {
     }
 
     createTransactionRow(transaction, index) {
-        const row = document.createElement('tr');
-        row.className = 'clickable-row';
-        row.onclick = () => this.editTransaction(index);
+    const row = document.createElement('tr');
+    row.className = 'clickable-row';
+    row.onclick = () => this.editTransaction(index);
 
-        const date = new Date(transaction.date);
-        const formattedDate = date.toLocaleDateString('en', { 
-            day: 'numeric', 
-            month: 'short' 
-        });
+    const date = new Date(transaction.date);
+    const formattedDate = date.toLocaleDateString('en', { 
+        day: 'numeric', 
+        month: 'short' 
+    });
 
-        row.innerHTML = `
-            <td>${formattedDate}</td>
-            <td>${transaction.desc}</td>
-            <td><span class="badge bg-${transaction.type === 'income' ? 'success' : 'danger'}">${transaction.type}</span></td>
-            <td>${transaction.category}</td>
-            <td class="fw-bold ${transaction.type === 'income' ? 'text-success' : 'text-danger'}">
-                ${this.formatCurrency(transaction.amount)}
-            </td>
-            <td>
-                <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); wealthCommandApp.deleteTransaction(${index})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
+    // Ensure category and type are in correct column order matching the header:
+    row.innerHTML = `
+        <td>${formattedDate}</td>
+        <td>${transaction.desc}</td>
+        <td>${transaction.category}</td>
+        <td><span class="badge bg-${transaction.type === 'income' ? 'success' : 'danger'}">${transaction.type}</span></td>
+        <td class="fw-bold ${transaction.type === 'income' ? 'text-success' : 'text-danger'}">
+            ${this.formatCurrency(transaction.amount)}
+        </td>
+        <td>
+            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); wealthCommandApp.deleteTransaction(${index})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
 
-        return row;
-    }
+    return row;
+}
 
     // Transaction Management
     async addTransaction(transactionData) {
