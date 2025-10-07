@@ -8,7 +8,6 @@ class SyncEngine {
         this.pendingSync = false;
         this.lastSyncTime = null;
         this.lastBackupMonth = null;
-        
         // Configuration
         this.config = {
             GOOGLE_DRIVE_FILE_NAME: 'wealth_command_pro_data.json',
@@ -26,9 +25,65 @@ class SyncEngine {
         await this.loadGoogleAuth();
         this.setupEventListeners();
         this.startPeriodicSync();
-        
         // Try to restore previous session
         await this.restoreSession();
+    }
+
+    // --- ADDED THIS NEW METHOD ---
+    updateProfileUI() {
+        const profilePicture = document.getElementById('profilePicture');
+        const signedInUser = document.getElementById('signedInUser');
+        const userEmail = document.getElementById('userEmail');
+        const signInOption = document.getElementById('signInOption');
+        const signOutOption = document.getElementById('signOutOption');
+
+        if (this.googleUser && this.isTokenValid(this.googleUser)) {
+            profilePicture.innerHTML = `<i class="bi bi-person-check-fill profile-icon"></i>`;
+            signedInUser.classList.remove('d-none');
+            userEmail.textContent = 'Connected';
+            signInOption.classList.add('d-none');
+            signOutOption.classList.remove('d-none');
+        } else {
+            profilePicture.innerHTML = `<i class="bi bi-person-circle profile-icon"></i>`;
+            signedInUser.classList.add('d-none');
+            userEmail.textContent = '';
+            signInOption.classList.remove('d-none');
+            signOutOption.classList.add('d-none');
+        }
+    }
+
+    async handleTokenResponse(tokenResponse) {
+        if (tokenResponse && tokenResponse.access_token) {
+            this.googleUser = {
+                access_token: tokenResponse.access_token,
+                expires_in: tokenResponse.expires_in,
+                acquired_at: Date.now(),
+                scope: tokenResponse.scope
+            };
+            await this.saveUserData();
+            this.updateSyncStatus('success', 'Google Drive connected!');
+            this.updateProfileUI(); // <-- ADDED CALL
+            
+            // Setup auto-refresh
+            this.setupTokenAutoRefresh();
+            // Initial sync
+            await this.syncData();
+        }
+    }
+    
+    signOut() {
+        if (this.googleUser?.access_token) {
+            if (window.google?.accounts?.oauth2) {
+                google.accounts.oauth2.revoke(this.googleUser.access_token, () => {
+                    console.log('Token revoked');
+                });
+            }
+        }
+
+        this.googleUser = null;
+        this.clearUserData();
+        this.updateSyncStatus('offline', 'Signed out from Google Drive');
+        this.updateProfileUI(); // <-- ADDED CALL
     }
 
     async loadGoogleAuth() {
