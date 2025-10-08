@@ -501,7 +501,7 @@ body {
 
 .heat-map-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, 1fr) !important;
   gap: 4px;
 }
 
