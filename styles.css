@@ -493,6 +493,8 @@ body {
 }
 
 /* Trends Tab Styles */
+
+/* Heat Map */
 .heat-map-container {
   padding: 1rem;
 }
@@ -500,25 +502,23 @@ body {
 .heat-map-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.25rem;
+  gap: 4px;
 }
 
 .heat-map-day {
   aspect-ratio: 1;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid rgba(0,0,0,0.1);
+  font-size: 0.8rem;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
 }
 
 .heat-map-day:hover {
   transform: scale(1.1);
-  z-index: 1;
 }
 
 /* Comparison Tab Styles */
