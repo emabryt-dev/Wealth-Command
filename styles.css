@@ -14,6 +14,11 @@ body {
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
 }
 
+.navbar .dropdown {
+  position: relative;
+  z-index: 1070;
+}
+
 .navbar-brand, .navbar-nav .nav-link {
   color: #1a1d23 !important;
   font-weight: 500;
