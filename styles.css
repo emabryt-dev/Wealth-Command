@@ -14,14 +14,47 @@ body {
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
 }
 
+.navbar-brand, .navbar-nav .nav-link {
+  color: #1a1d23 !important;
+  font-weight: 500;
+}
+
+/* Fix for dropdown menu z-index issue */
+.navbar .dropdown-menu {
+  z-index: 1080 !important;
+}
+
+/* Ensure the dropdown toggle has proper stacking */
 .navbar .dropdown {
   position: relative;
   z-index: 1070;
 }
 
-.navbar-brand, .navbar-nav .nav-link {
-  color: #1a1d23 !important;
-  font-weight: 500;
+/* Fix for modal backdrop if needed */
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
+.modal {
+  z-index: 1060 !important;
+}
+
+/* Ensure profile dropdown appears above everything */
+.profile-pic-container {
+  position: relative;
+  z-index: 1071;
+}
+
+/* Fix for any potential card z-index issues */
+.card {
+  position: relative;
+  z-index: 1;
+}
+
+/* Specific fix for the main content area */
+.main-content {
+  position: relative;
+  z-index: 1;
 }
 
 /* Enhanced Cards with Glass Morphism */
