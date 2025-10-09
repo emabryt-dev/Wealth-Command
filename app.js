@@ -34,6 +34,158 @@ let pendingSync = false;
 let lastBackupMonth = null;
 let lastSyncTime = null;
 
+// NEW: Enhanced Navigation Variables
+let fabLongPressTimer = null;
+let isQuickActionsVisible = false;
+
+// NEW: Enhanced Navigation Functions
+function initializeEnhancedNavigation() {
+    const fabMain = document.getElementById('fabMain');
+    const quickActionsMenu = document.getElementById('quickActionsMenu');
+    
+    if (!fabMain || !quickActionsMenu) return;
+    
+    // Long press functionality for FAB
+    fabMain.addEventListener('mousedown', startLongPress);
+    fabMain.addEventListener('touchstart', startLongPress);
+    
+    fabMain.addEventListener('mouseup', cancelLongPress);
+    fabMain.addEventListener('mouseleave', cancelLongPress);
+    fabMain.addEventListener('touchend', cancelLongPress);
+    fabMain.addEventListener('touchcancel', cancelLongPress);
+    
+    // Click functionality for FAB
+    fabMain.addEventListener('click', handleFabClick);
+    
+    // Close quick actions when clicking outside
+    document.addEventListener('click', function(event) {
+        if (isQuickActionsVisible && 
+            !fabMain.contains(event.target) && 
+            !quickActionsMenu.contains(event.target)) {
+            hideQuickActions();
+        }
+    });
+}
+
+function startLongPress(event) {
+    event.preventDefault();
+    fabLongPressTimer = setTimeout(showQuickActions, 800); // 800ms for long press
+}
+
+function cancelLongPress() {
+    if (fabLongPressTimer) {
+        clearTimeout(fabLongPressTimer);
+        fabLongPressTimer = null;
+    }
+}
+
+function handleFabClick(event) {
+    event.preventDefault();
+    cancelLongPress();
+    
+    if (!isQuickActionsVisible) {
+        // Quick add income as default action
+        quickAddTransaction('income');
+    } else {
+        hideQuickActions();
+    }
+}
+
+function showQuickActions() {
+    const quickActionsMenu = document.getElementById('quickActionsMenu');
+    if (quickActionsMenu) {
+        quickActionsMenu.classList.add('show');
+        isQuickActionsVisible = true;
+    }
+}
+
+function hideQuickActions() {
+    const quickActionsMenu = document.getElementById('quickActionsMenu');
+    if (quickActionsMenu) {
+        quickActionsMenu.classList.remove('show');
+        isQuickActionsVisible = false;
+    }
+}
+
+// NEW: Quick Action Functions
+function quickAddTransaction(type) {
+    hideQuickActions();
+    
+    // Pre-fill the transaction modal based on type
+    document.getElementById('addTransactionModalLabel').innerHTML = 
+        `<i class="bi bi-plus-circle"></i> Quick ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    document.getElementById('submitButtonText').textContent = 'Add';
+    document.getElementById('editTransactionIndex').value = '-1';
+    document.getElementById('transactionForm').reset();
+    
+    document.getElementById('typeInput').value = type;
+    updateCategorySelect();
+    
+    // Set default category based on type
+    const defaultCategory = type === 'income' ? 'Salary' : 'Food';
+    if (categories.some(cat => cat.name === defaultCategory && cat.type === type)) {
+        document.getElementById('categoryInput').value = defaultCategory;
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
+    
+    // Focus on amount field for quick entry
+    setTimeout(() => {
+        document.getElementById('amountInput').focus();
+    }, 300);
+    
+    const addTxModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
+    addTxModal.show();
+}
+
+function quickAddTransfer() {
+    hideQuickActions();
+    
+    // For transfer, we'll create two transactions: one expense and one income
+    const amount = prompt('Enter transfer amount:');
+    if (!amount || isNaN(parseFloat(amount))) return;
+    
+    const description = prompt('Transfer description (e.g., "Bank Transfer"):', 'Transfer');
+    if (!description) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Create expense transaction (money going out)
+    transactions.push({
+        date: today,
+        desc: `${description} (Out)`,
+        type: 'expense',
+        category: 'Transfer',
+        amount: parseFloat(amount)
+    });
+    
+    // Create income transaction (money coming in)
+    transactions.push({
+        date: today,
+        desc: `${description} (In)`,
+        type: 'income',
+        category: 'Transfer',
+        amount: parseFloat(amount)
+    });
+    
+    saveTransactions(transactions);
+    updateUI();
+    showToast('Transfer recorded successfully', 'success');
+}
+
+function quickScheduleTransaction() {
+    hideQuickActions();
+    
+    const type = confirm('Schedule income? (OK for Income, Cancel for Expense)') ? 'income' : 'expense';
+    
+    if (type === 'income') {
+        openAddFutureIncome();
+    } else {
+        openAddFutureExpense();
+    }
+}
+
 // AI Analytics Engine
 const AnalyticsEngine = {
     // Calculate financial health score (0-100)
@@ -4315,101 +4467,103 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initializeApplicationData();
     
+    // Initialize enhanced navigation
+    initializeEnhancedNavigation();
+    
     // Initialize tab state
     initTabState();
     
     // Enhanced saved user validation
-// Enhanced initialization - Offline First approach
-const savedUser = localStorage.getItem('googleUser');
-if (savedUser) {
-    try {
-        googleUser = JSON.parse(savedUser);
-        const tokenAge = Date.now() - googleUser.acquired_at;
-        const tokenLifetime = googleUser.expires_in * 1000;
-        
-        // Check if token is expired (with 2 minute buffer)
-        if (tokenAge > (tokenLifetime - (2 * 60 * 1000))) {
-            console.log('Token expired, working offline');
+    const savedUser = localStorage.getItem('googleUser');
+    if (savedUser) {
+        try {
+            googleUser = JSON.parse(savedUser);
+            const tokenAge = Date.now() - googleUser.acquired_at;
+            const tokenLifetime = googleUser.expires_in * 1000;
+            
+            // Check if token is expired (with 2 minute buffer)
+            if (tokenAge > (tokenLifetime - (2 * 60 * 1000))) {
+                console.log('Token expired, working offline');
+                localStorage.removeItem('googleUser');
+                googleUser = null;
+                showSyncStatus('warning', 'Working offline - Sign in to sync');
+                initializeApplicationData(); // Load from local storage
+            } else {
+                showSyncStatus('success', 'Google Drive connected');
+                // Calculate remaining time and set up auto-refresh
+                const remainingTime = tokenLifetime - tokenAge - (1 * 60 * 1000); // Refresh 1 min before expiry
+                if (remainingTime > 0) {
+                    setTimeout(() => {
+                        if (googleUser && isOnline) {
+                            console.log('Auto-refreshing Google token');
+                            showGoogleSignIn();
+                        }
+                    }, remainingTime);
+                }
+                
+                // Try to load from Drive, but fall back to local storage
+                loadDataFromDrive().then(success => {
+                    if (!success) {
+                        console.log('Failed to load from Drive, using local data');
+                        initializeApplicationData();
+                    }
+                }).catch(error => {
+                    console.log('Error loading from Drive, using local data', error);
+                    initializeApplicationData();
+                });
+            }
+        } catch (error) {
+            console.error('Error parsing saved user:', error);
             localStorage.removeItem('googleUser');
             googleUser = null;
-            showSyncStatus('warning', 'Working offline - Sign in to sync');
+            showSyncStatus('warning', 'Working offline');
             initializeApplicationData(); // Load from local storage
-        } else {
-            showSyncStatus('success', 'Google Drive connected');
-            // Calculate remaining time and set up auto-refresh
-            const remainingTime = tokenLifetime - tokenAge - (1 * 60 * 1000); // Refresh 1 min before expiry
-            if (remainingTime > 0) {
-                setTimeout(() => {
-                    if (googleUser && isOnline) {
-                        console.log('Auto-refreshing Google token');
-                        showGoogleSignIn();
-                    }
-                }, remainingTime);
-            }
-            
-            // Try to load from Drive, but fall back to local storage
-            loadDataFromDrive().then(success => {
-                if (!success) {
-                    console.log('Failed to load from Drive, using local data');
-                    initializeApplicationData();
-                }
-            }).catch(error => {
-                console.log('Error loading from Drive, using local data', error);
-                initializeApplicationData();
-            });
         }
-    } catch (error) {
-        console.error('Error parsing saved user:', error);
-        localStorage.removeItem('googleUser');
-        googleUser = null;
-        showSyncStatus('warning', 'Working offline');
+    } else {
+        // No Google auth - work offline with local storage
+        showSyncStatus('offline', 'Working offline - Sign in to sync');
         initializeApplicationData(); // Load from local storage
     }
-} else {
-    // No Google auth - work offline with local storage
-    showSyncStatus('offline', 'Working offline - Sign in to sync');
-    initializeApplicationData(); // Load from local storage
-}
 
-// Enhanced Google API initialization that waits for the library
-function initializeGoogleAPI() {
-    if (window.google && google.accounts && google.accounts.oauth2) {
-        initGoogleAuth();
-        updateProfileUI();
-    } else {
-        // Google API not loaded yet, try again
-        console.log('Google API not loaded yet, retrying...');
-        setTimeout(initializeGoogleAPI, 500);
-    }
-}
-
-// Start the initialization
-setTimeout(initializeGoogleAPI, 100);
-
-setTimeout(() => {
-    const manualSyncBtn = document.getElementById('manualSyncSettings');
-    if (manualSyncBtn) {
-        manualSyncBtn.addEventListener('click', manualSync);
-    }
-}, 200);
-
-// Auto-refresh token before expiry
-function setupTokenAutoRefresh() {
-    if (googleUser && googleUser.expires_in) {
-        const refreshTime = (googleUser.expires_in - 300) * 1000; // Refresh 5 minutes before expiry
-        if (refreshTime > 0) {
-            setTimeout(() => {
-                if (googleUser && isOnline) {
-                    console.log('Refreshing Google token before expiry');
-                    showGoogleSignIn();
-                }
-            }, refreshTime);
+    // Enhanced Google API initialization that waits for the library
+    function initializeGoogleAPI() {
+        if (window.google && google.accounts && google.accounts.oauth2) {
+            initGoogleAuth();
+            updateProfileUI();
+        } else {
+            // Google API not loaded yet, try again
+            console.log('Google API not loaded yet, retrying...');
+            setTimeout(initializeGoogleAPI, 500);
         }
     }
-}
+
+    // Start the initialization
+    setTimeout(initializeGoogleAPI, 100);
+
+    setTimeout(() => {
+        const manualSyncBtn = document.getElementById('manualSyncSettings');
+        if (manualSyncBtn) {
+            manualSyncBtn.addEventListener('click', manualSync);
+        }
+    }, 200);
+
+    // Auto-refresh token before expiry
+    function setupTokenAutoRefresh() {
+        if (googleUser && googleUser.expires_in) {
+            const refreshTime = (googleUser.expires_in - 300) * 1000; // Refresh 5 minutes before expiry
+            if (refreshTime > 0) {
+                setTimeout(() => {
+                    if (googleUser && isOnline) {
+                        console.log('Refreshing Google token before expiry');
+                        showGoogleSignIn();
+                    }
+                }, refreshTime);
+            }
+        }
+    }
     
     // Start periodic sync
     startPeriodicSync();
     
-    console.log('Wealth Command initialized successfully');
+    console.log('Wealth Command initialized successfully with enhanced navigation');
 });
