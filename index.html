@@ -21,18 +21,8 @@
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <a class="navbar-brand" href="#">Wealth Command</a>
       <div class="d-flex align-items-center gap-2">
-        <!-- Sync Status Icon -->
-        <div class="sync-status-container">
-          <i id="syncStatusIcon" class="bi bi-cloud text-muted" 
-             data-bs-toggle="tooltip" data-bs-placement="bottom"
-             title="Not signed in"></i>
         </div>
-        <div class="sync-status-container">
-  <i id="syncStatusIcon" class="bi bi-cloud text-muted" 
-     data-bs-toggle="tooltip" data-bs-placement="bottom"
-     title="Not signed in"></i>
-  <span id="syncStatusTooltip" class="d-none"></span>
-</div>
+        
         <!-- Profile Picture -->
         <div class="dropdown">
           <button class="btn p-0 border-0" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -70,31 +60,6 @@
 
   <!-- Toast Container for Important Messages -->
   <div class="toast-container" id="toastContainer"></div>
-
-  <!-- NEW: Floating Action Button with Quick Actions -->
-  <div class="fab-container">
-    <button class="fab-main" id="fabMain" title="Quick Actions (Long Press)">
-      <i class="bi bi-lightning-fill"></i>
-    </button>
-    <div class="quick-actions-menu" id="quickActionsMenu">
-      <button class="quick-action-item quick-action-income" onclick="quickAddTransaction('income')">
-        <i class="bi bi-currency-dollar"></i>
-        Quick Income
-      </button>
-      <button class="quick-action-item quick-action-expense" onclick="quickAddTransaction('expense')">
-        <i class="bi bi-cart"></i>
-        Quick Expense
-      </button>
-      <button class="quick-action-item quick-action-transfer" onclick="quickAddTransfer()">
-        <i class="bi bi-arrow-left-right"></i>
-        Transfer
-      </button>
-      <button class="quick-action-item quick-action-schedule" onclick="quickScheduleTransaction()">
-        <i class="bi bi-clock"></i>
-        Schedule
-      </button>
-    </div>
-  </div>
 
   <!-- Google Sign-In Modal -->
   <div class="modal fade" id="googleSignInModal" tabindex="-1" aria-labelledby="googleSignInModalLabel" aria-hidden="true">
@@ -342,70 +307,70 @@
     </div>
   </div>
 
-  <!-- Monthly Details Modal -->
-  <div class="modal fade" id="monthDetailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="monthDetailsModalLabel">
-            <i class="bi bi-calendar-month"></i> Month Details
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="month-details-summary">
-            <div class="row text-center">
-              <div class="col-4">
-                <div class="text-success">
-                  <div class="fw-bold fs-4" id="monthDetailsIncome">0</div>
-                  <small>Total Income</small>
-                </div>
-              </div>
-              <div class="col-4">
-                <div class="text-danger">
-                  <div class="fw-bold fs-4" id="monthDetailsExpenses">0</div>
-                  <small>Total Expenses</small>
-                </div>
-              </div>
-              <div class="col-4">
-                <div class="text-primary">
-                  <div class="fw-bold fs-4" id="monthDetailsBalance">0</div>
-                  <small>Ending Balance</small>
-                </div>
-              </div>
-            </div>
-          </div>
+  <div class="main-content container py-3">
 
-          <div class="row">
-            <div class="col-md-6">
-              <h6><i class="bi bi-currency-dollar text-success"></i> Income Breakdown</h6>
-              <div id="monthDetailsIncomeList" class="month-details-breakdown">
-                <!-- Income items will be populated here -->
+    <!-- Monthly Details Modal -->
+<div class="modal fade" id="monthDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="monthDetailsModalLabel">
+          <i class="bi bi-calendar-month"></i> Month Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="month-details-summary">
+          <div class="row text-center">
+            <div class="col-4">
+              <div class="text-success">
+                <div class="fw-bold fs-4" id="monthDetailsIncome">0</div>
+                <small>Total Income</small>
               </div>
             </div>
-            <div class="col-md-6">
-              <h6><i class="bi bi-cart text-danger"></i> Expense Breakdown</h6>
-              <div id="monthDetailsExpensesList" class="month-details-breakdown">
-                <!-- Expense items will be populated here -->
+            <div class="col-4">
+              <div class="text-danger">
+                <div class="fw-bold fs-4" id="monthDetailsExpenses">0</div>
+                <small>Total Expenses</small>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="text-primary">
+                <div class="fw-bold fs-4" id="monthDetailsBalance">0</div>
+                <small>Ending Balance</small>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="mt-3">
-            <h6><i class="bi bi-info-circle text-info"></i> Transaction Details</h6>
-            <div id="monthDetailsTransactions" class="month-details-breakdown">
-              <!-- Individual transaction calculations will be shown here -->
+        <div class="row">
+          <div class="col-md-6">
+            <h6><i class="bi bi-currency-dollar text-success"></i> Income Breakdown</h6>
+            <div id="monthDetailsIncomeList" class="month-details-breakdown">
+              <!-- Income items will be populated here -->
+            </div>
+          </div>
+          <div class="col-md-6">
+            <h6><i class="bi bi-cart text-danger"></i> Expense Breakdown</h6>
+            <div id="monthDetailsExpensesList" class="month-details-breakdown">
+              <!-- Expense items will be populated here -->
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+        <div class="mt-3">
+          <h6><i class="bi bi-info-circle text-info"></i> Transaction Details</h6>
+          <div id="monthDetailsTransactions" class="month-details-breakdown">
+            <!-- Individual transaction calculations will be shown here -->
+          </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
-  
-  <div class="main-content container py-3">
+</div>
     
     <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
