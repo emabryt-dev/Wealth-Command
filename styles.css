@@ -1979,3 +1979,68 @@ body.dark-mode .month-details-expense-item {
 body.dark-mode .month-details-summary {
   background: rgba(30, 30, 30, 0.8);
 }
+/* Fix for Debt Management Cards in Dark Mode */
+body.dark-mode #tab-debt .card .card-body .row .col-6 .card,
+body.dark-mode #tab-debt .card .card-body .row .col-md-3 .card {
+    background: rgba(30, 30, 30, 0.2) !important;
+    backdrop-filter: blur(35px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 
+        0 15px 35px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode #tab-debt .card .card-body .row .col-6 .card .card-body,
+body.dark-mode #tab-debt .card .card-body .row .col-md-3 .card .card-body {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-mode #tab-debt .card .card-body .row .col-6 .card .card-body i,
+body.dark-mode #tab-debt .card .card-body .row .col-md-3 .card .card-body i {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-mode #tab-debt .card .card-body .row .col-6 .card .card-body .fw-bold,
+body.dark-mode #tab-debt .card .card-body .row .col-md-3 .card .card-body .fw-bold {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+body.dark-mode #tab-debt .card .card-body .row .col-6 .card .card-body small,
+body.dark-mode #tab-debt .card .card-body .row .col-md-3 .card .card-body small {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Fix for Net Position text color in dark mode */
+body.dark-mode #netDebtPosition {
+    color: #4361EE !important;
+}
+
+/* Apply gradient border to debt cards in dark mode */
+body.dark-mode #tab-debt .card .card-body .row .col-6 .card::before,
+body.dark-mode #tab-debt .card .card-body .row .col-md-3 .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.3), 
+        rgba(255, 255, 255, 0.1), 
+        rgba(255, 255, 255, 0.2));
+    -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+/* Ensure debt cards have proper positioning for gradient borders */
+#tab-debt .card .card-body .row .col-6 .card,
+#tab-debt .card .card-body .row .col-md-3 .card {
+    position: relative;
+}
