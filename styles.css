@@ -2044,57 +2044,111 @@ body.dark-mode #tab-debt .card .card-body .row .col-md-3 .card::before {
 #tab-debt .card .card-body .row .col-md-3 .card {
     position: relative;
 }
-/* Fix for white lines in transactions table in dark mode */
+/* Complete fix for white lines in transactions table */
+body.dark-mode #transactionsTable {
+  --bs-table-border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode #transactionsTable thead th {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode #transactionsTable td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode #transactionsTable thead th:nth-child(1) {
+  border-right: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode #transactionsTable td:nth-child(1) {
+  border-right: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Remove borders from table entirely in dark mode */
+body.dark-mode #transactionsTable th,
+body.dark-mode #transactionsTable td {
+  border: none !important;
+}
+
 body.dark-mode #transactionsTable thead th {
   border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 body.dark-mode #transactionsTable td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Alternative: Remove all borders and use background differentiation */
+body.dark-mode #transactionsTable thead th {
+  border: none !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-body.dark-mode #transactionsTable thead th:nth-child(1),
+body.dark-mode #transactionsTable td {
+  border: none !important;
+}
+
+body.dark-mode #transactionsTable tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+body.dark-mode #transactionsTable tbody tr:last-child {
+  border-bottom: none !important;
+}
+
+/* Fix for sticky columns */
+body.dark-mode #transactionsTable thead th:nth-child(1) {
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
 body.dark-mode #transactionsTable td:nth-child(1) {
-  border-right: 2px solid rgba(255, 255, 255, 0.1) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-body.dark-mode .table-hover tbody tr:hover td {
-  border-bottom-color: rgba(67, 97, 238, 0.3) !important;
-}
-
-/* Also fix the table container border */
+/* Remove table container border in dark mode */
 body.dark-mode .table-container {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Fix for table header background in dark mode */
-body.dark-mode #transactionsTable thead th {
-  background: rgba(45, 45, 45, 0.9) !important;
-  backdrop-filter: blur(10px);
+/* Ensure proper hover states */
+body.dark-mode .table-hover tbody tr:hover {
+  background: rgba(67, 97, 238, 0.1) !important;
 }
 
-/* Fix for table cell background in dark mode */
+body.dark-mode .table-hover tbody tr:hover td {
+  background: rgba(67, 97, 238, 0.1) !important;
+  border-bottom-color: rgba(67, 97, 238, 0.2) !important;
+}
+
+/* Remove any remaining Bootstrap table borders */
+body.dark-mode .table > :not(caption) > * > * {
+  border-bottom-width: 0px !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode .table > thead {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Complete border removal approach */
+body.dark-mode #transactionsTable {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+body.dark-mode #transactionsTable th,
 body.dark-mode #transactionsTable td {
-  background: rgba(30, 30, 30, 0.9) !important;
-  backdrop-filter: blur(10px);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-/* Ensure sticky columns have consistent borders */
-body.dark-mode #transactionsTable thead th:nth-child(1) {
-  background: rgba(45, 45, 45, 0.95) !important;
+body.dark-mode #transactionsTable thead th {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-body.dark-mode #transactionsTable td:nth-child(1) {
-  background: rgba(30, 30, 30, 0.95) !important;
-}
-
-/* Fix for table striped rows in dark mode */
-body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
-  --bs-table-accent-bg: rgba(255, 255, 255, 0.02) !important;
-  color: var(--bs-table-color);
-}
-
-body.dark-mode .table-hover > tbody > tr:hover > * {
-  --bs-table-accent-bg: rgba(67, 97, 238, 0.1) !important;
-  color: var(--bs-table-color);
+body.dark-mode #transactionsTable tbody tr:last-child td {
+  border-bottom: none;
 }
