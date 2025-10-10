@@ -2044,3 +2044,57 @@ body.dark-mode #tab-debt .card .card-body .row .col-md-3 .card::before {
 #tab-debt .card .card-body .row .col-md-3 .card {
     position: relative;
 }
+/* Fix for white lines in transactions table in dark mode */
+body.dark-mode #transactionsTable thead th {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode #transactionsTable td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode #transactionsTable thead th:nth-child(1),
+body.dark-mode #transactionsTable td:nth-child(1) {
+  border-right: 2px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .table-hover tbody tr:hover td {
+  border-bottom-color: rgba(67, 97, 238, 0.3) !important;
+}
+
+/* Also fix the table container border */
+body.dark-mode .table-container {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Fix for table header background in dark mode */
+body.dark-mode #transactionsTable thead th {
+  background: rgba(45, 45, 45, 0.9) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Fix for table cell background in dark mode */
+body.dark-mode #transactionsTable td {
+  background: rgba(30, 30, 30, 0.9) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Ensure sticky columns have consistent borders */
+body.dark-mode #transactionsTable thead th:nth-child(1) {
+  background: rgba(45, 45, 45, 0.95) !important;
+}
+
+body.dark-mode #transactionsTable td:nth-child(1) {
+  background: rgba(30, 30, 30, 0.95) !important;
+}
+
+/* Fix for table striped rows in dark mode */
+body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+  --bs-table-accent-bg: rgba(255, 255, 255, 0.02) !important;
+  color: var(--bs-table-color);
+}
+
+body.dark-mode .table-hover > tbody > tr:hover > * {
+  --bs-table-accent-bg: rgba(67, 97, 238, 0.1) !important;
+  color: var(--bs-table-color);
+}
