@@ -477,7 +477,6 @@ body {
 }
 .chart-body {
   padding: 1.5rem;
-  height: 300px;
   position: relative;
 }
 .chart-placeholder {
