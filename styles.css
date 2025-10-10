@@ -19,40 +19,37 @@ body {
   font-weight: 500;
 }
 
-/* Fix for dropdown menu z-index issue */
+/* Fix for dropdown menu appearing behind cards */
 .navbar .dropdown-menu {
-  z-index: 1080 !important;
+  z-index: 9999 !important;
 }
 
-/* Ensure the dropdown toggle has proper stacking */
-.navbar .dropdown {
+.dropdown {
+  position: static !important;
+}
+
+.navbar .dropdown-menu {
+  position: absolute !important;
+  transform: none !important;
+  top: 100% !important;
+  right: 0 !important;
+  left: auto !important;
+}
+
+/* Ensure the navbar has proper stacking context */
+.navbar {
   position: relative;
-  z-index: 1070;
+  z-index: 1030;
 }
 
-/* Fix for modal backdrop if needed */
-.modal-backdrop {
-  z-index: 1050 !important;
-}
-
-.modal {
-  z-index: 1060 !important;
-}
-
-/* Ensure profile dropdown appears above everything */
-.profile-pic-container {
-  position: relative;
-  z-index: 1071;
-}
-
-/* Fix for any potential card z-index issues */
-.card {
+/* Fix for any overflow issues */
+.main-content {
   position: relative;
   z-index: 1;
+  overflow: visible !important;
 }
 
-/* Specific fix for the main content area */
-.main-content {
+.card {
   position: relative;
   z-index: 1;
 }
