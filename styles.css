@@ -7,11 +7,13 @@ body {
 
 /* Enhanced White Nav Bar with Glass Morphism */
 .navbar {
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .navbar-brand, .navbar-nav .nav-link {
@@ -58,13 +60,14 @@ body {
 .card {
   border-radius: 1rem;
   padding: 0.8rem 1rem;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(35px) saturate(180%);
+  -webkit-backdrop-filter: blur(35px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 15px 35px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
 }
 
 #netWealth, #totalIncome, #totalExpense {
@@ -80,13 +83,23 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(10px);
 }
-.form-select, .form-control {
+.form-control, .form-select {
   font-size: 0.93rem;
   padding: 0.3rem 0.5rem;
   height: 2.0rem;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.form-control:focus, .form-select:focus {
+  background: rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 0 0 0.2rem rgba(67, 97, 238, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .btn {
   font-size: 0.97rem;
@@ -94,10 +107,12 @@ body {
   border: none;
   border-radius: 0.75rem;
   background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
   box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 8px 25px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
 }
 .btn-lg {
@@ -113,11 +128,17 @@ body {
 }
 .modal-content {
   font-size: 0.97rem;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(60px) saturate(200%);
+  -webkit-backdrop-filter: blur(60px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
   border-radius: 1.5rem;
 }
+
 .tab-page {
   display: flex;
   flex-direction: column;
@@ -200,17 +221,14 @@ body {
 
 /* Enhanced Bottom Navigation with Glass Morphism */
 #fixedNavBar {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border-top: 1px solid rgba(255, 255, 255, 0.3);
-  width: 95%; 
-  left: 2.5%; 
-  border-radius: 20px;
-  transform: none;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(50px) saturate(200%);
+  -webkit-backdrop-filter: blur(50px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 
-    0 -8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 -15px 35px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
   height: 70px;
   position: fixed;
   bottom: 10px;
@@ -318,9 +336,10 @@ body {
   min-height: 200px;
   padding: 0;
   border-radius: 1.2rem;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 
     0 8px 32px rgba(0,0,0,0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -393,11 +412,12 @@ body {
 }
 
 .health-score-card, .savings-rate-card, .ai-recommendations-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-radius: 1.2rem;
   padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 
     0 8px 32px rgba(0,0,0,0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -503,10 +523,11 @@ body {
 
 /* Chart Cards */
 .chart-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-radius: 1.2rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 
     0 8px 32px rgba(0,0,0,0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -551,9 +572,10 @@ body {
 /* Distribution Cards */
 .distribution-card {
   border-radius: 1.2rem;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 
     0 8px 32px rgba(0,0,0,0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -966,7 +988,10 @@ body {
 }
 
 .table-container {
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 1.2rem;
 }
 
@@ -2119,4 +2144,137 @@ body.dark-mode .month-details-expense-item {
 
 body.dark-mode .month-details-summary {
   background: rgba(30, 30, 30, 0.8);
+}
+
+/* ===== ENHANCED GLASS EFFECTS ===== */
+
+/* Enhanced Dropdown Glass Effect */
+.navbar .dropdown-menu {
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(50px) saturate(200%);
+  -webkit-backdrop-filter: blur(50px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+  border-radius: 1.5rem;
+  padding: 0.5rem;
+  z-index: 9999 !important;
+}
+
+/* Premium Gradient Border Effects */
+.navbar::before,
+.card::before,
+.modal-content::before,
+.breakdown-card::before,
+#fixedNavBar::before,
+.dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.8), 
+    rgba(255, 255, 255, 0.2), 
+    rgba(255, 255, 255, 0.6));
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Apply positioning for gradient borders */
+.navbar,
+.card,
+.modal-content,
+.breakdown-card,
+#fixedNavBar,
+.dropdown-menu {
+  position: relative;
+}
+
+/* Enhanced Text Readability on Glass */
+.card,
+.modal-content,
+.dropdown-menu,
+.breakdown-card {
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.card-title,
+.modal-title,
+.dropdown-header {
+  color: rgba(0, 0, 0, 0.9);
+  font-weight: 600;
+}
+
+/* Enhanced Dark Mode Glass Effects */
+body.dark-mode .navbar {
+  background: rgba(30, 30, 30, 0.25) !important;
+  backdrop-filter: blur(40px) saturate(180%);
+}
+
+body.dark-mode .dropdown-menu {
+  background: rgba(30, 30, 30, 0.25) !important;
+  backdrop-filter: blur(50px) saturate(200%);
+}
+
+body.dark-mode .card {
+  background: rgba(30, 30, 30, 0.2) !important;
+  backdrop-filter: blur(35px) saturate(180%);
+}
+
+body.dark-mode #fixedNavBar {
+  background: rgba(30, 30, 30, 0.25);
+  backdrop-filter: blur(50px) saturate(200%);
+}
+
+body.dark-mode .modal-content {
+  background: rgba(30, 30, 30, 0.25) !important;
+  backdrop-filter: blur(60px) saturate(200%);
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background: rgba(45, 45, 45, 0.3) !important;
+  backdrop-filter: blur(20px);
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+  background: rgba(45, 45, 45, 0.4) !important;
+}
+
+/* Dark mode gradient borders */
+body.dark-mode .navbar::before,
+body.dark-mode .card::before,
+body.dark-mode .modal-content::before,
+body.dark-mode .breakdown-card::before,
+body.dark-mode #fixedNavBar::before,
+body.dark-mode .dropdown-menu::before {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.3), 
+    rgba(255, 255, 255, 0.1), 
+    rgba(255, 255, 255, 0.2));
+}
+
+/* Dark mode text contrast */
+body.dark-mode .card,
+body.dark-mode .modal-content,
+body.dark-mode .dropdown-menu,
+body.dark-mode .breakdown-card {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body.dark-mode .card-title,
+body.dark-mode .modal-title,
+body.dark-mode .dropdown-header {
+  color: rgba(255, 255, 255, 0.95);
 }
