@@ -12,11 +12,30 @@ body {
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1030;
 }
 
 .navbar-brand, .navbar-nav .nav-link {
   color: #1a1d23 !important;
   font-weight: 500;
+}
+
+/* Fix for dropdown menu appearing behind cards */
+.navbar .dropdown-menu {
+  z-index: 9999 !important;
+}
+
+.dropdown {
+  position: static !important;
+}
+
+.navbar .dropdown-menu {
+  position: absolute !important;
+  transform: none !important;
+  top: 100% !important;
+  right: 0 !important;
+  left: auto !important;
 }
 
 /* Enhanced Cards with Glass Morphism */
@@ -25,6 +44,8 @@ body {
   padding: 0.8rem 1rem;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 1;
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 
@@ -255,6 +276,9 @@ body {
   padding-bottom: 0px;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
+  overflow: visible !important;
 }
 
 .tab-page {
