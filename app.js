@@ -836,32 +836,32 @@ function initGoogleAuth() {
         googleAuth = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/drive.file',
-            callback: async (tokenResponse) => {
-                if (tokenResponse && tokenResponse.access_token) {
-                    googleUser = {
-                        access_token: tokenResponse.access_token,
-                        expires_in: tokenResponse.expires_in,
-                        acquired_at: Date.now(),
-                        scope: tokenResponse.scope
-                    };
-                    
-                    localStorage.setItem('googleUser', JSON.stringify(googleUser));
-                    showSyncStatus('success', 'Google Drive connected!');
-                    updateProfileUI();
-                    
-                    // Setup auto-refresh for the token
-                    if (typeof setupTokenAutoRefresh === 'function') {
-                        setupTokenAutoRefresh();
-                    }
-                    
-                    // Auto-load data from Drive after sign-in
-                    const success = await loadDataFromDrive();
-                    if (!success) {
-                        // If load fails, sync local data to Drive
-                        await syncDataToDrive();
-                    }
-                }
-            },
+callback: async (tokenResponse) => {
+    if (tokenResponse && tokenResponse.access_token) {
+        googleUser = {
+            access_token: tokenResponse.access_token,
+            expires_in: tokenResponse.expires_in,
+            acquired_at: Date.now(),
+            scope: tokenResponse.scope
+        };
+        
+        localStorage.setItem('googleUser', JSON.stringify(googleUser));
+        showSyncStatus('success', 'Google Drive connected!');
+        updateProfileUI();
+        
+        // Setup auto-refresh for the token
+        if (typeof setupTokenAutoRefresh === 'function') {
+            setupTokenAutoRefresh();
+        }
+        
+        // Load data from Drive WITH conflict resolution
+        const success = await loadDataFromDrive();
+        if (!success) {
+            // If load fails, sync local data to Drive
+            await syncDataToDrive();
+        }
+    }
+},
             error_callback: (error) => {
                 console.error('Google Auth error:', error);
                 if (error.type === 'user_logged_out') {
@@ -989,62 +989,32 @@ async function loadDataFromDrive() {
             
             const driveData = await fileResponse.json();
             
-            // Validate and load data
-            if (driveData.transactions && Array.isArray(driveData.transactions)) {
-                transactions = driveData.transactions;
-                localStorage.setItem('transactions', JSON.stringify(transactions));
+            // CONFLICT RESOLUTION: Check if we have local changes that should be preserved
+            const hasLocalChanges = await detectLocalChanges(driveData);
+            
+            if (hasLocalChanges) {
+                // Show conflict resolution dialog
+                const userChoice = await showConflictResolutionDialog();
+                
+                if (userChoice === 'local') {
+                    // User wants to keep local data - sync local to drive instead
+                    showSyncStatus('info', 'Keeping local changes, syncing to Drive...');
+                    await syncDataToDrive();
+                    return true;
+                } else if (userChoice === 'merge') {
+                    // Merge data intelligently
+                    await mergeData(driveData);
+                    showSyncStatus('success', 'Data merged successfully!');
+                } else {
+                    // User chose 'drive' - proceed with drive data (default behavior)
+                    loadDriveData(driveData);
+                    showSyncStatus('success', 'Data loaded from Google Drive!');
+                }
+            } else {
+                // No conflicts, just load drive data
+                loadDriveData(driveData);
+                showSyncStatus('success', 'Data loaded from Google Drive!');
             }
-            
-            if (driveData.categories && Array.isArray(driveData.categories)) {
-                categories = driveData.categories;
-                localStorage.setItem('categories', JSON.stringify(categories));
-            }
-            
-            if (driveData.currency) {
-                currency = driveData.currency;
-                localStorage.setItem('currency', currency);
-            }
-            
-            if (driveData.monthlyBudgets) {
-                monthlyBudgets = driveData.monthlyBudgets;
-                localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
-            }
-            
-            if (driveData.futureTransactions) {
-                futureTransactions = driveData.futureTransactions;
-                localStorage.setItem('futureTransactions', JSON.stringify(futureTransactions));
-            }
-            
-            if (driveData.loans) {
-                loans = driveData.loans;
-                localStorage.setItem('loans', JSON.stringify(loans));
-            }
-            
-            // Update last backup month from loaded data
-            if (driveData.lastBackupMonth) {
-                lastBackupMonth = driveData.lastBackupMonth;
-            }
-            
-            if (driveData.lastSync) {
-                lastSyncTime = driveData.lastSync;
-            }
-            
-            // Update UI with loaded data
-            updateUI();
-            populateSummaryFilters();
-            renderCategoryList();
-            renderPlannerProjections();
-            renderDebtManagement();
-            
-            showSyncStatus('success', 'Data loaded from Google Drive!');
-            console.log('Data loaded from Drive:', {
-                transactions: transactions.length,
-                categories: categories.length,
-                currency: currency,
-                monthlyBudgets: Object.keys(monthlyBudgets).length,
-                futureTransactions: futureTransactions,
-                loans: loans
-            });
             
             return true;
         } else {
@@ -1058,6 +1028,264 @@ async function loadDataFromDrive() {
         showSyncStatus('error', 'Error loading from Google Drive');
         return false;
     }
+}
+
+// Detect if local data has changes that would be lost
+async function detectLocalChanges(driveData) {
+    // Check transactions
+    const localTxCount = transactions.length;
+    const driveTxCount = driveData.transactions ? driveData.transactions.length : 0;
+    
+    if (localTxCount > driveTxCount) {
+        return true; // We have more transactions locally
+    }
+    
+    // Check if any local transactions are newer than what's in drive
+    if (driveData.transactions && localTxCount > 0) {
+        const localLatest = getLatestTransactionDate(transactions);
+        const driveLatest = getLatestTransactionDate(driveData.transactions);
+        
+        if (localLatest > driveLatest) {
+            return true;
+        }
+    }
+    
+    // Check other data types for changes
+    const checks = [
+        { local: categories, drive: driveData.categories, name: 'categories' },
+        { local: monthlyBudgets, drive: driveData.monthlyBudgets, name: 'monthlyBudgets' },
+        { local: futureTransactions, drive: driveData.futureTransactions, name: 'futureTransactions' },
+        { local: loans, drive: driveData.loans, name: 'loans' }
+    ];
+    
+    for (let check of checks) {
+        if (hasDataChanges(check.local, check.drive)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Get the latest transaction date
+function getLatestTransactionDate(transactionArray) {
+    if (!transactionArray || transactionArray.length === 0) return new Date(0);
+    
+    return new Date(Math.max(...transactionArray.map(tx => new Date(tx.date))));
+}
+
+// Check if data has meaningful changes
+function hasDataChanges(localData, driveData) {
+    if (!localData && !driveData) return false;
+    if (!localData && driveData) return false; // No local data, use drive
+    if (localData && !driveData) return true; // We have local data, drive doesn't
+    
+    return JSON.stringify(localData) !== JSON.stringify(driveData);
+}
+
+// Load drive data into app
+function loadDriveData(driveData) {
+    // Validate and load data
+    if (driveData.transactions && Array.isArray(driveData.transactions)) {
+        transactions = driveData.transactions;
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
+    
+    if (driveData.categories && Array.isArray(driveData.categories)) {
+        categories = driveData.categories;
+        localStorage.setItem('categories', JSON.stringify(categories));
+    }
+    
+    if (driveData.currency) {
+        currency = driveData.currency;
+        localStorage.setItem('currency', currency);
+    }
+    
+    if (driveData.monthlyBudgets) {
+        monthlyBudgets = driveData.monthlyBudgets;
+        localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
+    }
+    
+    if (driveData.futureTransactions) {
+        futureTransactions = driveData.futureTransactions;
+        localStorage.setItem('futureTransactions', JSON.stringify(futureTransactions));
+    }
+    
+    if (driveData.loans) {
+        loans = driveData.loans;
+        localStorage.setItem('loans', JSON.stringify(loans));
+    }
+    
+    // Update last backup month from loaded data
+    if (driveData.lastBackupMonth) {
+        lastBackupMonth = driveData.lastBackupMonth;
+    }
+    
+    if (driveData.lastSync) {
+        lastSyncTime = driveData.lastSync;
+    }
+    
+    // Update UI with loaded data
+    updateUI();
+    populateSummaryFilters();
+    renderCategoryList();
+    renderPlannerProjections();
+    renderDebtManagement();
+}
+
+// Show conflict resolution dialog
+function showConflictResolutionDialog() {
+    return new Promise((resolve) => {
+        // Create a custom modal for conflict resolution
+        const modalHTML = `
+            <div class="modal fade" id="conflictResolutionModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-warning"></i> Data Sync Conflict</h5>
+                        </div>
+                        <div class="modal-body">
+                            <p>We found local changes that haven't been synced to Google Drive yet.</p>
+                            <p><strong>What would you like to do?</strong></p>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="syncOption" id="useLocal" checked>
+                                <label class="form-check-label" for="useLocal">
+                                    <strong>Keep my local changes</strong><br>
+                                    <small class="text-muted">Upload my current data to Google Drive (recommended)</small>
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="syncOption" id="useDrive">
+                                <label class="form-check-label" for="useDrive">
+                                    <strong>Use Google Drive data</strong><br>
+                                    <small class="text-muted">Replace my local data with older cloud data</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="syncOption" id="mergeData">
+                                <label class="form-check-label" for="mergeData">
+                                    <strong>Try to merge both</strong><br>
+                                    <small class="text-muted">Combine local and cloud data (experimental)</small>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" id="confirmSyncChoice">Continue</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to DOM
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modalElement = document.getElementById('conflictResolutionModal');
+        const modal = new bootstrap.Modal(modalElement);
+        
+        // Set up event listener
+        document.getElementById('confirmSyncChoice').onclick = function() {
+            const selectedOption = document.querySelector('input[name="syncOption"]:checked').id;
+            modal.hide();
+            
+            // Clean up modal
+            setTimeout(() => {
+                modalElement.remove();
+            }, 500);
+            
+            // Resolve with user's choice
+            switch(selectedOption) {
+                case 'useLocal': resolve('local'); break;
+                case 'useDrive': resolve('drive'); break;
+                case 'mergeData': resolve('merge'); break;
+                default: resolve('local');
+            }
+        };
+        
+        // Show modal
+        modal.show();
+        
+        // Auto-close and use local data if modal is dismissed
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            if (!document.querySelector('input[name="syncOption"]:checked')) {
+                resolve('local'); // Default to local if dismissed
+            }
+            modalElement.remove();
+        });
+    });
+}
+
+// Merge local and drive data intelligently
+async function mergeData(driveData) {
+    console.log('Merging local and drive data...');
+    
+    // Merge transactions (by date and description to avoid duplicates)
+    if (driveData.transactions) {
+        const mergedTransactions = [...driveData.transactions];
+        
+        transactions.forEach(localTx => {
+            const isDuplicate = mergedTransactions.some(driveTx => 
+                driveTx.date === localTx.date && 
+                driveTx.desc === localTx.desc && 
+                driveTx.amount === localTx.amount
+            );
+            
+            if (!isDuplicate) {
+                mergedTransactions.push(localTx);
+            }
+        });
+        
+        transactions = mergedTransactions;
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
+    
+    // Merge categories (unique by name)
+    if (driveData.categories) {
+        const mergedCategories = [...driveData.categories];
+        
+        categories.forEach(localCat => {
+            const exists = mergedCategories.some(driveCat => 
+                driveCat.name === localCat.name
+            );
+            
+            if (!exists) {
+                mergedCategories.push(localCat);
+            }
+        });
+        
+        categories = mergedCategories;
+        localStorage.setItem('categories', JSON.stringify(categories));
+    }
+    
+    // For other data types, prefer local if it exists, otherwise use drive
+    if (!currency && driveData.currency) {
+        currency = driveData.currency;
+        localStorage.setItem('currency', currency);
+    }
+    
+    if (Object.keys(monthlyBudgets).length === 0 && driveData.monthlyBudgets) {
+        monthlyBudgets = driveData.monthlyBudgets;
+        localStorage.setItem('monthlyBudgets', JSON.stringify(monthlyBudgets));
+    }
+    
+    if ((!futureTransactions.income.length && !futureTransactions.expenses.length) && driveData.futureTransactions) {
+        futureTransactions = driveData.futureTransactions;
+        localStorage.setItem('futureTransactions', JSON.stringify(futureTransactions));
+    }
+    
+    if ((!loans.given.length && !loans.taken.length) && driveData.loans) {
+        loans = driveData.loans;
+        localStorage.setItem('loans', JSON.stringify(loans));
+    }
+    
+    // Update UI
+    updateUI();
+    populateSummaryFilters();
+    renderCategoryList();
+    renderPlannerProjections();
+    renderDebtManagement();
+    
+    // Sync merged data back to drive
+    await syncDataToDrive();
 }
 
 // Helper function to sync a single file
