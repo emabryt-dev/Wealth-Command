@@ -4,26 +4,21 @@
   <meta charset="UTF-8">
   <title>Wealth Command</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Google Sign-In Meta -->
   <meta name="google-signin-client_id" content="86191691449-lop8lu293h8956071sr0jllc2qsdpc2e.apps.googleusercontent.com">
-  <!-- Bootstrap 5 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <!-- Top Navbar with Profile Picture -->
   <nav class="navbar navbar-dark bg-primary">
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <a class="navbar-brand" href="#">Wealth Command</a>
       <div class="d-flex align-items-center gap-2">
         </div>
         
-        <!-- Profile Picture -->
         <div class="dropdown">
           <button class="btn p-0 border-0" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             <div id="profilePicture" class="profile-pic-container">
@@ -58,10 +53,8 @@
     </div>
   </nav>
 
-  <!-- Toast Container for Important Messages -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Google Sign-In Modal -->
   <div class="modal fade" id="googleSignInModal" tabindex="-1" aria-labelledby="googleSignInModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
       <div class="modal-content">
@@ -77,7 +70,6 @@
     </div>
   </div>
 
-  <!-- Category Transactions Modal -->
   <div class="modal fade category-transactions-modal" id="categoryTransactionsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -93,8 +85,7 @@
             <span id="categoryTotalAmount" class="fw-bold fs-5"></span>
           </div>
           <div class="category-transactions-list" id="categoryTransactionsList">
-            <!-- Transactions will be populated here -->
-          </div>
+            </div>
           <div id="noCategoryTransactions" class="text-center text-muted p-3 d-none">
             No transactions found for this category in the selected period.
           </div>
@@ -109,30 +100,24 @@
     </div>
   </div>
 
-  <!-- AI Insights Modal -->
   <div class="modal fade" id="aiInsightsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="bi bi-robot"></i> AI Insights & Recommendations</h5>
+          <h5 class="modal-title"><i class="bi bi-robot"></i> AI-Powered Analysis</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div id="aiInsightsContent">
-            <!-- AI insights will be populated here -->
-          </div>
+            </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" onclick="applyAISuggestions()">
-            <i class="bi bi-check-circle"></i> Apply Suggestions
-          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Future Income Modal -->
   <div class="modal fade" id="futureIncomeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -191,7 +176,6 @@
     </div>
   </div>
 
-  <!-- Future Expense Modal -->
   <div class="modal fade" id="futureExpenseModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -251,7 +235,6 @@
     </div>
   </div>
 
-  <!-- Loan Modal -->
   <div class="modal fade" id="loanModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -309,8 +292,7 @@
 
   <div class="main-content container py-3">
 
-    <!-- Monthly Details Modal -->
-<div class="modal fade" id="monthDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="monthDetailsModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
       <div class="modal-header">
@@ -347,22 +329,19 @@
           <div class="col-md-6">
             <h6><i class="bi bi-currency-dollar text-success"></i> Income Breakdown</h6>
             <div id="monthDetailsIncomeList" class="month-details-breakdown">
-              <!-- Income items will be populated here -->
-            </div>
+              </div>
           </div>
           <div class="col-md-6">
             <h6><i class="bi bi-cart text-danger"></i> Expense Breakdown</h6>
             <div id="monthDetailsExpensesList" class="month-details-breakdown">
-              <!-- Expense items will be populated here -->
-            </div>
+              </div>
           </div>
         </div>
 
         <div class="mt-3">
           <h6><i class="bi bi-info-circle text-info"></i> Transaction Details</h6>
           <div id="monthDetailsTransactions" class="month-details-breakdown">
-            <!-- Individual transaction calculations will be shown here -->
-          </div>
+            </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -372,11 +351,9 @@
   </div>
 </div>
     
-    <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-page">
       <div class="row g-4">
         <div class="col-12">
-          <!-- Rollover Balance Display -->
           <div id="rolloverBalance" class="rollover-balance d-none">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -397,7 +374,6 @@
               <h5 class="card-title">
                 Net Wealth (<span id="currencyLabel">PKR</span>)
               </h5>
-              <!-- Sleek filter row -->
               <div class="row mb-2 justify-content-center align-items-center">
                 <div class="col-12 col-md-8 mx-auto">
                   <div class="input-group">
@@ -426,7 +402,6 @@
           </div>
         </div>
 
-        <!-- Improved Income and Expense Breakdown Cards -->
         <div class="breakdown-container">
           <div class="col-12 col-md-6">
             <div class="breakdown-card income-card" onclick="showCategoryTransactions('income', 'all')">
@@ -435,8 +410,7 @@
               </div>
               <div class="breakdown-list income-breakdown">
                 <div id="incomeBreakdown">
-                  <!-- Income categories will appear here -->
-                </div>
+                  </div>
                 <div id="noIncomeCategories" class="text-center text-muted p-2">No income categories</div>
               </div>
             </div>
@@ -449,8 +423,7 @@
               </div>
               <div class="breakdown-list expense-breakdown">
                 <div id="expenseBreakdown">
-                  <!-- Expense categories will appear here -->
-                </div>
+                  </div>
                 <div id="noExpenseCategories" class="text-center text-muted p-2">No expense categories</div>
               </div>
             </div>
@@ -459,9 +432,7 @@
       </div>
     </div>
 
-    <!-- Transactions Tab -->
     <div id="tab-transactions" class="tab-page d-none">
-      <!-- Improved Transactions Table with Click-to-Edit -->
       <div class="card shadow-sm mb-4">
         <div class="card-header">
           <span><i class="bi bi-list-ul"></i> Transactions</span>
@@ -489,14 +460,12 @@
       </div>
     </div>
 
-    <!-- Planner Tab -->
     <div id="tab-planner" class="tab-page d-none">
       <div class="card shadow-sm mb-4">
         <div class="card-header">
           <i class="bi bi-calendar-check"></i> Financial Planner
         </div>
         <div class="card-body">
-          <!-- Timeframe Selector -->
           <div class="row mb-4">
             <div class="col-12">
               <div class="btn-group w-100" role="group">
@@ -513,7 +482,6 @@
             </div>
           </div>
 
-          <!-- Projection Summary -->
           <div class="row g-3 mb-4">
             <div class="col-6 col-md-3">
               <div class="card text-center">
@@ -561,7 +529,6 @@
             </div>
           </div>
 
-          <!-- Action Buttons -->
           <div class="row mb-4">
             <div class="col-6">
               <button class="btn btn-success w-100" onclick="openAddFutureIncome()">
@@ -575,41 +542,33 @@
             </div>
           </div>
 
-          <!-- Monthly Projection Timeline -->
           <div class="mb-4">
             <h6><i class="bi bi-graph-up"></i> Monthly Projections</h6>
             <div id="plannerTimeline" class="planner-timeline">
-              <!-- Monthly projections will be populated here -->
-            </div>
+              </div>
           </div>
 
-          <!-- Future Income List -->
           <div class="mb-4">
             <h6><i class="bi bi-currency-dollar text-success"></i> Future Income</h6>
             <div id="futureIncomeList" class="planner-list">
-              <!-- Future income items will be populated here -->
-            </div>
+              </div>
           </div>
 
-          <!-- Future Expenses List -->
           <div class="mb-4">
             <h6><i class="bi bi-cart text-danger"></i> Future Expenses</h6>
             <div id="futureExpensesList" class="planner-list">
-              <!-- Future expense items will be populated here -->
-            </div>
+              </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Debt Management Tab -->
     <div id="tab-debt" class="tab-page d-none">
       <div class="card shadow-sm mb-4">
         <div class="card-header">
           <i class="bi bi-cash-coin"></i> Debt Management
         </div>
         <div class="card-body">
-          <!-- Debt Summary -->
           <div class="row g-3 mb-4">
             <div class="col-6 col-md-3">
               <div class="card text-center">
@@ -659,7 +618,6 @@
             </div>
           </div>
 
-          <!-- Action Buttons -->
           <div class="row mb-4">
             <div class="col-6">
               <button class="btn btn-success w-100" onclick="openAddLoan('given')">
@@ -673,37 +631,29 @@
             </div>
           </div>
 
-          <!-- Upcoming Repayments -->
           <div class="mb-4">
             <h6><i class="bi bi-clock text-warning"></i> Upcoming Repayments</h6>
             <div id="upcomingRepayments" class="debt-list">
-              <!-- Upcoming repayments will be populated here -->
-            </div>
+              </div>
           </div>
 
-          <!-- Loans Given -->
           <div class="mb-4">
             <h6><i class="bi bi-arrow-up-right text-success"></i> Loans Given</h6>
             <div id="loansGivenList" class="debt-list">
-              <!-- Loans given will be populated here -->
-            </div>
+              </div>
           </div>
 
-          <!-- Loans Taken -->
           <div class="mb-4">
             <h6><i class="bi bi-arrow-down-left text-danger"></i> Loans Taken</h6>
             <div id="loansTakenList" class="debt-list">
-              <!-- Loans taken will be populated here -->
-            </div>
+              </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Enhanced Analytics Tab -->
     <div id="tab-analytics" class="tab-page d-none">
       <div class="analytics-container">
-        <!-- AI Insights Header -->
         <div class="ai-insights-header">
           <div class="row g-3">
             <div class="col-12 col-md-4">
@@ -748,7 +698,6 @@
           </div>
         </div>
 
-        <!-- Analytics Navigation -->
         <div class="analytics-nav">
           <div class="nav nav-pills nav-fill" id="analyticsTabs" role="tablist">
             <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button">
@@ -763,9 +712,7 @@
           </div>
         </div>
 
-        <!-- Analytics Content -->
         <div class="tab-content" id="analyticsTabContent">
-          <!-- Overview Tab -->
           <div class="tab-pane fade show active" id="overview" role="tabpanel">
             <div class="row g-3">
               <div class="col-12 col-lg-8">
@@ -816,15 +763,14 @@
                 </div>
                 <div class="chart-card mt-3">
                   <div class="chart-header">
-                    <i class="bi bi-exclamation-triangle"></i> Risk Alerts
+                    <i class="bi bi-exclamation-triangle"></i> AI Anomaly Alerts
                   </div>
                   <div class="chart-body">
                     <div id="riskAlerts" class="risk-alerts-container">
-                      <!-- Risk alerts will be populated here -->
-                    </div>
+                      </div>
                     <div id="noRiskAlerts" class="chart-placeholder">
                       <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.5;"></i>
-                      <p class="mt-2">No spending risks detected</p>
+                      <p class="mt-2">No spending anomalies detected</p>
                     </div>
                   </div>
                 </div>
@@ -832,7 +778,6 @@
             </div>
           </div>
 
-          <!-- Trends Tab -->
           <div class="tab-pane fade" id="trends" role="tabpanel">
             <div class="row g-3">
               <div class="col-12">
@@ -856,8 +801,7 @@
                   </div>
                   <div class="chart-body">
                     <div id="heatMapContainer" class="heat-map-container">
-                      <!-- Heat map will be populated here -->
-                    </div>
+                      </div>
                     <div id="heatMapPlaceholder" class="chart-placeholder">
                       <i class="bi bi-grid-3x3-gap" style="font-size: 3rem; opacity: 0.5;"></i>
                       <p class="mt-2">Heat map requires transaction data</p>
@@ -882,7 +826,6 @@
             </div>
           </div>
 
-          <!-- Comparison Tab -->
           <div class="tab-pane fade" id="comparison" role="tabpanel">
             <div class="row g-3">
               <div class="col-12">
@@ -925,8 +868,7 @@
                   </div>
                   <div class="chart-body">
                     <div id="changeAnalysis" class="change-analysis-container">
-                      <!-- Change analysis will be populated here -->
-                    </div>
+                      </div>
                     <div id="noChangeAnalysis" class="chart-placeholder">
                       <i class="bi bi-arrow-left-right" style="font-size: 3rem; opacity: 0.5;"></i>
                       <p class="mt-2">Compare periods to see changes</p>
@@ -940,12 +882,10 @@
       </div>
     </div>
 
-    <!-- Settings Tab -->
     <div id="tab-settings" class="tab-page d-none">
       <div class="card shadow-sm mb-4">
         <div class="card-header"><i class="bi bi-gear"></i> Settings</div>
         <div class="card-body">
-          <!-- Dark Mode Toggle -->
           <div class="mb-3">
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" id="darkModeToggle">
@@ -954,7 +894,6 @@
           </div>
           <hr>
 
-          <!-- Cloud Sync Section -->
           <div class="mb-3">
             <label class="form-label">Cloud Sync</label>
             <div class="d-flex gap-2 mb-2">
@@ -968,7 +907,6 @@
           </div>
           <hr>
 
-          <!-- Monthly Rollover Settings -->
           <div class="mb-3">
             <label class="form-label">Monthly Rollover Settings</label>
             <div class="form-check form-switch mb-2">
@@ -983,7 +921,6 @@
           </div>
           <hr>
 
-          <!-- Currency Selection -->
           <div class="mb-3">
             <label for="currencySelect" class="form-label">Currency</label>
             <select id="currencySelect" class="form-select">
@@ -993,7 +930,6 @@
             </select>
           </div>
 
-          <!-- Enhanced Category Management -->
           <div>
             <button id="toggleCategorySettings" class="btn btn-outline-secondary w-100 mb-2" type="button">
               <span id="catCollapseIcon"><i class="bi bi-chevron-right"></i></span> Category Settings
@@ -1012,7 +948,6 @@
           </div>
           <hr>
 
-          <!-- Import / Export -->
           <div>
             <label class="form-label">Import / Export Transactions</label>
             <div class="mb-2">
@@ -1027,7 +962,6 @@
     </div>
   </div>
 
-  <!-- Add/Edit Transaction Modal -->
   <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -1038,32 +972,32 @@
           </div>
           <div class="modal-body">
             <input type="hidden" id="editTransactionIndex" value="-1">
-            <div class="row g-2 align-items-end">
-              <div class="col-6 col-md-4">
+            <div class="mb-3">
                 <label for="dateInput" class="form-label">Date</label>
                 <input type="date" class="form-control" id="dateInput" required>
-              </div>
-              <div class="col-12 col-md-4">
+            </div>
+            <div class="mb-3">
                 <label for="descInput" class="form-label">Description</label>
                 <input type="text" class="form-control" id="descInput" required>
-              </div>
-              <div class="col-6 col-md-2">
-                <label class="form-label">Type</label>
-                <select class="form-select" id="typeInput" required>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
-              </div>
-              <div class="col-6 col-md-2">
-                <label for="categoryInput" class="form-label">Category</label>
-                <select class="form-select" id="categoryInput" required>
-                  <!-- Categories populate here -->
-                </select>
-              </div>
-              <div class="col-6 col-md-2">
+                 <div id="categorySuggestion" class="mt-2"></div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="typeInput" class="form-label">Type</label>
+                    <select class="form-select" id="typeInput" required>
+                      <option value="expense">Expense</option>
+                      <option value="income">Income</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="categoryInput" class="form-label">Category</label>
+                    <select class="form-select" id="categoryInput" required>
+                      </select>
+                </div>
+            </div>
+             <div class="mb-3 mt-3">
                 <label for="amountInput" class="form-label">Amount</label>
                 <input type="number" class="form-control" id="amountInput" required step="0.01">
-              </div>
             </div>
             <div id="formAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
           </div>
@@ -1076,7 +1010,6 @@
     </div>
   </div>
 
-  <!-- Confirmation Modal -->
   <div class="modal fade confirmation-modal" id="confirmationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -1098,7 +1031,6 @@
     </div>
   </div>
 
-  <!-- Enhanced Bottom Navigation Bar -->
   <nav class="navbar navbar-light p-0 fixed-bottom" id="fixedNavBar">
     <div class="container-fluid p-0">
       <div class="d-flex justify-content-around w-100">
@@ -1130,9 +1062,11 @@
     </div>
   </nav>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+  
   <script src="app.js"></script>
 </body>
 </html>
