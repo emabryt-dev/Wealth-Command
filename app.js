@@ -392,7 +392,8 @@ const PlannerEngine = {
         
         let runningBalance = currentBalance;
         
-        for (let i = 0; i < months; i++) {
+        // Start from next month instead of current month
+        for (let i = 1; i <= months; i++) {
             const currentDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
             const monthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
             const monthName = currentDate.toLocaleDateString('en', { month: 'long', year: 'numeric' });
@@ -436,41 +437,41 @@ const PlannerEngine = {
     },
     
     shouldIncludeInMonth: function(transaction, targetDate) {
-    const targetMonth = targetDate.getMonth();
-    const targetYear = targetDate.getFullYear();
-    
-    const startDate = new Date(transaction.startDate);
-    const startMonth = startDate.getMonth();
-    const startYear = startDate.getFullYear();
-    
-    // If transaction starts after target month, exclude
-    if (startYear > targetYear || (startYear === targetYear && startMonth > targetMonth)) {
-        return false;
-    }
-    
-    // Check end date if exists
-    if (transaction.endDate) {
-        const endDate = new Date(transaction.endDate);
-        const endMonth = endDate.getMonth();
-        const endYear = endDate.getFullYear();
+        const targetMonth = targetDate.getMonth();
+        const targetYear = targetDate.getFullYear();
         
-        if (endYear < targetYear || (endYear === targetYear && endMonth < targetMonth)) {
+        const startDate = new Date(transaction.startDate);
+        const startMonth = startDate.getMonth();
+        const startYear = startDate.getFullYear();
+        
+        // If transaction starts after target month, exclude
+        if (startYear > targetYear || (startYear === targetYear && startMonth > targetMonth)) {
             return false;
         }
+        
+        // Check end date if exists
+        if (transaction.endDate) {
+            const endDate = new Date(transaction.endDate);
+            const endMonth = endDate.getMonth();
+            const endYear = endDate.getFullYear();
+            
+            if (endYear < targetYear || (endYear === targetYear && endMonth < targetMonth)) {
+                return false;
+            }
+        }
+        
+        // Check frequency
+        if (transaction.frequency === 'one-time') {
+            return startMonth === targetMonth && startYear === targetYear;
+        } else if (transaction.frequency === 'monthly') {
+            return true; // Include every month
+        } else if (transaction.frequency === 'quarterly') {
+            const monthsDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
+            return monthsDiff % 3 === 0;
+        }
+        
+        return false;
     }
-    
-    // Check frequency
-    if (transaction.frequency === 'one-time') {
-        return startMonth === targetMonth && startYear === targetYear;
-    } else if (transaction.frequency === 'monthly') {
-        return true; // Include every month
-    } else if (transaction.frequency === 'quarterly') {
-        const monthsDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
-        return monthsDiff % 3 === 0;
-    }
-    
-    return false;
-}
 };
 
 // Debt Management Engine
