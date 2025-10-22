@@ -2173,3 +2173,37 @@ body.dark-mode #transactionsTable tbody tr:last-child td {
   color: #1a1d23 !important;
   font-weight: 600;
 }
+
+/* Force modal content to have proper background */
+.modal-content {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 1rem !important;
+}
+
+/* Ensure form controls are visible */
+.modal-body .form-control,
+.modal-body .form-select {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  color: #1a1d23 !important;
+}
+
+.modal-body .form-label {
+  color: #1a1d23 !important;
+  font-weight: 500;
+}
+
+/* Remove any dark mode interference for this modal */
+#addTransactionModal .btn-close {
+  filter: invert(0) !important;
+}
+
+#addTransactionModal .modal-header {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+#addTransactionModal .modal-title {
+  color: #1a1d23 !important;
+}
