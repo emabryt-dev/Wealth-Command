@@ -963,52 +963,62 @@
   </div>
 
   <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form id="transactionForm" autocomplete="off">
-          <div class="modal-header">
-            <h5 class="modal-title" id="addTransactionModalLabel"><i class="bi bi-plus-circle"></i> Add Transaction</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="transactionForm" autocomplete="off">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addTransactionModalLabel"><i class="bi bi-plus-circle"></i> Add Transaction</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editTransactionIndex" value="-1">
+          
+          <!-- Row 1: Date and Amount -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label for="dateInput" class="form-label">Date</label>
+              <input type="date" class="form-control" id="dateInput" required>
+            </div>
+            <div class="col-md-6">
+              <label for="amountInput" class="form-label">Amount</label>
+              <input type="number" class="form-control" id="amountInput" required step="0.01">
+            </div>
           </div>
-          <div class="modal-body">
-            <input type="hidden" id="editTransactionIndex" value="-1">
-            <div class="mb-3">
-                <label for="dateInput" class="form-label">Date</label>
-                <input type="date" class="form-control" id="dateInput" required>
-            </div>
-            <div class="mb-3">
-                <label for="descInput" class="form-label">Description</label>
-                <input type="text" class="form-control" id="descInput" required>
-                 <div id="categorySuggestion" class="mt-2"></div>
-            </div>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label for="typeInput" class="form-label">Type</label>
-                    <select class="form-select" id="typeInput" required>
-                      <option value="expense">Expense</option>
-                      <option value="income">Income</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label for="categoryInput" class="form-label">Category</label>
-                    <select class="form-select" id="categoryInput" required>
-                      </select>
-                </div>
-            </div>
-             <div class="mb-3 mt-3">
-                <label for="amountInput" class="form-label">Amount</label>
-                <input type="number" class="form-control" id="amountInput" required step="0.01">
-            </div>
-            <div id="formAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+          
+          <!-- Row 2: Description -->
+          <div class="mb-3">
+            <label for="descInput" class="form-label">Description</label>
+            <input type="text" class="form-control" id="descInput" required>
+            <div id="categorySuggestion" class="mt-2"></div>
           </div>
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> <span id="submitButtonText">Add</span></button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          
+          <!-- Row 3: Type and Category -->
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="typeInput" class="form-label">Type</label>
+              <select class="form-select" id="typeInput" required>
+                <option value="expense">Expense</option>
+                <option value="income">Income</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="categoryInput" class="form-label">Category</label>
+              <select class="form-select" id="categoryInput" required>
+                <!-- Categories will be populated by JavaScript -->
+              </select>
+            </div>
           </div>
-        </form>
-      </div>
+          
+          <div id="formAlert" class="alert alert-danger mt-3 d-none" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> <span id="submitButtonText">Add</span></button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 
   <div class="modal fade confirmation-modal" id="confirmationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
