@@ -2151,3 +2151,22 @@ body.dark-mode #transactionsTable thead th {
 body.dark-mode #transactionsTable tbody tr:last-child td {
   border-bottom: none;
 }
+
+/* Fix for modal close button */
+.btn-close {
+  filter: invert(0); /* Ensure it's dark/visible */
+  opacity: 0.7;
+}
+
+.btn-close:hover {
+  opacity: 1;
+}
+
+/* Ensure modal header has proper contrast */
+.modal-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.modal-title {
+  color: #1a1d23;
+}
