@@ -2152,96 +2152,24 @@ body.dark-mode #transactionsTable tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* Fix for modal close button */
+/* Fix modal close button - Force dark color */
 .btn-close {
-  filter: invert(0); /* Ensure it's dark/visible */
+  filter: invert(0) !important;
   opacity: 0.7;
 }
 
 .btn-close:hover {
   opacity: 1;
+  filter: invert(0) !important;
 }
 
 /* Ensure modal header has proper contrast */
 .modal-header {
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95) !important;
 }
 
 .modal-title {
-  color: #1a1d23;
-}
-
-/* Enhanced modal styling */
-.modal-header {
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 1.5rem 1.5rem 0 0;
-  padding: 1rem 1.5rem;
-}
-
-.modal-footer {
-  background: rgba(255, 255, 255, 0.95);
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 0 0 1.5rem 1.5rem;
-  padding: 1rem 1.5rem;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-/* Form label improvements */
-.form-label {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: #1a1d23;
-}
-
-/* Better spacing for form rows */
-.row.g-3 {
-  margin-bottom: 1rem;
-}
-
-.row.g-3:last-child {
-  margin-bottom: 0;
-}
-
-/* Ensure proper contrast for form controls */
-.form-control, .form-select {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  color: #1a1d23;
-}
-
-.form-control:focus, .form-select:focus {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: #4361EE;
-  box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
-}
-
-/* Fix for dark mode compatibility */
-body.dark-mode .modal-content {
-  background: rgba(40, 40, 40, 0.95);
-  color: #ffffff;
-}
-
-body.dark-mode .modal-header,
-body.dark-mode .modal-footer {
-  background: rgba(50, 50, 50, 0.95);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-body.dark-mode .form-control,
-body.dark-mode .form-select {
-  background: rgba(60, 60, 60, 0.9);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
-
-body.dark-mode .form-label {
-  color: #ffffff;
-}
-
-body.dark-mode .btn-close {
-  filter: invert(1);
+  color: #1a1d23 !important;
+  font-weight: 600;
 }
